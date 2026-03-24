@@ -1,0 +1,167 @@
+version: '3'
+
+tasks:
+  _ports:check:sqlite:
+    internal: true
+    desc: Ensure local sqlite dev ports are available
+    cmds:
+      - |
+        for port in 3000 4173 8000; do
+          listeners="$(lsof -iTCP:$port -sTCP:LISTEN -n -P 2>/dev/null || true)"
+          if [ -n "$listeners" ]; then
+            echo "Port $port is already in use."
+            echo "$listeners"
+            exit 1
+          fi
+        done
+        exit 0
+
+  _ports:check:sqlite:app:
+    internal: true
+    desc: Ensure local sqlite app ports are available
+    cmds:
+      - |
+        for port in 3000 8000; do
+          listeners="$(lsof -iTCP:$port -sTCP:LISTEN -n -P 2>/dev/null || true)"
+          if [ -n "$listeners" ]; then
+            echo "Port $port is already in use."
+            echo "$listeners"
+            exit 1
+          fi
+        done
+        exit 0
+
+  bootstrap:
+    desc: Install Bun dependencies for web, marketing, and infra
+    cmds:
+      - cd web && bun install
+      - cd marketing && bun install
+      - cd infra && bun install
+      - cd infra && bunx sst install
+
+  app:dev:
+    desc: Run the Go app locally against ./data/microdote.db
+    cmds:
+      - |
+        set -a
+        . ./.env
+        set +a
+        env cleartify_DATABASE_URL= cleartify_DATABASE_AUTH_TOKEN= go run .
+
+  web:dev:
+    desc: Run the Vite app shell at http://localhost:3000
+    cmds:
+      - |
+        set -a
+        . ./.env
+        set +a
+        cd web && bun run dev
+
+  marketing:dev:
+    desc: Run the marketing site at http://localhost:4173
+    cmds:
+      - |
+        set -a
+        . ./.env
+        set +a
+        cd marketing && bun run dev
+
+  dev:sqlite:app:
+    desc: Run the Go app and app frontend locally against SQLite
+    cmds:
+      - task: _ports:check:sqlite:app
+      - task: build:app-web
+      - |
+        set -a
+        . ./.env
+        set +a
+        trap 'kill 0' EXIT
+        env cleartify_DATABASE_URL= cleartify_DATABASE_AUTH_TOKEN= go run . &
+        (cd web && bun run dev) &
+        wait
+
+  dev:sqlite:
+    desc: Run backend, app frontend, and marketing locally against SQLite
+    cmds:
+      - task: _ports:check:sqlite
+      - task: build:app-web
+      - |
+        set -a
+        . ./.env
+        set +a
+        trap 'kill 0' EXIT
+        env cleartify_DATABASE_URL= cleartify_DATABASE_AUTH_TOKEN= go run . &
+        (cd web && bun run dev) &
+        (cd marketing && bun run dev) &
+        wait
+
+  dev:
+    desc: Run backend plus app frontend against SQLite
+    cmds:
+      - task: dev:sqlite:app
+
+  dev:full:
+    desc: Run backend, app frontend, and marketing frontend against SQLite
+    cmds:
+      - task: dev:sqlite
+
+  build:app-web:
+    desc: Build the embedded web app into web/dist
+    cmds:
+      - cd web && bun run build
+
+  build:marketing:
+    desc: Build the marketing site into marketing/dist
+    cmds:
+      - cd marketing && bun run build
+
+  build:server:
+    desc: Build the Go server binary with embedded web assets
+    deps: [build:app-web]
+    cmds:
+      - go build -o bin/cleartify .
+
+  build:
+    desc: Build marketing, embedded app web assets, and server
+    deps: [build:marketing, build:server]
+
+  test:go:
+    desc: Run Go tests
+    cmds:
+      - go test ./...
+
+  test:web:
+    desc: Run web unit tests
+    cmds:
+      - cd web && bun run test:unit
+
+  test:
+    desc: Run Go and web tests
+    deps: [test:go, test:web]
+
+  debug:session:
+    desc: Call the session endpoint with a cookie jar for local debugging
+    cmds:
+      - |
+        set -a
+        . ./.env
+        set +a
+        mkdir -p .tasktmp
+        curl -i --cookie-jar .tasktmp/session.cookies "${cleartify_APP_ORIGIN:-http://localhost:8000}/api/auth/session"
+
+  deploy:fly:
+    desc: Deploy the app server to Fly.io
+    cmds:
+      - fly deploy --remote-only --app ${FLY_APP:-cleartify-app}
+
+  deploy:marketing:
+    desc: Build and push the marketing site to Cloudflare Pages via Wrangler
+    cmds:
+      - cd marketing && bun run build
+      - cd marketing && bunx wrangler pages deploy dist --project-name ${cleartify_MARKETING_PAGES_PROJECT}
+
+  deploy:
+    desc: Deploy Fly app and marketing site
+    cmds:
+      - task: deploy:fly
+      - task: deploy:marketing

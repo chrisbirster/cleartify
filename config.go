@@ -1,0 +1,284 @@
+package main
+
+import (
+	"fmt"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+type DatabaseMode string
+
+const (
+	DatabaseModeSQLite DatabaseMode = "sqlite"
+	DatabaseModeTurso  DatabaseMode = "turso"
+)
+
+type DatabaseConfig struct {
+	Mode      DatabaseMode
+	URL       string
+	AuthToken string
+	Path      string
+}
+
+type CookieConfig struct {
+	Domain string
+	Secure bool
+}
+
+type OTPConfig struct {
+	TTL            time.Duration
+	ResendCooldown time.Duration
+	MaxAttempts    int
+}
+
+type EmailConfig struct {
+	SendURL         string
+	AuthHeaderName  string
+	AuthHeaderValue string
+}
+
+type StripeConfig struct {
+	SecretKey           string
+	WebhookSecret       string
+	ConnectCountry      string
+	ConnectRefreshURL   string
+	ConnectReturnURL    string
+	CheckoutSuccessURL  string
+	CheckoutCancelURL   string
+	PlatformFeeBasisPts int
+}
+
+type OpenAIConfig struct {
+	APIKey  string
+	Model   string
+	BaseURL string
+}
+
+type AppConfig struct {
+	Environment     string
+	Port            string
+	Host            string
+	AppOrigin       string
+	MarketingOrigin string
+	AllowedOrigins  []string
+	Database        DatabaseConfig
+	Cookie          CookieConfig
+	OTP             OTPConfig
+	SessionTTL      time.Duration
+	SessionSecret   string
+	Email           EmailConfig
+	Stripe          StripeConfig
+	OpenAI          OpenAIConfig
+	AuthSuccessPath string
+}
+
+func LoadAppConfig() (AppConfig, error) {
+	environment := stringEnv("cleartify_ENV", "development")
+	appOrigin := stringEnv("cleartify_APP_ORIGIN", "http://localhost:8000")
+	marketingOrigin := stringEnv("cleartify_MARKETING_ORIGIN", "http://localhost:4173")
+	port := stringEnv("PORT", "8000")
+	host := "localhost"
+	if os.Getenv("PORT") != "" {
+		host = "0.0.0.0"
+	}
+
+	database := DatabaseConfig{
+		Path:      stringEnv("cleartify_DATABASE_PATH", "./data/microdote.db"),
+		URL:       strings.TrimSpace(os.Getenv("cleartify_DATABASE_URL")),
+		AuthToken: strings.TrimSpace(os.Getenv("cleartify_DATABASE_AUTH_TOKEN")),
+	}
+	if database.URL != "" {
+		database.Mode = DatabaseModeTurso
+	} else {
+		database.Mode = DatabaseModeSQLite
+	}
+
+	cookieSecureDefault := boolEnvDefault("cleartify_COOKIE_SECURE", database.Mode == DatabaseModeTurso || strings.HasPrefix(appOrigin, "https://"))
+	cookieDomain := strings.TrimSpace(os.Getenv("cleartify_COOKIE_DOMAIN"))
+	if cookieDomain == "" && cookieSecureDefault {
+		cookieDomain = ".cleartify.com"
+	}
+
+	sessionTTLDays := intEnv("cleartify_SESSION_TTL_DAYS", 7)
+	otpTTLMinutes := intEnv("cleartify_OTP_TTL_MINUTES", 10)
+	otpResendSeconds := intEnv("cleartify_OTP_RESEND_SECONDS", 60)
+	otpMaxAttempts := intEnv("cleartify_OTP_MAX_ATTEMPTS", 5)
+	sessionSecret := strings.TrimSpace(os.Getenv("cleartify_SESSION_SECRET"))
+	if sessionSecret == "" {
+		sessionSecret = "dev-session-secret-change-me"
+	}
+
+	cfg := AppConfig{
+		Environment:     environment,
+		Port:            port,
+		Host:            host,
+		AppOrigin:       appOrigin,
+		MarketingOrigin: marketingOrigin,
+		AllowedOrigins:  buildAllowedOrigins(appOrigin, marketingOrigin),
+		Database:        database,
+		Cookie: CookieConfig{
+			Domain: cookieDomain,
+			Secure: cookieSecureDefault,
+		},
+		OTP: OTPConfig{
+			TTL:            time.Duration(otpTTLMinutes) * time.Minute,
+			ResendCooldown: time.Duration(otpResendSeconds) * time.Second,
+			MaxAttempts:    otpMaxAttempts,
+		},
+		SessionTTL:    time.Duration(sessionTTLDays) * 24 * time.Hour,
+		SessionSecret: sessionSecret,
+		Email: EmailConfig{
+			SendURL:         strings.TrimSpace(os.Getenv("cleartify_EMAIL_SEND_URL")),
+			AuthHeaderName:  stringEnv("cleartify_EMAIL_SEND_AUTH_HEADER", "Authorization"),
+			AuthHeaderValue: strings.TrimSpace(os.Getenv("cleartify_EMAIL_SEND_AUTH_VALUE")),
+		},
+		Stripe: StripeConfig{
+			SecretKey:           strings.TrimSpace(os.Getenv("cleartify_STRIPE_SECRET_KEY")),
+			WebhookSecret:       firstNonEmpty(strings.TrimSpace(os.Getenv("cleartify_STRIPE_WEBHOOK_SECRET")), strings.TrimSpace(os.Getenv("cleartify_BILLING_WEBHOOK_SECRET"))),
+			ConnectCountry:      strings.ToUpper(stringEnv("cleartify_STRIPE_CONNECT_COUNTRY", "US")),
+			ConnectRefreshURL:   stringEnv("cleartify_STRIPE_CONNECT_REFRESH_URL", strings.TrimRight(appOrigin, "/")+"/marketplace/publish?creator=refresh"),
+			ConnectReturnURL:    stringEnv("cleartify_STRIPE_CONNECT_RETURN_URL", strings.TrimRight(appOrigin, "/")+"/marketplace/publish?creator=return"),
+			CheckoutSuccessURL:  stringEnv("cleartify_MARKETPLACE_CHECKOUT_SUCCESS_URL", strings.TrimRight(appOrigin, "/")+"/marketplace?checkout=success"),
+			CheckoutCancelURL:   stringEnv("cleartify_MARKETPLACE_CHECKOUT_CANCEL_URL", strings.TrimRight(appOrigin, "/")+"/marketplace?checkout=cancelled"),
+			PlatformFeeBasisPts: intEnv("cleartify_MARKETPLACE_PLATFORM_FEE_BPS", 1500),
+		},
+		OpenAI: OpenAIConfig{
+			APIKey:  strings.TrimSpace(os.Getenv("cleartify_OPENAI_API_KEY")),
+			Model:   stringEnv("cleartify_OPENAI_MODEL", "gpt-5-mini"),
+			BaseURL: strings.TrimRight(stringEnv("cleartify_OPENAI_BASE_URL", "https://api.openai.com/v1"), "/"),
+		},
+		AuthSuccessPath: stringEnv("cleartify_AUTH_SUCCESS_URL", "/decks"),
+	}
+
+	if cfg.Database.Mode == DatabaseModeTurso && cfg.Database.AuthToken == "" {
+		return AppConfig{}, fmt.Errorf("cleartify_DATABASE_AUTH_TOKEN is required when cleartify_DATABASE_URL is set")
+	}
+
+	return cfg, nil
+}
+
+func mustLocalAppConfig() AppConfig {
+	cfg, err := LoadAppConfig()
+	if err == nil {
+		return cfg
+	}
+
+	return AppConfig{
+		Environment:     "development",
+		Port:            "8000",
+		Host:            "localhost",
+		AppOrigin:       "http://localhost:3000",
+		MarketingOrigin: "http://localhost:4173",
+		AllowedOrigins:  buildAllowedOrigins("http://localhost:3000", "http://localhost:4173"),
+		Database: DatabaseConfig{
+			Mode: DatabaseModeSQLite,
+			Path: "./data/microdote.db",
+		},
+		Cookie: CookieConfig{
+			Secure: false,
+		},
+		OTP: OTPConfig{
+			TTL:            10 * time.Minute,
+			ResendCooldown: 60 * time.Second,
+			MaxAttempts:    5,
+		},
+		SessionTTL:    7 * 24 * time.Hour,
+		SessionSecret: "dev-session-secret-change-me",
+		Email: EmailConfig{
+			AuthHeaderName: "Authorization",
+		},
+		Stripe: StripeConfig{
+			ConnectCountry:      "US",
+			ConnectRefreshURL:   "http://localhost:3000/marketplace/publish?creator=refresh",
+			ConnectReturnURL:    "http://localhost:3000/marketplace/publish?creator=return",
+			CheckoutSuccessURL:  "http://localhost:3000/marketplace?checkout=success",
+			CheckoutCancelURL:   "http://localhost:3000/marketplace?checkout=cancelled",
+			PlatformFeeBasisPts: 1500,
+		},
+		OpenAI: OpenAIConfig{
+			Model:   "gpt-5-mini",
+			BaseURL: "https://api.openai.com/v1",
+		},
+		AuthSuccessPath: "/decks",
+	}
+}
+
+func (cfg AppConfig) IsDevelopment() bool {
+	return strings.ToLower(strings.TrimSpace(cfg.Environment)) != "production"
+}
+
+func buildAllowedOrigins(appOrigin, marketingOrigin string) []string {
+	origins := []string{
+		appOrigin,
+		marketingOrigin,
+		"https://www.cleartify.com",
+		"http://localhost:3000",
+		"http://127.0.0.1:3000",
+		"http://localhost:4173",
+		"http://127.0.0.1:4173",
+		"http://marketing.lvh.me:4174",
+		"http://app.lvh.me:3000",
+		"http://localhost:4317",
+		"http://127.0.0.1:4317",
+	}
+
+	if extra := strings.TrimSpace(os.Getenv("cleartify_ALLOWED_ORIGINS")); extra != "" {
+		for _, origin := range strings.Split(extra, ",") {
+			origins = append(origins, strings.TrimSpace(origin))
+		}
+	}
+
+	seen := make(map[string]struct{}, len(origins))
+	filtered := make([]string, 0, len(origins))
+	for _, origin := range origins {
+		origin = strings.TrimSpace(origin)
+		if origin == "" {
+			continue
+		}
+		parsed, err := url.Parse(origin)
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+			continue
+		}
+		if _, ok := seen[origin]; ok {
+			continue
+		}
+		seen[origin] = struct{}{}
+		filtered = append(filtered, origin)
+	}
+
+	return filtered
+}
+
+func stringEnv(key, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func intEnv(key string, fallback int) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func boolEnvDefault(key string, fallback bool) bool {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
