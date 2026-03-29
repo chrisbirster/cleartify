@@ -1,30 +1,27 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '#': path.resolve(__dirname, './src'),
-    },
-  },
+  plugins: [react(), tailwindcss()],
   test: {
-    environment: 'jsdom',
-    setupFiles: './test/setup.ts',
-    css: true,
-    include: ['test/**/*.test.{ts,tsx}'],
-    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+    environment: "jsdom",
+    setupFiles: ["./test/setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
+    exclude: ["test/smoke/**"],
     coverage: {
-      provider: 'v8',
-      reportsDirectory: './coverage',
-      reporter: ['text', 'json-summary', 'lcov'],
+      provider: "v8",
+      all: true,
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/index.css", "src/lib/types.ts"],
+      reporter: ["text", "json-summary"],
+      reportsDirectory: "./coverage",
       thresholds: {
-        lines: 40,
-        functions: 40,
-        branches: 35,
-        statements: 40,
+        lines: 90,
+        functions: 90,
+        branches: 90,
+        statements: 90,
       },
     },
   },
-})
+});

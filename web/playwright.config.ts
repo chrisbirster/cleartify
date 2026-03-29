@@ -1,32 +1,14 @@
-import { defineConfig, devices } from '@playwright/test';
-
-const playwrightPort = Number(process.env.PLAYWRIGHT_PORT || 5000);
-const baseURL = `http://127.0.0.1:${playwrightPort}`;
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './e2e',
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: 1,
-  reporter: 'html',
+  testDir: "./test/smoke",
   use: {
-    baseURL,
-    trace: 'on',
-    screenshot: 'on',
-    video: 'on',
+    baseURL: "http://127.0.0.1:3000",
   },
-
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
-
   webServer: {
-    command: `npm run dev -- --host 127.0.0.1 --port ${playwrightPort} --strictPort`,
-    url: baseURL,
-    reuseExistingServer: false,
+    command: "node ./node_modules/vite/bin/vite.js --port 3000 --strictPort --host 127.0.0.1",
+    port: 3000,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
   },
 });

@@ -1,137 +1,73 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  Outlet,
-  useLocation,
-} from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Layout } from "#/layouts/root-layout";
-import { DecksPage } from "#/pages/DecksPage";
-import { HomePage } from "#/pages/HomePage";
-import { StatsPage } from "#/pages/StatsPage";
-import { NotesPage } from "#/pages/NotesPage";
-import {
-  MarketplaceDetailPage,
-  MarketplacePage,
-  MarketplacePublishPage,
-} from "#/pages/MarketplacePage";
-import { StudyPage } from "#/pages/StudyPage";
-import { AddNotePage } from "#/pages/AddNotePage";
-import {
-  StudyGroupDetailPage,
-  StudyGroupJoinPage,
-  StudyGroupsPage,
-} from "#/pages/StudyGroupsPage";
-import { TemplatesPage } from "#/pages/TemplatesPage";
-import { EmptyCardsPage } from "#/pages/EmptyCardsPage";
-import { LoginPage } from "#/pages/LoginPage";
-import { SettingsPage } from "#/pages/SettingsPage";
-import { OnboardingPlanPage } from "#/pages/OnboardingPlanPage";
-import { TeamPage } from "#/pages/TeamPage";
-import { useAppRepository } from "#/lib/app-repository";
-import {
-  AddNoteFieldEditorRoutePage,
-  AddNoteTemplateEditorRoutePage,
-  TemplatesTemplateEditorRoutePage,
-} from "#/pages/NoteTypeEditorRoutes";
+import { useEffect, useState } from "react";
+import { Effect } from "effect";
 
-function RequireAuthLayout() {
-  const repository = useAppRepository();
-  const location = useLocation();
-  const sessionQuery = useQuery({
-    queryKey: ["auth-session"],
-    queryFn: () => repository.fetchSession(),
-  });
+import { loadAppData } from "./lib/api";
+import type { AppData } from "./lib/types";
+import { AppRouter } from "./router";
 
-  if (sessionQuery.isLoading) {
+type AppState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; data: AppData };
+
+export function App() {
+  const [state, setState] = useState<AppState>({ status: "loading" });
+
+  useEffect(() => {
+    let isActive = true;
+
+    Effect.runPromise(loadAppData())
+      .then((data) => {
+        if (isActive) {
+          setState({ status: "ready", data });
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setState({ status: "error", message: "Unable to load app data." });
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  if (state.status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--app-bg)] text-sm text-[var(--app-muted)]">
-        Checking session...
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <p role="status" className="text-sm text-muted-foreground">
+          Loading workspace
+        </p>
       </div>
     );
   }
 
-  if (!sessionQuery.data?.authenticated) {
+  if (state.status === "error") {
     return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: `${location.pathname}${location.search}` }}
-      />
+      <div className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+        <div className="max-w-md rounded-3xl border border-border bg-card p-8 text-center">
+          <h1 className="text-2xl font-semibold">Unable to load Cleartify</h1>
+          <p className="mt-3 text-sm text-muted-foreground">{state.message}</p>
+        </div>
+      </div>
     );
   }
 
-  const onboarding = sessionQuery.data.user?.onboarding ?? false;
-  const isOnboardingPath = location.pathname.startsWith("/onboarding/plan");
-
-  if (onboarding && !isOnboardingPath) {
-    return <Navigate to="/onboarding/plan" replace />;
+  if (!state.data.session.authenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+        <div className="max-w-md rounded-3xl border border-border bg-card p-8 text-center">
+          <h1 className="text-2xl font-semibold">Authentication required</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            WorkOS AuthKit is reserved behind the Phase 0 auth boundary. Use the demo session locally or finish auth wiring next.
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  if (!onboarding && isOnboardingPath) {
-    return <Navigate to="/" replace />;
-  }
-
-  return (
-    <Layout>
-      <Outlet />
-    </Layout>
-  );
+  return <AppRouter data={state.data} />;
 }
 
-export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<RequireAuthLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="onboarding/plan" element={<OnboardingPlanPage />} />
-          <Route path="stats" element={<StatsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="team" element={<TeamPage />} />
-          <Route path="notes/view" element={<NotesPage />} />
-          <Route path="decks" element={<DecksPage />} />
-          <Route path="marketplace" element={<MarketplacePage />} />
-          <Route
-            path="marketplace/publish"
-            element={<MarketplacePublishPage />}
-          />
-          <Route path="marketplace/:slug" element={<MarketplaceDetailPage />} />
-          <Route path="study-groups" element={<StudyGroupsPage />} />
-          <Route path="study-groups/join" element={<StudyGroupJoinPage />} />
-          <Route
-            path="study-groups/:groupId"
-            element={<StudyGroupDetailPage />}
-          />
-          <Route path="study/:deckId" element={<StudyPage />} />
-          <Route path="notes/add" element={<AddNotePage />}>
-            <Route
-              path="note-types/:noteTypeName/fields"
-              element={<AddNoteFieldEditorRoutePage />}
-            />
-            <Route
-              path="note-types/:noteTypeName/templates"
-              element={<AddNoteTemplateEditorRoutePage />}
-            />
-          </Route>
-          <Route path="templates" element={<TemplatesPage />}>
-            <Route
-              path=":noteTypeName"
-              element={<TemplatesTemplateEditorRoutePage />}
-            />
-          </Route>
-          <Route path="tools/empty-cards" element={<EmptyCardsPage />} />
-          {/* Future routes */}
-          {/* <Route path="browse" element={<BrowsePage />} /> */}
-          {/* <Route path="notes/:noteId" element={<EditNotePage />} /> */}
-          {/* <Route path="card/:cardId" element={<CardPage />} /> */}
-          {/* <Route path="templates" element={<TemplatesPage />} /> */}
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
+export default App;

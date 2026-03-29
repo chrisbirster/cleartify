@@ -9,4 +9,10 @@ infra/.env
 infra/.env.*
 marketing/node_modules
 marketing/dist
+web/node_modules
+web/dist
+web/coverage
+web/playwright-report
+web/test-results
 .env
+.tasktmp

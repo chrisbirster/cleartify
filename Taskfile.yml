@@ -32,28 +32,29 @@ tasks:
         exit 0
 
   bootstrap:
-    desc: Install Bun dependencies for web, marketing, and infra
+    desc: Install Go and Bun dependencies for app, marketing, and infra
     cmds:
+      - go mod download
       - cd web && bun install
       - cd marketing && bun install
       - cd infra && bun install
       - cd infra && bunx sst install
 
   app:dev:
-    desc: Run the Go app locally against ./data/microdote.db
+    desc: Run the Go app locally
     cmds:
       - |
         set -a
-        . ./.env
+        [ -f ./.env ] && . ./.env || true
         set +a
-        env cleartify_DATABASE_URL= cleartify_DATABASE_AUTH_TOKEN= go run .
+        go run ./cmd/cleartify
 
   web:dev:
     desc: Run the Vite app shell at http://localhost:3000
     cmds:
       - |
         set -a
-        . ./.env
+        [ -f ./.env ] && . ./.env || true
         set +a
         cd web && bun run dev
 
@@ -62,7 +63,7 @@ tasks:
     cmds:
       - |
         set -a
-        . ./.env
+        [ -f ./.env ] && . ./.env || true
         set +a
         cd marketing && bun run dev
 
@@ -72,11 +73,17 @@ tasks:
       - task: _ports:check:sqlite:app
       - task: build:app-web
       - |
+        mkdir -p .tasktmp
+        rm -f .tasktmp/dev.sqlite.db .tasktmp/dev.sqlite.db-shm .tasktmp/dev.sqlite.db-wal
         set -a
-        . ./.env
+        [ -f ./.env ] && . ./.env || true
+        APP_PUBLIC_URL=http://localhost:3000
+        APP_MARKETING_URL=http://localhost:4173
+        DATABASE_PATH=.tasktmp/dev.sqlite.db
+        SEED_DEMO=true
         set +a
         trap 'kill 0' EXIT
-        env cleartify_DATABASE_URL= cleartify_DATABASE_AUTH_TOKEN= go run . &
+        go run ./cmd/cleartify &
         (cd web && bun run dev) &
         wait
 
@@ -86,11 +93,17 @@ tasks:
       - task: _ports:check:sqlite
       - task: build:app-web
       - |
+        mkdir -p .tasktmp
+        rm -f .tasktmp/dev.sqlite.db .tasktmp/dev.sqlite.db-shm .tasktmp/dev.sqlite.db-wal
         set -a
-        . ./.env
+        [ -f ./.env ] && . ./.env || true
+        APP_PUBLIC_URL=http://localhost:3000
+        APP_MARKETING_URL=http://localhost:4173
+        DATABASE_PATH=.tasktmp/dev.sqlite.db
+        SEED_DEMO=true
         set +a
         trap 'kill 0' EXIT
-        env cleartify_DATABASE_URL= cleartify_DATABASE_AUTH_TOKEN= go run . &
+        go run ./cmd/cleartify &
         (cd web && bun run dev) &
         (cd marketing && bun run dev) &
         wait
@@ -119,7 +132,8 @@ tasks:
     desc: Build the Go server binary with embedded web assets
     deps: [build:app-web]
     cmds:
-      - go build -o bin/cleartify .
+      - mkdir -p bin
+      - go build -o bin/cleartify ./cmd/cleartify
 
   build:
     desc: Build marketing, embedded app web assets, and server
@@ -133,7 +147,7 @@ tasks:
   test:web:
     desc: Run web unit tests
     cmds:
-      - cd web && bun run test:unit
+      - cd web && bun run test:coverage
 
   test:
     desc: Run Go and web tests
@@ -144,10 +158,10 @@ tasks:
     cmds:
       - |
         set -a
-        . ./.env
+        [ -f ./.env ] && . ./.env || true
         set +a
         mkdir -p .tasktmp
-        curl -i --cookie-jar .tasktmp/session.cookies "${cleartify_APP_ORIGIN:-http://localhost:8000}/api/auth/session"
+        curl -i --cookie-jar .tasktmp/session.cookies "${APP_SERVER_ORIGIN:-http://localhost:8000}/api/auth/session"
 
   deploy:fly:
     desc: Deploy the app server to Fly.io
