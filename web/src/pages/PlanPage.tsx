@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { StatePanel } from "../components/StatePanel";
 import { generateDraftPlanForWorkObject, loadDraftPlanForWorkObject, updateDraftPlanForWorkObject } from "../lib/api";
 import type { Cluster, DraftPlan, DraftPlanInput, WorkObject } from "../lib/types";
 
@@ -135,7 +136,13 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
   }, [workObject]);
 
   if (!workObject) {
-    return <EmptyState title="Work Object not found" description="Select a Work Object with prototype context to review its draft plan." />;
+    return (
+      <EmptyState
+        eyebrow="Prototype-to-Plan"
+        title="Work Object not found"
+        description="Select a Work Object from Work Objects to review its persisted draft plan."
+      />
+    );
   }
 
   const prototypeContext = workObject.prototypeUrl || workObject.prototypeNote;
@@ -261,11 +268,14 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
           ) : null}
 
           {isLoading ? (
-            <div className="rounded-3xl border border-border bg-card/90 px-5 py-8 shadow-xl shadow-black/10">
-              <p role="status" className="text-sm text-muted-foreground">
-                Loading persisted draft plan...
-              </p>
-            </div>
+            <StatePanel
+              description="Bringing the current Prototype-to-Plan context into view for this Work Object."
+              eyebrow="Prototype-to-Plan"
+              role="status"
+              surface="page"
+              title="Loading persisted draft plan..."
+              tone="loading"
+            />
           ) : draftPlan ? (
             <div className="space-y-5">
               {isEditing ? (
@@ -347,6 +357,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
             </div>
           ) : (
             <EmptyState
+              eyebrow="Prototype-to-Plan"
               title="No draft plan yet"
               description="Generate a deterministic draft plan from the current Work Object, prototype reference, and linked Cluster context."
             />
@@ -396,9 +407,13 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                No prototype context is attached yet. The draft will fall back to Work Object and Cluster context until a prototype reference is added.
-              </p>
+              <div className="mt-4">
+                <StatePanel
+                  description="No prototype context is attached yet. The draft will fall back to Work Object and linked Cluster context until a prototype reference is added."
+                  eyebrow="Prototype-to-Plan"
+                  title="No prototype context yet"
+                />
+              </div>
             )}
           </section>
 
@@ -421,7 +436,13 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
                 </Link>
               </div>
             ) : (
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">No linked Cluster is attached to this Work Object yet.</p>
+              <div className="mt-4">
+                <StatePanel
+                  description="This Work Object can still carry a draft plan, but the upstream Context Inbox link is missing right now."
+                  eyebrow="Context origin"
+                  title="No linked Cluster"
+                />
+              </div>
             )}
           </section>
         </aside>

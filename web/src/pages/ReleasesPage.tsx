@@ -1,14 +1,125 @@
+import { Link } from "react-router-dom";
+
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import type { Cluster, WorkObject } from "../lib/types";
 
-export function ReleasesPage() {
+type ReleasesPageProps = {
+  workObjects: WorkObject[];
+  clusters: Cluster[];
+};
+
+function panelTone(value: string) {
+  switch (value) {
+    case "urgent":
+      return "border-rose-400/30 bg-rose-400/10 text-rose-100";
+    case "high":
+    case "in_progress":
+      return "border-primary/20 bg-primary/10 text-primary";
+    case "ready":
+      return "border-sky-400/30 bg-sky-400/10 text-sky-100";
+    case "medium":
+      return "border-violet-400/20 bg-violet-400/10 text-violet-100";
+    case "in_review":
+      return "border-amber-400/20 bg-amber-400/10 text-amber-200";
+    case "shipped":
+      return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
+    case "low":
+      return "border-slate-400/20 bg-slate-400/10 text-slate-200";
+    default:
+      return "border-border bg-secondary/70 text-muted-foreground";
+  }
+}
+
+function formatTimestamp(value: string) {
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function ReleasesPage({ workObjects, clusters }: ReleasesPageProps) {
+  const releaseReadyWorkObjects = [...workObjects]
+    .filter((workObject) => Boolean(workObject.releaseReadyAt))
+    .sort((left, right) => (right.releaseReadyAt ?? "").localeCompare(left.releaseReadyAt ?? ""));
+
   return (
     <div>
-      <PageHeader title="Releases" description="Release summaries and product memory ship behind this stable Phase 0 route." />
-      <EmptyState
-        title="Release list scaffold"
-        description="The product shell keeps this route ready for release summaries, outcomes, and linked decisions."
+      <PageHeader
+        title="Releases"
+        description="A lightweight list of Work Objects that have cleared the current human review checkpoint."
       />
+
+      {releaseReadyWorkObjects.length === 0 ? (
+        <EmptyState
+          eyebrow="Release queue"
+          title="No release-ready Work Objects yet"
+          description="Use the Review screen to mark a Work Object ready for release, and Cleartify will stage it here for the MVP release pass."
+        />
+      ) : (
+        <div className="grid gap-4">
+          {releaseReadyWorkObjects.map((workObject) => {
+            const linkedCluster = workObject.clusterId ? clusters.find((cluster) => cluster.id === workObject.clusterId) : undefined;
+
+            return (
+              <article key={workObject.id} className="rounded-3xl border border-border bg-card/95 p-5 shadow-xl shadow-black/10">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Release-ready Work Object</p>
+                    <h2 className="mt-2 text-xl font-medium text-foreground">{workObject.title}</h2>
+                    <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">{workObject.summary}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200">
+                      Ready on {formatTimestamp(workObject.releaseReadyAt ?? "")}
+                    </span>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${panelTone(workObject.status)}`}>{workObject.status.replaceAll("_", " ")}</span>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${panelTone(workObject.priority)}`}>{workObject.priority} priority</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {linkedCluster ? (
+                    <>
+                      <span className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-foreground">
+                        {linkedCluster.title}
+                      </span>
+                      <span className={`rounded-full border px-3 py-1 text-xs font-medium ${panelTone(linkedCluster.severity)}`}>
+                        {linkedCluster.severity} severity
+                      </span>
+                    </>
+                  ) : (
+                    <span className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground">
+                      No linked Cluster
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                  <span>{workObject.decisions.length} Decisions</span>
+                  <span>{workObject.artifacts.length} Artifacts</span>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Link
+                    className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
+                    to={`/review/${workObject.id}`}
+                  >
+                    Open review
+                  </Link>
+                  <Link
+                    className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
+                    to={`/work/${workObject.id}`}
+                  >
+                    Open Work Object
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

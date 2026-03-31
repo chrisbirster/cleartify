@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"cleartify/internal/auth"
 	"cleartify/internal/config"
@@ -229,6 +230,21 @@ func (f *fakeStore) UpdateWorkObjectPriority(_ context.Context, workObjectID str
 			ID:       workObjectID,
 			Title:    "Updated Work Object",
 			Priority: priority,
+		}, nil
+	}
+	return f.updatedWorkObject, nil
+}
+
+func (f *fakeStore) MarkWorkObjectReadyForRelease(_ context.Context, workObjectID string) (domain.WorkObject, error) {
+	if f.err != nil {
+		return domain.WorkObject{}, f.err
+	}
+	if f.updatedWorkObject.ID == "" {
+		readyAt := time.Date(2026, 3, 31, 16, 30, 0, 0, time.UTC)
+		return domain.WorkObject{
+			ID:             workObjectID,
+			Title:          "Updated Work Object",
+			ReleaseReadyAt: &readyAt,
 		}, nil
 	}
 	return f.updatedWorkObject, nil

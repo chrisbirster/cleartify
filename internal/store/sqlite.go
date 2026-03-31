@@ -103,3 +103,15 @@ func decodeJSONMap(raw sql.NullString) (map[string]any, error) {
 func decodeTime(raw string) (time.Time, error) {
 	return time.Parse(time.RFC3339, raw)
 }
+
+func decodeNullableTime(raw string) (*time.Time, error) {
+	if raw == "" {
+		return nil, nil
+	}
+
+	parsed, err := decodeTime(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}

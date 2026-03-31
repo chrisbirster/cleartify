@@ -113,6 +113,7 @@ func TestBootstrapReturnsSeedError(t *testing.T) {
 			owner_id TEXT NOT NULL,
 			prototype_url TEXT,
 			prototype_note TEXT,
+			release_ready_at TEXT,
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL
 		);`,

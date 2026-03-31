@@ -12,6 +12,7 @@ var pragmaTableInfoTemplate = sqldata.MustQuery("pragma_table_info.sql")
 var addNullableTextColumnTemplate = sqldata.MustQuery("add_nullable_text_column.sql")
 var phase1WorkObjectsClusterIDMigration = sqldata.MustMigration("001_phase1_work_objects_cluster_id.sql")
 var phase3WorkObjectsPrototypeNoteMigration = sqldata.MustMigration("002_phase3_work_objects_prototype_note.sql")
+var phase5WorkObjectsReleaseReadyAtMigration = sqldata.MustMigration("003_phase5_work_objects_release_ready_at.sql")
 
 var recordMigration = func(db *sql.DB, name, appliedAt string) error {
 	_, err := db.Exec(insertMigrationStatement, name, appliedAt)
@@ -39,6 +40,9 @@ func (s *Store) Migrate() error {
 	if err := ensureNullableTextColumn(s.DB, "work_objects", "prototype_note"); err != nil {
 		return fmt.Errorf("ensure work_objects.prototype_note: %w", err)
 	}
+	if err := ensureNullableTextColumn(s.DB, "work_objects", "release_ready_at"); err != nil {
+		return fmt.Errorf("ensure work_objects.release_ready_at: %w", err)
+	}
 
 	if err := recordMigration(s.DB, "phase0_init", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		return fmt.Errorf("record migration: %w", err)
@@ -48,6 +52,9 @@ func (s *Store) Migrate() error {
 	}
 	if err := recordMigration(s.DB, "phase3_work_objects_prototype_note", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		return fmt.Errorf("record phase3 migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "phase5_work_objects_release_ready_at", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record phase5 migration: %w", err)
 	}
 
 	return nil
@@ -71,6 +78,9 @@ func ensureNullableTextColumn(db *sql.DB, table, column string) error {
 	}
 	if table == "work_objects" && column == "prototype_note" {
 		statement = phase3WorkObjectsPrototypeNoteMigration
+	}
+	if table == "work_objects" && column == "release_ready_at" {
+		statement = phase5WorkObjectsReleaseReadyAtMigration
 	}
 
 	if _, err := db.Exec(statement); err != nil {

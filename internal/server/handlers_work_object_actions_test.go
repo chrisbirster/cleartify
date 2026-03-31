@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"cleartify/internal/auth"
 	"cleartify/internal/config"
@@ -186,6 +187,32 @@ func TestHandleWorkObjectActionsUpdatesPriority(t *testing.T) {
 	}
 	if !strings.Contains(recorder.Body.String(), `"priority":"urgent"`) {
 		t.Fatalf("expected updated work object priority in response, got %q", recorder.Body.String())
+	}
+}
+
+func TestHandleWorkObjectActionsMarksWorkObjectReadyForRelease(t *testing.T) {
+	t.Parallel()
+
+	releaseReadyAt := time.Date(2026, 3, 31, 17, 0, 0, 0, time.UTC)
+	server, err := New(
+		config.Config{AppMarketingURL: "http://localhost:4173"},
+		&fakeStore{updatedWorkObject: domain.WorkObject{ID: "wo_1", Title: "Updated Work Object", ReleaseReadyAt: &releaseReadyAt}},
+		auth.NewDemoAuthService(),
+		newTestServer(t).frontend,
+	)
+	if err != nil {
+		t.Fatalf("expected server build: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/work-objects/wo_1/release-ready", nil)
+	server.handleWorkObjectActions(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", recorder.Code)
+	}
+	if !strings.Contains(recorder.Body.String(), `"releaseReadyAt":"2026-03-31T17:00:00Z"`) {
+		t.Fatalf("expected updated release-ready state in response, got %q", recorder.Body.String())
 	}
 }
 
@@ -774,6 +801,50 @@ func TestHandleWorkObjectActionsReturnsNotFoundForMissingDraftPlanDuringImplemen
 	}
 }
 
+func TestHandleWorkObjectActionsReturnsConflictForMissingDraftPlanDuringReleaseReady(t *testing.T) {
+	t.Parallel()
+
+	server, err := New(
+		config.Config{AppMarketingURL: "http://localhost:4173"},
+		&fakeStore{err: store.ErrDraftPlanNotFound},
+		auth.NewDemoAuthService(),
+		newTestServer(t).frontend,
+	)
+	if err != nil {
+		t.Fatalf("expected server build: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/work-objects/wo_1/release-ready", nil)
+	server.handleWorkObjectActions(recorder, request)
+
+	if recorder.Code != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", recorder.Code)
+	}
+}
+
+func TestHandleWorkObjectActionsReturnsNotFoundForMissingReleaseReadyWorkObject(t *testing.T) {
+	t.Parallel()
+
+	server, err := New(
+		config.Config{AppMarketingURL: "http://localhost:4173"},
+		&fakeStore{err: sql.ErrNoRows},
+		auth.NewDemoAuthService(),
+		newTestServer(t).frontend,
+	)
+	if err != nil {
+		t.Fatalf("expected server build: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/work-objects/missing/release-ready", nil)
+	server.handleWorkObjectActions(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", recorder.Code)
+	}
+}
+
 func TestHandleWorkObjectActionsReturnsNotFoundForMissingDraftPlanDuringTaskBreakdownArtifactGeneration(t *testing.T) {
 	t.Parallel()
 
@@ -884,6 +955,14 @@ func TestHandleWorkObjectActionsReturnsInternalErrorForUpdateFailure(t *testing.
 	if recorder.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500 for task-breakdown artifact generate, got %d", recorder.Code)
 	}
+
+	recorder = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodPost, "/api/work-objects/wo_1/release-ready", nil)
+	server.handleWorkObjectActions(recorder, request)
+
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500 for release-ready update, got %d", recorder.Code)
+	}
 }
 
 func TestHandleWorkObjectActionsRejectsBadBodies(t *testing.T) {
@@ -990,6 +1069,14 @@ func TestWorkObjectActionPath(t *testing.T) {
 	}
 	if workObjectID != "wo_1" || action != "priority" {
 		t.Fatalf("expected parsed priority path values, got %q %q", workObjectID, action)
+	}
+
+	workObjectID, action, ok = workObjectActionPath("/api/work-objects/wo_1/release-ready")
+	if !ok {
+		t.Fatal("expected valid work object release-ready action path")
+	}
+	if workObjectID != "wo_1" || action != "release-ready" {
+		t.Fatalf("expected parsed release-ready path values, got %q %q", workObjectID, action)
 	}
 
 	workObjectID, action, ok = workObjectActionPath("/api/work-objects/wo_1/decisions")

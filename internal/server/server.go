@@ -26,6 +26,7 @@ type DataStore interface {
 	UpdateWorkObjectPrototype(ctx context.Context, workObjectID string, prototypeURL string, prototypeNote string) (domain.WorkObject, error)
 	UpdateWorkObjectStatus(ctx context.Context, workObjectID string, status string) (domain.WorkObject, error)
 	UpdateWorkObjectPriority(ctx context.Context, workObjectID string, priority string) (domain.WorkObject, error)
+	MarkWorkObjectReadyForRelease(ctx context.Context, workObjectID string) (domain.WorkObject, error)
 }
 
 type Server struct {

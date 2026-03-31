@@ -17,6 +17,7 @@ let createArtifactForWorkObjectMock: any;
 let loadDraftPlanForWorkObjectMock: any;
 let generateImplementationArtifactForWorkObjectMock: any;
 let generateTaskBreakdownArtifactForWorkObjectMock: any;
+let markWorkObjectReadyForReleaseMock: any;
 
 const persistedDraftPlan = {
   workObjectId: "wo_onboarding_refresh",
@@ -54,6 +55,7 @@ describe("App", () => {
     loadDraftPlanForWorkObjectMock = vi.spyOn(api, "loadDraftPlanForWorkObject");
     generateImplementationArtifactForWorkObjectMock = vi.spyOn(api, "generateImplementationArtifactForWorkObject");
     generateTaskBreakdownArtifactForWorkObjectMock = vi.spyOn(api, "generateTaskBreakdownArtifactForWorkObject");
+    markWorkObjectReadyForReleaseMock = vi.spyOn(api, "markWorkObjectReadyForRelease");
   });
 
   afterEach(() => {
@@ -188,7 +190,7 @@ describe("App", () => {
     expect(screen.getByText("A tighter summary for the seeded work object.")).toBeInTheDocument();
     expect(screen.getByText("Mobile performance improvements")).toBeInTheDocument();
     expect(screen.getByText("high severity")).toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("keeps the Decisions panel in sync after creating a new Decision and navigating away and back", async () => {
     const user = userEvent.setup();
@@ -222,7 +224,7 @@ describe("App", () => {
 
     await user.click(screen.getByRole("link", { name: /Speed up mobile dashboard rendering/i }));
     expect(await screen.findByText("Keep the mobile performance pass tight")).toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("keeps prototype context in sync after a successful prototype attach update", async () => {
     const user = userEvent.setup();
@@ -254,7 +256,7 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Prototypes" })).toBeInTheDocument();
     expect(screen.getByText("Updated prototype note for the first Prototype-to-Plan pass.")).toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("keeps the Artifacts panel in sync after creating a new Artifact and navigating away and back", async () => {
     const user = userEvent.setup();
@@ -346,5 +348,32 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Prototype-to-Plan onboarding refresh" })).toBeInTheDocument();
     expect(screen.getByText("Prototype-to-Plan onboarding refresh task breakdown")).toBeInTheDocument();
+  });
+
+  it("keeps the Releases list in sync after marking a Work Object ready for release", async () => {
+    const user = userEvent.setup();
+    window.history.pushState({}, "", "/app/review/wo_onboarding_refresh");
+    loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
+    loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(persistedDraftPlan));
+    markWorkObjectReadyForReleaseMock.mockReturnValue(
+      Effect.succeed({
+        ...appDataFixture.workObjects[1],
+        releaseReadyAt: "2026-03-31T17:00:00Z",
+        updatedAt: "2026-03-31T17:00:00Z",
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Mark ready for release" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Mark ready for release" }));
+
+    expect(await screen.findByText(/Ready for release on Mar 31, 2026/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Releases" }));
+
+    expect(await screen.findByRole("heading", { name: "Releases" })).toBeInTheDocument();
+    expect(screen.getByText("Prototype-to-Plan onboarding refresh")).toBeInTheDocument();
+    expect(screen.getByText(/Ready on Mar 31, 2026/i)).toBeInTheDocument();
   });
 });

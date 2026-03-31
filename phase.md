@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-31
 
-Current target: Phase 5 - Review and Release
+Current target: Phase 6 - Polish
 
 ## Status Summary
 
@@ -13,8 +13,8 @@ Current target: Phase 5 - Review and Release
 | 2 | Work Objects | Done | The MVP Work Object loop is complete: seeded examples, richer detail page, evidence panel, linked Cluster context, status and priority transitions, core editing, and lightweight Decision and Artifact capture all work end to end. Further Work Object slices should be treated as future enhancements unless explicitly required. |
 | 3 | Prototype-to-Plan | Done | Prototype attach, deterministic draft plan generation, and lightweight persisted draft plan editing are now implemented end to end for MVP review. |
 | 4 | Agent Workspace | Done | Agent Workspace now supports two deterministic persisted mock actions that turn a Work Object plus its persisted draft plan into `implementation_brief` and `task_breakdown` Artifacts. Treat broader agent scope as future enhancement unless explicitly required. |
-| 5 | Review and Release | Scaffolded | Stable review and release routes exist, but release/review workflows are not implemented yet. |
-| 6 | Polish | Not started | No dedicated polish pass yet beyond Phase 0 baseline styling and shell quality. |
+| 5 | Review and Release | Done | The MVP review loop is complete: `/app/review/:workObjectId` is a real checkpoint, `release_ready_at` persists, `POST /api/work-objects/:id/release-ready` exists, and `/app/releases` surfaces release-ready Work Objects. Treat release detail and outcome-note scope as optional future enhancement unless explicitly required. |
+| 6 | Polish | In progress | Start with a narrow MVP polish pass focused on loading states, empty states, tighter copy, visual consistency, and small seeded demo-data refinements across the key execution routes. |
 
 ## Phase Breakdown
 
@@ -135,32 +135,59 @@ Deferred:
 
 ### Phase 5 - Review and Release
 
-Status: Scaffolded
+Status: Done
 
 Completed:
 - `/app/review/:workObjectId`
 - `/app/releases`
-- `/app/releases/:releaseId`
+- real review checkpoint for a `Work Object`
+- persisted `release_ready_at` state on `work_objects`
+- `POST /api/work-objects/:id/release-ready`
+- review summary with core Work Object details, linked Cluster context, current status and priority, persisted draft plan summary, Decisions, and Artifacts
+- compact `Mark ready for release` action with immediate and persisted UI updates
+- simple releases list sourced from release-ready `Work Object`s
 
-Remaining:
-- review screen workflow
-- release summary view
-- linked decisions and artifacts flow
-- outcome notes
+Exit criteria met:
+- a human can review the key execution context before release and mark a Work Object ready
+- release-ready state persists, reloads cleanly, and is visible in both review and releases views
+
+Deferred:
+- optional release detail surface
+- optional outcome-note capture
+- any broader approvals, deployment automation, or release workflow engines
 
 ### Phase 6 - Polish
 
-Status: Not started
+Status: In progress
 
-Planned:
-- better loading and empty states
-- richer seeded demo data
-- keyboard shortcuts if simple
-- visual polish
-- docs cleanup
+MVP polish focus:
+- improve loading and empty states on the key execution routes
+- tighten copy and visual consistency across Work Object, Plan, Agent Workspace, Review, and Releases
+- improve seeded demo data where it makes the product story easier to review
+- keep the pass small, product-focused, and demo-oriented
+
+Completed:
+- shared loading and empty-state polish across `/app/work/:workObjectId`, `/app/plans/:workObjectId`, `/app/agents/:workObjectId`, `/app/review/:workObjectId`, and `/app/releases`
+- reusable state-surface treatment for route-level empty states and section-level missing/loading panels
+- tighter empty-state copy and more consistent panel framing across the key execution routes
+
+Proposed slices:
+1. Shared loading and empty-state polish
+   - make route loading states feel more intentional and consistent
+   - tighten empty-state copy so each page explains what the user should do next
+2. Cross-page copy and hierarchy polish
+   - normalize headings, section descriptions, button copy, and badge language across `/app/work/:workObjectId`, `/app/plans/:workObjectId`, `/app/agents/:workObjectId`, `/app/review/:workObjectId`, and `/app/releases`
+   - align panel spacing, section labels, and summary treatments so the flow feels like one product
+3. Seeded demo-data polish
+   - tune a few seeded `Decision`, `Artifact`, and plan examples so the core demo path reads more clearly end to end
+   - avoid expanding the schema or adding new feature scope
+
+First slice:
+- shared loading and empty-state polish on `/app/work/:workObjectId`, `/app/plans/:workObjectId`, `/app/agents/:workObjectId`, `/app/review/:workObjectId`, and `/app/releases` is complete
+- next up is cross-page copy and hierarchy polish
 
 ## Next Recommended Focus
 
-1. Start the first real Phase 5 slice with a narrow review surface that lets a Work Object show a compact pre-release summary of its Decisions and Artifacts.
-2. Keep Review and Release lightweight and product-facing instead of introducing workflow engines, approvals infrastructure, or background jobs.
-3. Treat broader Agent Workspace scope as future enhancement unless a specific MVP gap appears during review.
+1. Start Phase 6 with shared loading and empty-state polish across the key execution routes.
+2. Follow that with a small copy and visual-consistency pass so Work Object, Plan, Agent Workspace, Review, and Releases feel like one coherent product.
+3. Treat optional release-detail, outcome-note, and broader workflow automation as future enhancements unless explicitly required.

@@ -25,13 +25,14 @@ func TestRoutesRegisterKnownAPIEndpoints(t *testing.T) {
 		"/api/work-objects/wo_1/prototype",
 		"/api/work-objects/wo_1/status",
 		"/api/work-objects/wo_1/priority",
+		"/api/work-objects/wo_1/release-ready",
 		"/api/work-objects/wo_1/decisions",
 		"/api/work-objects/wo_1/artifacts",
 		"/api/work-objects/wo_1/implementation-artifact",
 		"/api/work-objects/wo_1/task-breakdown-artifact",
 	} {
 		method := http.MethodGet
-		if path == "/api/work-objects/wo_1/core" || path == "/api/work-objects/wo_1/prototype" || path == "/api/work-objects/wo_1/status" || path == "/api/work-objects/wo_1/priority" || path == "/api/work-objects/wo_1/decisions" || path == "/api/work-objects/wo_1/artifacts" || path == "/api/work-objects/wo_1/implementation-artifact" || path == "/api/work-objects/wo_1/task-breakdown-artifact" {
+		if path == "/api/work-objects/wo_1/core" || path == "/api/work-objects/wo_1/prototype" || path == "/api/work-objects/wo_1/status" || path == "/api/work-objects/wo_1/priority" || path == "/api/work-objects/wo_1/release-ready" || path == "/api/work-objects/wo_1/decisions" || path == "/api/work-objects/wo_1/artifacts" || path == "/api/work-objects/wo_1/implementation-artifact" || path == "/api/work-objects/wo_1/task-breakdown-artifact" {
 			method = http.MethodPost
 		}
 		request := httptest.NewRequest(method, path, nil)
@@ -152,6 +153,19 @@ func TestWorkObjectPriorityUpdateRejectsWrongMethod(t *testing.T) {
 	server := newTestServer(t)
 
 	request := httptest.NewRequest(http.MethodGet, "/api/work-objects/wo_1/priority", nil)
+	recorder := httptest.NewRecorder()
+	server.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected 405 for wrong method, got %d", recorder.Code)
+	}
+}
+
+func TestWorkObjectReleaseReadyRejectsWrongMethod(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer(t)
+
+	request := httptest.NewRequest(http.MethodGet, "/api/work-objects/wo_1/release-ready", nil)
 	recorder := httptest.NewRecorder()
 	server.ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusMethodNotAllowed {

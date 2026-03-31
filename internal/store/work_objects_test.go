@@ -45,7 +45,7 @@ func TestListWorkObjectsReturnsErrorsForBadData(t *testing.T) {
 
 	t.Run("scan error", func(t *testing.T) {
 		store := openRawStore(t)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `INSERT INTO work_objects (id, cluster_id, title, summary, goal, status, priority, owner_type, owner_id, created_at, updated_at) VALUES (NULL, 'clu_1', 'Work', 'Summary', 'Goal', 'planning', 'high', 'user', 'usr_1', '2026-03-01T09:00:00Z', '2026-03-01T09:30:00Z');`)
 		if _, err := store.ListWorkObjects(context.Background()); err == nil {
 			t.Fatal("expected scan error")
@@ -54,7 +54,7 @@ func TestListWorkObjectsReturnsErrorsForBadData(t *testing.T) {
 
 	t.Run("invalid work object created_at", func(t *testing.T) {
 		store := openRawStore(t)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `INSERT INTO work_objects (id, cluster_id, title, summary, goal, status, priority, owner_type, owner_id, created_at, updated_at) VALUES ('wo_1', 'clu_1', 'Work', 'Summary', 'Goal', 'planning', 'high', 'user', 'usr_1', 'bad', '2026-03-01T09:30:00Z');`)
 		if _, err := store.ListWorkObjects(context.Background()); err == nil {
 			t.Fatal("expected created_at error")
@@ -63,7 +63,7 @@ func TestListWorkObjectsReturnsErrorsForBadData(t *testing.T) {
 
 	t.Run("invalid work object updated_at", func(t *testing.T) {
 		store := openRawStore(t)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `INSERT INTO work_objects (id, cluster_id, title, summary, goal, status, priority, owner_type, owner_id, created_at, updated_at) VALUES ('wo_1', 'clu_1', 'Work', 'Summary', 'Goal', 'planning', 'high', 'user', 'usr_1', '2026-03-01T09:00:00Z', 'bad');`)
 		if _, err := store.ListWorkObjects(context.Background()); err == nil {
 			t.Fatal("expected updated_at error")
@@ -72,7 +72,7 @@ func TestListWorkObjectsReturnsErrorsForBadData(t *testing.T) {
 
 	t.Run("decisions query error", func(t *testing.T) {
 		store := openRawStore(t)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `INSERT INTO work_objects (id, cluster_id, title, summary, goal, status, priority, owner_type, owner_id, created_at, updated_at) VALUES ('wo_1', 'clu_1', 'Work', 'Summary', 'Goal', 'planning', 'high', 'user', 'usr_1', '2026-03-01T09:00:00Z', '2026-03-01T09:30:00Z');`)
 		if _, err := store.ListWorkObjects(context.Background()); err == nil {
 			t.Fatal("expected decisions query error")
@@ -99,7 +99,7 @@ func TestListWorkObjectsReturnsErrorsForBadData(t *testing.T) {
 
 	t.Run("artifacts query error", func(t *testing.T) {
 		store := openRawStore(t)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `CREATE TABLE decisions (id TEXT, work_object_id TEXT, title TEXT, summary TEXT, rationale TEXT, created_at TEXT);`)
 		mustExec(t, store.DB, `INSERT INTO work_objects (id, cluster_id, title, summary, goal, status, priority, owner_type, owner_id, created_at, updated_at) VALUES ('wo_1', 'clu_1', 'Work', 'Summary', 'Goal', 'planning', 'high', 'user', 'usr_1', '2026-03-01T09:00:00Z', '2026-03-01T09:30:00Z');`)
 		if _, err := store.ListWorkObjects(context.Background()); err == nil {
@@ -615,6 +615,77 @@ func TestUpdateWorkObjectPriorityReturnsNotFound(t *testing.T) {
 	store := newTestStore(t, true)
 	if _, err := store.UpdateWorkObjectPriority(context.Background(), "missing", "high"); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows, got %v", err)
+	}
+}
+
+func TestMarkWorkObjectReadyForReleasePersistsChanges(t *testing.T) {
+	store := newTestStore(t, true)
+	originalNow := workObjectNow
+	t.Cleanup(func() { workObjectNow = originalNow })
+
+	if _, err := store.GenerateDraftPlanForWorkObject(context.Background(), "wo_onboarding_refresh"); err != nil {
+		t.Fatalf("expected draft plan generation: %v", err)
+	}
+
+	releaseReadyAt := time.Date(2026, 3, 31, 16, 10, 0, 0, time.UTC)
+	workObjectNow = func() time.Time { return releaseReadyAt }
+
+	workObject, err := store.MarkWorkObjectReadyForRelease(context.Background(), "wo_onboarding_refresh")
+	if err != nil {
+		t.Fatalf("expected mark ready for release: %v", err)
+	}
+
+	if workObject.ReleaseReadyAt == nil {
+		t.Fatal("expected release ready timestamp to be set")
+	}
+	if !workObject.ReleaseReadyAt.Equal(releaseReadyAt) {
+		t.Fatalf("expected release ready timestamp %s, got %s", releaseReadyAt, workObject.ReleaseReadyAt)
+	}
+	if !workObject.UpdatedAt.Equal(releaseReadyAt) {
+		t.Fatalf("expected updated timestamp %s, got %s", releaseReadyAt, workObject.UpdatedAt)
+	}
+
+	var persistedReleaseReadyAt string
+	var persistedUpdatedAt string
+	if err := store.DB.QueryRow(
+		`SELECT COALESCE(release_ready_at, ''), updated_at FROM work_objects WHERE id = ?`,
+		"wo_onboarding_refresh",
+	).Scan(&persistedReleaseReadyAt, &persistedUpdatedAt); err != nil {
+		t.Fatalf("expected persisted work object release-ready state: %v", err)
+	}
+	if persistedReleaseReadyAt != releaseReadyAt.Format(time.RFC3339) {
+		t.Fatalf("expected persisted release_ready_at %q, got %q", releaseReadyAt.Format(time.RFC3339), persistedReleaseReadyAt)
+	}
+	if persistedUpdatedAt != releaseReadyAt.Format(time.RFC3339) {
+		t.Fatalf("expected persisted updated_at %q, got %q", releaseReadyAt.Format(time.RFC3339), persistedUpdatedAt)
+	}
+
+	workObjects, err := store.ListWorkObjects(context.Background())
+	if err != nil {
+		t.Fatalf("expected work object list after review update: %v", err)
+	}
+	for _, entry := range workObjects {
+		if entry.ID == "wo_onboarding_refresh" && entry.ReleaseReadyAt == nil {
+			t.Fatal("expected list view to return persisted release-ready state")
+		}
+	}
+}
+
+func TestMarkWorkObjectReadyForReleaseReturnsNotFound(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t, true)
+	if _, err := store.MarkWorkObjectReadyForRelease(context.Background(), "missing"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected sql.ErrNoRows, got %v", err)
+	}
+}
+
+func TestMarkWorkObjectReadyForReleaseRequiresDraftPlan(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t, true)
+	if _, err := store.MarkWorkObjectReadyForRelease(context.Background(), "wo_mobile_perf"); !errors.Is(err, ErrDraftPlanNotFound) {
+		t.Fatalf("expected draft plan error, got %v", err)
 	}
 }
 

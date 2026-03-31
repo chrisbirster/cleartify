@@ -119,6 +119,7 @@ export type WorkObject = {
   ownerId: string;
   prototypeUrl?: string;
   prototypeNote?: string;
+  releaseReadyAt?: string;
   decisions: Decision[];
   artifacts: Artifact[];
   createdAt: string;

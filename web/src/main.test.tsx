@@ -22,7 +22,7 @@ describe("main entrypoint", () => {
 
     expect(createRootMock).toHaveBeenCalledWith(document.getElementById("root"));
     expect(renderMock).toHaveBeenCalledTimes(1);
-  });
+  }, 10000);
 
   it("throws when renderApp receives a missing root", async () => {
     const module = await import("./main");

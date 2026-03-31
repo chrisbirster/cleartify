@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
+import { StatePanel } from "../components/StatePanel";
 import {
   generateImplementationArtifactForWorkObject,
   generateTaskBreakdownArtifactForWorkObject,
@@ -94,7 +95,13 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
   }, [workObject]);
 
   if (!workObject) {
-    return <EmptyState title="Work Object not found" description="Select a Work Object from the list to run a deterministic mock agent action." />;
+    return (
+      <EmptyState
+        eyebrow="Agent Workspace"
+        title="Work Object not found"
+        description="Select a Work Object from Work Objects to run a deterministic Agent Workspace action."
+      />
+    );
   }
 
   const visibleArtifacts = mergeArtifacts(
@@ -202,17 +209,20 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
             </div>
 
             {!draftPlan && !isLoadingDraftPlan && !draftPlanError ? (
-              <div className="mt-5 rounded-2xl border border-dashed border-border/80 bg-background/40 px-4 py-5">
-                <p className="text-sm font-medium text-foreground">Persist a draft plan first</p>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  These mock agent actions depend on the current persisted draft plan before they can create persisted Artifacts.
-                </p>
-                <Link
-                  className="mt-4 inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                  to={`/plans/${workObject.id}`}
-                >
-                  Open draft plan
-                </Link>
+              <div className="mt-5">
+                <StatePanel
+                  action={
+                    <Link
+                      className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
+                      to={`/plans/${workObject.id}`}
+                    >
+                      Open draft plan
+                    </Link>
+                  }
+                  description="These mock agent actions depend on the current persisted draft plan before they can create persisted Artifacts."
+                  eyebrow="Draft plan prerequisite"
+                  title="Persist a draft plan first"
+                />
               </div>
             ) : null}
           </section>
@@ -232,11 +242,12 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
             </div>
 
             {visibleArtifacts.length === 0 ? (
-              <div className="mt-5 rounded-2xl border border-dashed border-border/80 bg-background/40 px-4 py-5">
-                <p className="text-sm font-medium text-foreground">No generated Artifacts yet</p>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Run a mock agent action to create a persisted implementation brief or task breakdown from the current product context.
-                </p>
+              <div className="mt-5">
+                <StatePanel
+                  description="Run a mock agent action to create a persisted implementation brief or task breakdown from the current product context."
+                  eyebrow="Agent output"
+                  title="No generated Artifacts yet"
+                />
               </div>
             ) : (
               <div className="mt-5 space-y-4">
@@ -298,9 +309,15 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
             ) : null}
 
             {isLoadingDraftPlan ? (
-              <p role="status" className="mt-4 text-sm text-muted-foreground">
-                Loading persisted draft plan...
-              </p>
+              <div className="mt-4">
+                <StatePanel
+                  description="Loading the persisted draft plan so the Agent Workspace actions stay grounded in the latest planning context."
+                  eyebrow="Draft plan context"
+                  role="status"
+                  title="Loading persisted draft plan..."
+                  tone="loading"
+                />
+              </div>
             ) : draftPlan ? (
               <div className="mt-4 space-y-4">
                 <p className="text-sm leading-6 text-foreground/90">{draftPlan.overview}</p>
@@ -324,9 +341,13 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                No persisted draft plan exists yet for this Work Object. Generate the plan first, then return here to create an implementation Artifact.
-              </p>
+              <div className="mt-4">
+                <StatePanel
+                  description="No persisted draft plan exists yet for this Work Object. Generate the plan first, then return here to create deterministic Artifacts."
+                  eyebrow="Draft plan context"
+                  title="Persist a draft plan first"
+                />
+              </div>
             )}
           </section>
         </aside>

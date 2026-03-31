@@ -55,8 +55,11 @@ export function AppRoutes({ data, onWorkObjectUpdated }: AppRoutesProps) {
           path="agents/:workObjectId"
           element={<AgentWorkspacePage workObjects={data.workObjects} clusters={data.clusters} onWorkObjectUpdated={onWorkObjectUpdated} />}
         />
-        <Route path="review/:workObjectId" element={<ReviewPage />} />
-        <Route path="releases" element={<ReleasesPage />} />
+        <Route
+          path="review/:workObjectId"
+          element={<ReviewPage workObjects={data.workObjects} clusters={data.clusters} onWorkObjectUpdated={onWorkObjectUpdated} />}
+        />
+        <Route path="releases" element={<ReleasesPage workObjects={data.workObjects} clusters={data.clusters} />} />
         <Route path="releases/:releaseId" element={<ReleaseDetailPage />} />
       </Route>
     </Routes>

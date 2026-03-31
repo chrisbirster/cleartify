@@ -72,19 +72,20 @@ type DraftPlan struct {
 }
 
 type WorkObject struct {
-	ID            string     `json:"id"`
-	ClusterID     string     `json:"clusterId,omitempty"`
-	Title         string     `json:"title"`
-	Summary       string     `json:"summary"`
-	Goal          string     `json:"goal"`
-	Status        string     `json:"status"`
-	Priority      string     `json:"priority"`
-	OwnerType     string     `json:"ownerType"`
-	OwnerID       string     `json:"ownerId"`
-	PrototypeURL  string     `json:"prototypeUrl,omitempty"`
-	PrototypeNote string     `json:"prototypeNote,omitempty"`
-	Decisions     []Decision `json:"decisions"`
-	Artifacts     []Artifact `json:"artifacts"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	ID             string     `json:"id"`
+	ClusterID      string     `json:"clusterId,omitempty"`
+	Title          string     `json:"title"`
+	Summary        string     `json:"summary"`
+	Goal           string     `json:"goal"`
+	Status         string     `json:"status"`
+	Priority       string     `json:"priority"`
+	OwnerType      string     `json:"ownerType"`
+	OwnerID        string     `json:"ownerId"`
+	PrototypeURL   string     `json:"prototypeUrl,omitempty"`
+	PrototypeNote  string     `json:"prototypeNote,omitempty"`
+	ReleaseReadyAt *time.Time `json:"releaseReadyAt,omitempty"`
+	Decisions      []Decision `json:"decisions"`
+	Artifacts      []Artifact `json:"artifacts"`
+	CreatedAt      time.Time  `json:"createdAt"`
+	UpdatedAt      time.Time  `json:"updatedAt"`
 }

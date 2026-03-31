@@ -92,6 +92,12 @@ func (s *Server) handleWorkObjectActions(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		s.handleWorkObjectPriorityUpdate(w, r, workObjectID)
+	case "release-ready":
+		if r.Method != http.MethodPost {
+			httpx.MethodNotAllowed(w)
+			return
+		}
+		s.handleWorkObjectReleaseReady(w, r, workObjectID)
 	case "decisions":
 		if r.Method != http.MethodPost {
 			httpx.MethodNotAllowed(w)
@@ -276,6 +282,23 @@ func (s *Server) handleWorkObjectPriorityUpdate(w http.ResponseWriter, r *http.R
 			httpx.WriteError(w, http.StatusNotFound, "work_object_not_found", "Work Object not found.")
 		default:
 			httpx.WriteError(w, http.StatusInternalServerError, "update_work_object_priority_failed", "Unable to update Work Object priority.")
+		}
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, workObject)
+}
+
+func (s *Server) handleWorkObjectReleaseReady(w http.ResponseWriter, r *http.Request, workObjectID string) {
+	workObject, err := s.store.MarkWorkObjectReadyForRelease(r.Context(), workObjectID)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrDraftPlanNotFound):
+			httpx.WriteError(w, http.StatusConflict, "draft_plan_not_found", "Persist a draft plan before marking the Work Object ready for release.")
+		case errors.Is(err, sql.ErrNoRows):
+			httpx.WriteError(w, http.StatusNotFound, "work_object_not_found", "Work Object not found.")
+		default:
+			httpx.WriteError(w, http.StatusInternalServerError, "mark_work_object_release_ready_failed", "Unable to mark the Work Object ready for release.")
 		}
 		return
 	}

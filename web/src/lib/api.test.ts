@@ -11,6 +11,7 @@ import {
   jsonFetch,
   loadDraftPlanForWorkObject,
   loadAppData,
+  markWorkObjectReadyForRelease,
   updateDraftPlanForWorkObject,
   updateWorkObjectCoreFields,
   updateWorkObjectPriority,
@@ -217,6 +218,25 @@ describe("api helpers", () => {
       method: "POST",
       headers: expect.any(Headers),
       body: JSON.stringify({ priority: "urgent" }),
+    });
+  });
+
+  it("markWorkObjectReadyForRelease posts to the work object release-ready endpoint", async () => {
+    vi.stubGlobal(
+      "fetch",
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: "wo_onboarding_refresh", releaseReadyAt: "2026-03-31T17:00:00Z" }),
+      }),
+    );
+
+    await expect(Effect.runPromise(markWorkObjectReadyForRelease("wo_onboarding_refresh"))).resolves.toEqual({
+      id: "wo_onboarding_refresh",
+      releaseReadyAt: "2026-03-31T17:00:00Z",
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/work-objects/wo_onboarding_refresh/release-ready", {
+      method: "POST",
+      headers: expect.any(Headers),
     });
   });
 

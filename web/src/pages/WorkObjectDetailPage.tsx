@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { StatePanel } from "../components/StatePanel";
 import {
   createArtifactForWorkObject,
   createDecisionForWorkObject,
@@ -68,15 +69,6 @@ function compactTimestamp(value: string) {
 
 function countLabel(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
-}
-
-function EmptyPanel({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-border/80 bg-background/40 px-4 py-5">
-      <p className="text-sm font-medium text-foreground">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
-    </div>
-  );
 }
 
 function buildCoreDraft(workObject: WorkObject): WorkObjectCoreFieldsInput {
@@ -180,7 +172,13 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
   }, [workObjectId]);
 
   if (!workObject) {
-    return <EmptyState title="Work Object not found" description="Select a Work Object from the list to inspect it." />;
+    return (
+      <EmptyState
+        eyebrow="Work Object detail"
+        title="Work Object not found"
+        description="Select a Work Object from Work Objects to inspect its execution context."
+      />
+    );
   }
 
   const linkedCluster = workObject.clusterId ? clusters.find((entry) => entry.id === workObject.clusterId) : undefined;
@@ -609,9 +607,10 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
               </div>
             ) : (
               <div className="mt-4">
-                <EmptyPanel
+                <StatePanel
+                  description="Attach a prototype link or note here before the next Prototype-to-Plan pass so this Work Object stays anchored in visual context."
+                  eyebrow="Prototype-to-Plan"
                   title="No prototype attached"
-                  description="Attach a prototype link or note here before the first real Prototype-to-Plan generation pass lands."
                 />
               </div>
             )}
@@ -714,9 +713,10 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
             </div>
           ) : (
             <div className="mt-4">
-              <EmptyPanel
-                title="No linked Cluster"
+              <StatePanel
                 description="This Work Object stands on its own for now, so the Context Inbox relationship is still open."
+                eyebrow="Context origin"
+                title="No linked Cluster"
               />
             </div>
           )}
@@ -759,9 +759,10 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
                 </article>
               ))
             ) : (
-              <EmptyPanel
-                title="No supporting Signals yet"
+              <StatePanel
                 description="Link a Cluster to this Work Object to keep the underlying product context attached."
+                eyebrow="Evidence"
+                title="No supporting Signals yet"
               />
             )}
           </div>
@@ -863,9 +864,10 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
                 </article>
               ))
             ) : (
-              <EmptyPanel
-                title="No Decisions yet"
+              <StatePanel
                 description="This Work Object does not have any captured product judgment yet."
+                eyebrow="Product judgment"
+                title="No Decisions yet"
               />
             )}
           </div>
@@ -966,9 +968,10 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
                 </article>
               ))
             ) : (
-              <EmptyPanel
-                title="No Artifacts yet"
+              <StatePanel
                 description="This Work Object does not have any attached outputs yet."
+                eyebrow="Execution output"
+                title="No Artifacts yet"
               />
             )}
           </div>

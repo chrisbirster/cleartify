@@ -194,17 +194,18 @@ func seedClusters(tx *sql.Tx) error {
 
 func seedWorkObjects(tx *sql.Tx) error {
 	type workObjectSeed struct {
-		ClusterID     string
-		ID            string
-		Title         string
-		Summary       string
-		Goal          string
-		Status        string
-		Priority      string
-		OwnerType     string
-		OwnerID       string
-		PrototypeURL  string
-		PrototypeNote string
+		ClusterID      string
+		ID             string
+		Title          string
+		Summary        string
+		Goal           string
+		Status         string
+		Priority       string
+		OwnerType      string
+		OwnerID        string
+		PrototypeURL   string
+		PrototypeNote  string
+		ReleaseReadyAt string
 	}
 
 	workObjects := []workObjectSeed{
@@ -250,6 +251,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 			workObject.OwnerID,
 			workObject.PrototypeURL,
 			workObject.PrototypeNote,
+			workObject.ReleaseReadyAt,
 			demoTimestamp.Format(time.RFC3339),
 			demoTimestamp.Add(45*time.Minute).Format(time.RFC3339),
 		); err != nil {

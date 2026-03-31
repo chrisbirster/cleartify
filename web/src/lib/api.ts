@@ -142,6 +142,12 @@ export function updateWorkObjectPriority(workObjectId: string, priority: WorkObj
   });
 }
 
+export function markWorkObjectReadyForRelease(workObjectId: string): Effect.Effect<WorkObject, Error> {
+  return jsonFetch<WorkObject>(`/api/work-objects/${encodeURIComponent(workObjectId)}/release-ready`, {
+    method: "POST",
+  });
+}
+
 export function createDecisionForWorkObject(workObjectId: string, fields: DecisionInput): Effect.Effect<Decision, Error> {
   return jsonFetch<Decision>(`/api/work-objects/${encodeURIComponent(workObjectId)}/decisions`, {
     method: "POST",

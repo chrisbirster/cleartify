@@ -167,7 +167,7 @@ func TestSeedDemoReturnsHelperErrors(t *testing.T) {
 		mustExec(t, store.DB, `CREATE TABLE sessions (id TEXT PRIMARY KEY, user_id TEXT, created_at TEXT);`)
 		mustExec(t, store.DB, `CREATE TABLE clusters (id TEXT PRIMARY KEY, title TEXT, summary TEXT, severity TEXT, status TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `CREATE TABLE cluster_signals (cluster_id TEXT, signal_id TEXT);`)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `CREATE TABLE decisions (id TEXT PRIMARY KEY, work_object_id TEXT, title TEXT, summary TEXT, rationale TEXT, created_at TEXT);`)
 		if err := store.SeedDemo(); err == nil {
 			t.Fatal("expected seed work objects error")
@@ -277,7 +277,7 @@ func TestSeedHelpersReturnErrors(t *testing.T) {
 
 	t.Run("seedWorkObjects fails without decisions table", func(t *testing.T) {
 		store := openRawStore(t)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		tx, err := store.DB.Begin()
 		if err != nil {
 			t.Fatalf("expected tx: %v", err)
@@ -291,7 +291,7 @@ func TestSeedHelpersReturnErrors(t *testing.T) {
 
 	t.Run("seedWorkObjects fails when artifact metadata marshal fails", func(t *testing.T) {
 		store := openRawStore(t)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `CREATE TABLE decisions (id TEXT PRIMARY KEY, work_object_id TEXT, title TEXT, summary TEXT, rationale TEXT, created_at TEXT);`)
 		tx, err := store.DB.Begin()
 		if err != nil {
@@ -312,7 +312,7 @@ func TestSeedHelpersReturnErrors(t *testing.T) {
 
 	t.Run("seedWorkObjects fails without artifacts table", func(t *testing.T) {
 		store := openRawStore(t)
-		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`)
+		mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY, cluster_id TEXT, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, release_ready_at TEXT, created_at TEXT, updated_at TEXT);`)
 		mustExec(t, store.DB, `CREATE TABLE decisions (id TEXT PRIMARY KEY, work_object_id TEXT, title TEXT, summary TEXT, rationale TEXT, created_at TEXT);`)
 		tx, err := store.DB.Begin()
 		if err != nil {

@@ -68,6 +68,26 @@ describe("AgentWorkspacePage", () => {
     expect(screen.getByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
   });
 
+  it("renders a polished loading state while the persisted draft plan is loading", () => {
+    loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.never);
+
+    render(
+      <MemoryRouter initialEntries={["/agents/wo_onboarding_refresh"]}>
+        <Routes>
+          <Route
+            path="/agents/:workObjectId"
+            element={<AgentWorkspacePage workObjects={appDataFixture.workObjects} clusters={appDataFixture.clusters} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("Loading persisted draft plan...");
+    expect(
+      screen.getByText("Loading the persisted draft plan so the Agent Workspace actions stay grounded in the latest planning context."),
+    ).toBeInTheDocument();
+  });
+
   it("renders an empty draft plan state when none exists yet", async () => {
     loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(null));
 
@@ -82,7 +102,7 @@ describe("AgentWorkspacePage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("Persist a draft plan first")).toBeInTheDocument();
+    expect(await screen.findAllByText("Persist a draft plan first")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Generate implementation Artifact" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Generate task-breakdown Artifact" })).toBeDisabled();
   });

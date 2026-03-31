@@ -24,8 +24,6 @@ func (f *fakeApplication) Close() error {
 }
 
 func TestRunReturnsSuccessWhenApplicationStarts(t *testing.T) {
-	t.Parallel()
-
 	var stderr bytes.Buffer
 	originalBuilder := buildApplication
 	t.Cleanup(func() { buildApplication = originalBuilder })
@@ -56,8 +54,6 @@ func TestRunReturnsSuccessWhenApplicationStarts(t *testing.T) {
 }
 
 func TestRunReturnsFailureOnInvalidConfig(t *testing.T) {
-	t.Parallel()
-
 	var stderr bytes.Buffer
 
 	code := run(func(key string) string {
@@ -76,8 +72,6 @@ func TestRunReturnsFailureOnInvalidConfig(t *testing.T) {
 }
 
 func TestRunReturnsFailureWhenBuildApplicationFails(t *testing.T) {
-	t.Parallel()
-
 	var stderr bytes.Buffer
 	originalBuilder := buildApplication
 	t.Cleanup(func() { buildApplication = originalBuilder })
@@ -96,8 +90,6 @@ func TestRunReturnsFailureWhenBuildApplicationFails(t *testing.T) {
 }
 
 func TestRunReturnsFailureWhenListenAndServeFails(t *testing.T) {
-	t.Parallel()
-
 	var stderr bytes.Buffer
 	originalBuilder := buildApplication
 	t.Cleanup(func() { buildApplication = originalBuilder })
@@ -116,8 +108,6 @@ func TestRunReturnsFailureWhenListenAndServeFails(t *testing.T) {
 }
 
 func TestMainUsesExitFunction(t *testing.T) {
-	t.Parallel()
-
 	originalBuilder := buildApplication
 	originalExit := exitFn
 	t.Cleanup(func() {

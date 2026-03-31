@@ -35,6 +35,7 @@ var updateWorkObjectCoreFieldsStatement = sqldata.MustQuery("update_work_object_
 var updateWorkObjectPrototypeFieldsStatement = sqldata.MustQuery("update_work_object_prototype_fields.sql")
 var updateWorkObjectStatusStatement = sqldata.MustQuery("update_work_object_status.sql")
 var updateWorkObjectPriorityStatement = sqldata.MustQuery("update_work_object_priority.sql")
+var updateWorkObjectReleaseReadyStatement = sqldata.MustQuery("update_work_object_release_ready.sql")
 var lookupClusterForWorkObjectStatement = sqldata.MustQuery("lookup_cluster_for_work_object.sql")
 var listWorkObjectDecisionsStatement = sqldata.MustQuery("list_work_object_decisions.sql")
 var listWorkObjectArtifactsStatement = sqldata.MustQuery("list_work_object_artifacts.sql")
@@ -204,6 +205,51 @@ func (s *Store) UpdateWorkObjectPriority(ctx context.Context, workObjectID strin
 	return workObject, nil
 }
 
+func (s *Store) MarkWorkObjectReadyForRelease(ctx context.Context, workObjectID string) (domain.WorkObject, error) {
+	workObject, err := s.lookupWorkObject(ctx, workObjectID)
+	if err != nil {
+		return domain.WorkObject{}, err
+	}
+
+	draftPlan, err := s.LookupDraftPlanForWorkObject(ctx, workObjectID)
+	if err != nil {
+		return domain.WorkObject{}, err
+	}
+	if draftPlan == nil {
+		return domain.WorkObject{}, ErrDraftPlanNotFound
+	}
+
+	if workObject.ReleaseReadyAt != nil {
+		return workObject, nil
+	}
+
+	readyAt := workObjectNow().UTC().Truncate(time.Second)
+	result, err := s.DB.ExecContext(
+		ctx,
+		updateWorkObjectReleaseReadyStatement,
+		readyAt.Format(time.RFC3339),
+		readyAt.Format(time.RFC3339),
+		workObjectID,
+	)
+	if err != nil {
+		return domain.WorkObject{}, fmt.Errorf("mark work object ready for release: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return domain.WorkObject{}, fmt.Errorf("mark work object ready for release rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return domain.WorkObject{}, sql.ErrNoRows
+	}
+
+	workObject, err = s.lookupWorkObject(ctx, workObjectID)
+	if err != nil {
+		return domain.WorkObject{}, err
+	}
+	return workObject, nil
+}
+
 func (s *Store) CreateDecisionForWorkObject(ctx context.Context, workObjectID string, title string, summary string, rationale string) (domain.Decision, error) {
 	title = strings.TrimSpace(title)
 	summary = strings.TrimSpace(summary)
@@ -355,6 +401,7 @@ func (s *Store) CreateWorkObjectFromCluster(ctx context.Context, clusterID strin
 		workObject.OwnerID,
 		workObject.PrototypeURL,
 		workObject.PrototypeNote,
+		workObject.ReleaseReadyAt,
 		workObject.CreatedAt.Format(time.RFC3339),
 		workObject.UpdatedAt.Format(time.RFC3339),
 	); err != nil {
@@ -465,6 +512,7 @@ func (s *Store) lookupWorkObject(ctx context.Context, workObjectID string) (doma
 
 func (s *Store) scanWorkObject(ctx context.Context, scanner workObjectScanner) (domain.WorkObject, error) {
 	var workObject domain.WorkObject
+	var releaseReadyAt string
 	var createdAt string
 	var updatedAt string
 	if err := scanner.Scan(
@@ -479,6 +527,7 @@ func (s *Store) scanWorkObject(ctx context.Context, scanner workObjectScanner) (
 		&workObject.OwnerID,
 		&workObject.PrototypeURL,
 		&workObject.PrototypeNote,
+		&releaseReadyAt,
 		&createdAt,
 		&updatedAt,
 	); err != nil {
@@ -493,6 +542,10 @@ func (s *Store) scanWorkObject(ctx context.Context, scanner workObjectScanner) (
 	workObject.UpdatedAt, err = decodeTime(updatedAt)
 	if err != nil {
 		return domain.WorkObject{}, fmt.Errorf("decode work object updated_at: %w", err)
+	}
+	workObject.ReleaseReadyAt, err = decodeNullableTime(releaseReadyAt)
+	if err != nil {
+		return domain.WorkObject{}, fmt.Errorf("decode work object release_ready_at: %w", err)
 	}
 	workObject.Decisions, err = s.listDecisionsForWorkObject(ctx, workObject.ID)
 	if err != nil {

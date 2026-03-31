@@ -78,6 +78,21 @@ describe("PlanPage", () => {
     expect(screen.getByText("Onboarding refresh")).toBeInTheDocument();
   });
 
+  it("renders a polished loading state while the persisted draft plan is loading", () => {
+    loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.never);
+
+    render(
+      <MemoryRouter initialEntries={["/plans/wo_onboarding_refresh"]}>
+        <Routes>
+          <Route path="/plans/:workObjectId" element={<PlanPage workObjects={appDataFixture.workObjects} clusters={appDataFixture.clusters} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("Loading persisted draft plan...");
+    expect(screen.getByText("Bringing the current Prototype-to-Plan context into view for this Work Object.")).toBeInTheDocument();
+  });
+
   it("renders an empty state before the first generation pass", async () => {
     loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(null));
 
