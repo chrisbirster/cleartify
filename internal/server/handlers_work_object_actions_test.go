@@ -296,6 +296,39 @@ func TestHandleWorkObjectActionsGeneratesImplementationArtifact(t *testing.T) {
 	}
 }
 
+func TestHandleWorkObjectActionsGeneratesTaskBreakdownArtifact(t *testing.T) {
+	t.Parallel()
+
+	server, err := New(
+		config.Config{AppMarketingURL: "http://localhost:4173"},
+		&fakeStore{
+			generatedTaskBreakdownArtifact: domain.Artifact{
+				ID:           "art_tasks_1",
+				WorkObjectID: "wo_1",
+				ArtifactType: "task_breakdown",
+				Title:        "Updated Work Object task breakdown",
+				Body:         "Execution tasks\n1. Clarify the first implementation slice.",
+			},
+		},
+		auth.NewDemoAuthService(),
+		newTestServer(t).frontend,
+	)
+	if err != nil {
+		t.Fatalf("expected server build: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/work-objects/wo_1/task-breakdown-artifact", nil)
+	server.handleWorkObjectActions(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", recorder.Code)
+	}
+	if !strings.Contains(recorder.Body.String(), `"artifactType":"task_breakdown"`) {
+		t.Fatalf("expected generated task-breakdown artifact in response, got %q", recorder.Body.String())
+	}
+}
+
 func TestHandleWorkObjectActionsUpdatesCoreFields(t *testing.T) {
 	t.Parallel()
 
@@ -671,6 +704,28 @@ func TestHandleWorkObjectActionsReturnsNotFoundForMissingImplementationArtifactW
 	}
 }
 
+func TestHandleWorkObjectActionsReturnsNotFoundForMissingTaskBreakdownArtifactWorkObject(t *testing.T) {
+	t.Parallel()
+
+	server, err := New(
+		config.Config{AppMarketingURL: "http://localhost:4173"},
+		&fakeStore{err: sql.ErrNoRows},
+		auth.NewDemoAuthService(),
+		newTestServer(t).frontend,
+	)
+	if err != nil {
+		t.Fatalf("expected server build: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/work-objects/missing/task-breakdown-artifact", nil)
+	server.handleWorkObjectActions(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", recorder.Code)
+	}
+}
+
 func TestHandleWorkObjectActionsReturnsNotFoundForMissingPersistedDraftPlan(t *testing.T) {
 	t.Parallel()
 
@@ -712,6 +767,28 @@ func TestHandleWorkObjectActionsReturnsNotFoundForMissingDraftPlanDuringImplemen
 
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "/api/work-objects/wo_1/implementation-artifact", nil)
+	server.handleWorkObjectActions(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", recorder.Code)
+	}
+}
+
+func TestHandleWorkObjectActionsReturnsNotFoundForMissingDraftPlanDuringTaskBreakdownArtifactGeneration(t *testing.T) {
+	t.Parallel()
+
+	server, err := New(
+		config.Config{AppMarketingURL: "http://localhost:4173"},
+		&fakeStore{err: store.ErrDraftPlanNotFound},
+		auth.NewDemoAuthService(),
+		newTestServer(t).frontend,
+	)
+	if err != nil {
+		t.Fatalf("expected server build: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/work-objects/wo_1/task-breakdown-artifact", nil)
 	server.handleWorkObjectActions(recorder, request)
 
 	if recorder.Code != http.StatusNotFound {
@@ -798,6 +875,14 @@ func TestHandleWorkObjectActionsReturnsInternalErrorForUpdateFailure(t *testing.
 
 	if recorder.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500 for implementation artifact generate, got %d", recorder.Code)
+	}
+
+	recorder = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodPost, "/api/work-objects/wo_1/task-breakdown-artifact", nil)
+	server.handleWorkObjectActions(recorder, request)
+
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500 for task-breakdown artifact generate, got %d", recorder.Code)
 	}
 }
 
@@ -937,6 +1022,14 @@ func TestWorkObjectActionPath(t *testing.T) {
 	}
 	if workObjectID != "wo_1" || action != "implementation-artifact" {
 		t.Fatalf("expected parsed implementation artifact path values, got %q %q", workObjectID, action)
+	}
+
+	workObjectID, action, ok = workObjectActionPath("/api/work-objects/wo_1/task-breakdown-artifact")
+	if !ok {
+		t.Fatal("expected valid work object task-breakdown artifact path")
+	}
+	if workObjectID != "wo_1" || action != "task-breakdown-artifact" {
+		t.Fatalf("expected parsed task-breakdown artifact path values, got %q %q", workObjectID, action)
 	}
 
 	if _, _, ok := workObjectActionPath("/api/work-objects/wo_1"); ok {

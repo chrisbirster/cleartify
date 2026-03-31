@@ -13,18 +13,19 @@ import (
 )
 
 type fakeStore struct {
-	signals            []domain.Signal
-	clusters           []domain.Cluster
-	workObjects        []domain.WorkObject
-	lookupDraftPlan    *domain.DraftPlan
-	generatedDraftPlan domain.DraftPlan
-	updatedDraftPlan   domain.DraftPlan
-	generatedArtifact  domain.Artifact
-	createdWorkObject  domain.WorkObject
-	createdDecision    domain.Decision
-	createdArtifact    domain.Artifact
-	updatedWorkObject  domain.WorkObject
-	err                error
+	signals                        []domain.Signal
+	clusters                       []domain.Cluster
+	workObjects                    []domain.WorkObject
+	lookupDraftPlan                *domain.DraftPlan
+	generatedDraftPlan             domain.DraftPlan
+	updatedDraftPlan               domain.DraftPlan
+	generatedArtifact              domain.Artifact
+	generatedTaskBreakdownArtifact domain.Artifact
+	createdWorkObject              domain.WorkObject
+	createdDecision                domain.Decision
+	createdArtifact                domain.Artifact
+	updatedWorkObject              domain.WorkObject
+	err                            error
 }
 
 func (f *fakeStore) ListSignals(context.Context) ([]domain.Signal, error) {
@@ -111,6 +112,22 @@ func (f *fakeStore) GenerateImplementationArtifactForWorkObject(_ context.Contex
 		}, nil
 	}
 	return f.generatedArtifact, nil
+}
+
+func (f *fakeStore) GenerateTaskBreakdownArtifactForWorkObject(_ context.Context, workObjectID string) (domain.Artifact, error) {
+	if f.err != nil {
+		return domain.Artifact{}, f.err
+	}
+	if f.generatedTaskBreakdownArtifact.ID == "" {
+		return domain.Artifact{
+			ID:           "art_task_breakdown",
+			WorkObjectID: workObjectID,
+			ArtifactType: "task_breakdown",
+			Title:        "Generated task breakdown",
+			Body:         "Deterministic mock task breakdown body.",
+		}, nil
+	}
+	return f.generatedTaskBreakdownArtifact, nil
 }
 
 func (f *fakeStore) CreateWorkObjectFromCluster(_ context.Context, clusterID string) (domain.WorkObject, error) {

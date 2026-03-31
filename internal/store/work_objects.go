@@ -273,28 +273,9 @@ func (s *Store) CreateArtifactForWorkObject(ctx context.Context, workObjectID st
 }
 
 func (s *Store) GenerateImplementationArtifactForWorkObject(ctx context.Context, workObjectID string) (domain.Artifact, error) {
-	workObject, err := s.lookupWorkObject(ctx, workObjectID)
+	workObject, draftPlan, linkedCluster, err := s.loadArtifactGenerationContext(ctx, workObjectID)
 	if err != nil {
 		return domain.Artifact{}, err
-	}
-
-	draftPlan, err := s.LookupDraftPlanForWorkObject(ctx, workObjectID)
-	if err != nil {
-		return domain.Artifact{}, err
-	}
-	if draftPlan == nil {
-		return domain.Artifact{}, ErrDraftPlanNotFound
-	}
-
-	var linkedCluster *domain.Cluster
-	if workObject.ClusterID != "" {
-		cluster, err := s.lookupClusterForWorkObject(ctx, workObject.ClusterID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return domain.Artifact{}, err
-		}
-		if err == nil {
-			linkedCluster = &cluster
-		}
 	}
 
 	createdAt := artifactNow().UTC().Truncate(time.Second)
@@ -303,7 +284,31 @@ func (s *Store) GenerateImplementationArtifactForWorkObject(ctx context.Context,
 		WorkObjectID: workObjectID,
 		ArtifactType: "implementation_brief",
 		Title:        fmt.Sprintf("%s implementation brief", workObject.Title),
-		Body:         buildImplementationArtifactBody(workObject, linkedCluster, *draftPlan),
+		Body:         buildImplementationArtifactBody(workObject, linkedCluster, draftPlan),
+		Metadata:     nil,
+		CreatedAt:    createdAt,
+	}
+
+	if err := s.persistArtifact(ctx, artifact); err != nil {
+		return domain.Artifact{}, err
+	}
+
+	return artifact, nil
+}
+
+func (s *Store) GenerateTaskBreakdownArtifactForWorkObject(ctx context.Context, workObjectID string) (domain.Artifact, error) {
+	workObject, draftPlan, linkedCluster, err := s.loadArtifactGenerationContext(ctx, workObjectID)
+	if err != nil {
+		return domain.Artifact{}, err
+	}
+
+	createdAt := artifactNow().UTC().Truncate(time.Second)
+	artifact := domain.Artifact{
+		ID:           artifactIDFromWorkObject(workObjectID, createdAt),
+		WorkObjectID: workObjectID,
+		ArtifactType: "task_breakdown",
+		Title:        fmt.Sprintf("%s task breakdown", workObject.Title),
+		Body:         buildTaskBreakdownArtifactBody(workObject, linkedCluster, draftPlan),
 		Metadata:     nil,
 		CreatedAt:    createdAt,
 	}
@@ -402,6 +407,34 @@ func workObjectPriorityForSeverity(severity string) string {
 	default:
 		return "medium"
 	}
+}
+
+func (s *Store) loadArtifactGenerationContext(ctx context.Context, workObjectID string) (domain.WorkObject, domain.DraftPlan, *domain.Cluster, error) {
+	workObject, err := s.lookupWorkObject(ctx, workObjectID)
+	if err != nil {
+		return domain.WorkObject{}, domain.DraftPlan{}, nil, err
+	}
+
+	draftPlan, err := s.LookupDraftPlanForWorkObject(ctx, workObjectID)
+	if err != nil {
+		return domain.WorkObject{}, domain.DraftPlan{}, nil, err
+	}
+	if draftPlan == nil {
+		return domain.WorkObject{}, domain.DraftPlan{}, nil, ErrDraftPlanNotFound
+	}
+
+	var linkedCluster *domain.Cluster
+	if workObject.ClusterID != "" {
+		cluster, err := s.lookupClusterForWorkObject(ctx, workObject.ClusterID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return domain.WorkObject{}, domain.DraftPlan{}, nil, err
+		}
+		if err == nil {
+			linkedCluster = &cluster
+		}
+	}
+
+	return workObject, *draftPlan, linkedCluster, nil
 }
 
 func isValidWorkObjectStatus(status string) bool {
@@ -594,6 +627,48 @@ func buildImplementationArtifactBody(workObject domain.WorkObject, linkedCluster
 		formatDraftPlanSection(draftPlan.EdgeCases, false),
 		"",
 		"Open questions",
+		formatDraftPlanSection(draftPlan.OpenQuestions, false),
+	}, "\n")
+}
+
+func buildTaskBreakdownArtifactBody(workObject domain.WorkObject, linkedCluster *domain.Cluster, draftPlan domain.DraftPlan) string {
+	clusterLine := "Linked Cluster: none attached yet."
+	if linkedCluster != nil {
+		clusterLine = fmt.Sprintf("Linked Cluster: %s (%s severity)", linkedCluster.Title, linkedCluster.Severity)
+	}
+
+	prototypeLink := "Prototype link: none attached yet."
+	if workObject.PrototypeURL != "" {
+		prototypeLink = fmt.Sprintf("Prototype link: %s", workObject.PrototypeURL)
+	}
+
+	prototypeNote := "Prototype note: none attached yet."
+	if workObject.PrototypeNote != "" {
+		prototypeNote = fmt.Sprintf("Prototype note: %s", workObject.PrototypeNote)
+	}
+
+	var tasks []string
+	for index, step := range draftPlan.ImplementationSteps {
+		tasks = append(tasks, fmt.Sprintf("%d. %s", index+1, step))
+	}
+
+	return strings.Join([]string{
+		fmt.Sprintf("Task breakdown for %s", workObject.Title),
+		"",
+		"Scope anchor",
+		fmt.Sprintf("Summary: %s", workObject.Summary),
+		fmt.Sprintf("Goal: %s", workObject.Goal),
+		clusterLine,
+		prototypeLink,
+		prototypeNote,
+		"",
+		"Execution tasks",
+		strings.Join(tasks, "\n"),
+		"",
+		"Edge cases to track",
+		formatDraftPlanSection(draftPlan.EdgeCases, false),
+		"",
+		"Open questions to resolve",
 		formatDraftPlanSection(draftPlan.OpenQuestions, false),
 	}, "\n")
 }

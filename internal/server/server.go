@@ -18,6 +18,7 @@ type DataStore interface {
 	GenerateDraftPlanForWorkObject(ctx context.Context, workObjectID string) (domain.DraftPlan, error)
 	UpdateDraftPlanForWorkObject(ctx context.Context, workObjectID string, overview string, implementationSteps []string, edgeCases []string, openQuestions []string) (domain.DraftPlan, error)
 	GenerateImplementationArtifactForWorkObject(ctx context.Context, workObjectID string) (domain.Artifact, error)
+	GenerateTaskBreakdownArtifactForWorkObject(ctx context.Context, workObjectID string) (domain.Artifact, error)
 	CreateWorkObjectFromCluster(ctx context.Context, clusterID string) (domain.WorkObject, error)
 	CreateDecisionForWorkObject(ctx context.Context, workObjectID string, title string, summary string, rationale string) (domain.Decision, error)
 	CreateArtifactForWorkObject(ctx context.Context, workObjectID string, artifactType string, title string, body string) (domain.Artifact, error)

@@ -275,6 +275,85 @@ func TestGenerateImplementationArtifactForWorkObjectReturnsDraftPlanNotFound(t *
 	}
 }
 
+func TestGenerateTaskBreakdownArtifactForWorkObjectPersistsArtifact(t *testing.T) {
+	store := newTestStore(t, true)
+	originalArtifactNow := artifactNow
+	originalArtifactID := artifactIDFromWorkObject
+	t.Cleanup(func() {
+		artifactNow = originalArtifactNow
+		artifactIDFromWorkObject = originalArtifactID
+	})
+
+	if _, err := store.GenerateDraftPlanForWorkObject(context.Background(), "wo_onboarding_refresh"); err != nil {
+		t.Fatalf("expected draft plan generation: %v", err)
+	}
+
+	createdAt := time.Date(2026, 3, 31, 14, 0, 0, 0, time.UTC)
+	artifactNow = func() time.Time { return createdAt }
+	artifactIDFromWorkObject = func(workObjectID string, _ time.Time) string {
+		return "art_task_breakdown"
+	}
+
+	artifact, err := store.GenerateTaskBreakdownArtifactForWorkObject(context.Background(), "wo_onboarding_refresh")
+	if err != nil {
+		t.Fatalf("expected task-breakdown artifact generation: %v", err)
+	}
+
+	if artifact.ID != "art_task_breakdown" {
+		t.Fatalf("expected deterministic artifact id, got %q", artifact.ID)
+	}
+	if artifact.ArtifactType != "task_breakdown" {
+		t.Fatalf("expected task_breakdown artifact type, got %q", artifact.ArtifactType)
+	}
+	if artifact.Title != "Prototype-to-Plan onboarding refresh task breakdown" {
+		t.Fatalf("expected derived artifact title, got %q", artifact.Title)
+	}
+	if !strings.Contains(artifact.Body, "Execution tasks") ||
+		!strings.Contains(artifact.Body, "1. Review the Work Object goal for") ||
+		!strings.Contains(artifact.Body, "Linked Cluster: Onboarding refresh (medium severity)") ||
+		!strings.Contains(artifact.Body, "Prototype link: https://example.com/prototype/onboarding-refresh") ||
+		!strings.Contains(artifact.Body, "Open questions to resolve") {
+		t.Fatalf("expected derived task breakdown body to include persisted context, got %q", artifact.Body)
+	}
+
+	workObjects, err := store.ListWorkObjects(context.Background())
+	if err != nil {
+		t.Fatalf("expected work object list after artifact generation: %v", err)
+	}
+
+	for _, entry := range workObjects {
+		if entry.ID == "wo_onboarding_refresh" {
+			var found bool
+			for _, persisted := range entry.Artifacts {
+				if persisted.ID == "art_task_breakdown" {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatal("expected generated task-breakdown artifact to persist on the work object")
+			}
+		}
+	}
+}
+
+func TestGenerateTaskBreakdownArtifactForWorkObjectReturnsNotFound(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t, true)
+	if _, err := store.GenerateTaskBreakdownArtifactForWorkObject(context.Background(), "missing"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected sql.ErrNoRows, got %v", err)
+	}
+}
+
+func TestGenerateTaskBreakdownArtifactForWorkObjectReturnsDraftPlanNotFound(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t, true)
+	if _, err := store.GenerateTaskBreakdownArtifactForWorkObject(context.Background(), "wo_mobile_perf"); !errors.Is(err, ErrDraftPlanNotFound) {
+		t.Fatalf("expected missing draft plan error, got %v", err)
+	}
+}
+
 func TestUpdateWorkObjectStatusPersistsChanges(t *testing.T) {
 	store := newTestStore(t, true)
 	originalNow := workObjectNow

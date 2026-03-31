@@ -34,10 +34,12 @@ const persistedDraftPlan = {
 describe("AgentWorkspacePage", () => {
   let loadDraftPlanForWorkObjectMock: any;
   let generateImplementationArtifactForWorkObjectMock: any;
+  let generateTaskBreakdownArtifactForWorkObjectMock: any;
 
   beforeEach(() => {
     loadDraftPlanForWorkObjectMock = vi.spyOn(api, "loadDraftPlanForWorkObject");
     generateImplementationArtifactForWorkObjectMock = vi.spyOn(api, "generateImplementationArtifactForWorkObject");
+    generateTaskBreakdownArtifactForWorkObjectMock = vi.spyOn(api, "generateTaskBreakdownArtifactForWorkObject");
   });
 
   afterEach(() => {
@@ -63,6 +65,7 @@ describe("AgentWorkspacePage", () => {
     expect(await screen.findByText(/This draft plan turns "Prototype-to-Plan onboarding refresh"/i)).toBeInTheDocument();
     expect(screen.getByText("Onboarding refresh")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Generate implementation Artifact" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
   });
 
   it("renders an empty draft plan state when none exists yet", async () => {
@@ -81,6 +84,7 @@ describe("AgentWorkspacePage", () => {
 
     expect(await screen.findByText("Persist a draft plan first")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Generate implementation Artifact" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate task-breakdown Artifact" })).toBeDisabled();
   });
 
   it("runs the implementation artifact action and renders the new Artifact immediately", async () => {
@@ -141,6 +145,7 @@ describe("AgentWorkspacePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Generate implementation Artifact" }));
 
     expect(screen.getByRole("button", { name: "Generating implementation Artifact..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate task-breakdown Artifact" })).toBeDisabled();
   });
 
   it("shows an inline error when implementation artifact generation fails", async () => {
@@ -162,6 +167,88 @@ describe("AgentWorkspacePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Generate implementation Artifact" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to generate implementation Artifact.");
+  });
+
+  it("runs the task-breakdown action and renders the new Artifact immediately", async () => {
+    loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(persistedDraftPlan));
+    generateTaskBreakdownArtifactForWorkObjectMock.mockReturnValue(
+      Effect.succeed({
+        id: "art_tasks_1",
+        workObjectId: "wo_onboarding_refresh",
+        artifactType: "task_breakdown",
+        title: "Prototype-to-Plan onboarding refresh task breakdown",
+        body: "Execution tasks\n1. Review the Work Object goal.",
+        createdAt: "2026-03-31T09:16:00Z",
+      }),
+    );
+    const onWorkObjectUpdated = vi.fn();
+
+    render(
+      <MemoryRouter initialEntries={["/agents/wo_onboarding_refresh"]}>
+        <Routes>
+          <Route
+            path="/agents/:workObjectId"
+            element={
+              <AgentWorkspacePage
+                workObjects={appDataFixture.workObjects}
+                clusters={appDataFixture.clusters}
+                onWorkObjectUpdated={onWorkObjectUpdated}
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate task-breakdown Artifact" }));
+
+    await waitFor(() => expect(generateTaskBreakdownArtifactForWorkObjectMock).toHaveBeenCalledWith("wo_onboarding_refresh"));
+    expect(await screen.findByText("Prototype-to-Plan onboarding refresh task breakdown")).toBeInTheDocument();
+    expect(onWorkObjectUpdated).toHaveBeenCalled();
+  });
+
+  it("shows a pending state while the task-breakdown action is in flight", async () => {
+    loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(persistedDraftPlan));
+    generateTaskBreakdownArtifactForWorkObjectMock.mockReturnValue(Effect.never as Effect.Effect<never, Error>);
+
+    render(
+      <MemoryRouter initialEntries={["/agents/wo_onboarding_refresh"]}>
+        <Routes>
+          <Route
+            path="/agents/:workObjectId"
+            element={<AgentWorkspacePage workObjects={appDataFixture.workObjects} clusters={appDataFixture.clusters} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate task-breakdown Artifact" }));
+
+    expect(screen.getByRole("button", { name: "Generating task-breakdown Artifact..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate implementation Artifact" })).toBeDisabled();
+  });
+
+  it("shows an inline error when task-breakdown artifact generation fails", async () => {
+    loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(persistedDraftPlan));
+    generateTaskBreakdownArtifactForWorkObjectMock.mockReturnValue(Effect.fail(new Error("boom")));
+
+    render(
+      <MemoryRouter initialEntries={["/agents/wo_onboarding_refresh"]}>
+        <Routes>
+          <Route
+            path="/agents/:workObjectId"
+            element={<AgentWorkspacePage workObjects={appDataFixture.workObjects} clusters={appDataFixture.clusters} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate task-breakdown Artifact" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to generate task-breakdown Artifact.");
   });
 
   it("shows an inline error when loading the persisted draft plan fails", async () => {

@@ -6,6 +6,7 @@ import {
   createDecisionForWorkObject,
   createWorkObjectFromCluster,
   generateImplementationArtifactForWorkObject,
+  generateTaskBreakdownArtifactForWorkObject,
   generateDraftPlanForWorkObject,
   jsonFetch,
   loadDraftPlanForWorkObject,
@@ -295,6 +296,25 @@ describe("api helpers", () => {
       artifactType: "implementation_brief",
     });
     expect(fetchMock).toHaveBeenCalledWith("/api/work-objects/wo_onboarding_refresh/implementation-artifact", {
+      method: "POST",
+      headers: expect.any(Headers),
+    });
+  });
+
+  it("generateTaskBreakdownArtifactForWorkObject posts to the work object task-breakdown artifact endpoint", async () => {
+    vi.stubGlobal(
+      "fetch",
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: "art_tasks_1", artifactType: "task_breakdown" }),
+      }),
+    );
+
+    await expect(Effect.runPromise(generateTaskBreakdownArtifactForWorkObject("wo_onboarding_refresh"))).resolves.toEqual({
+      id: "art_tasks_1",
+      artifactType: "task_breakdown",
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/work-objects/wo_onboarding_refresh/task-breakdown-artifact", {
       method: "POST",
       headers: expect.any(Headers),
     });

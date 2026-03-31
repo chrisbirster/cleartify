@@ -167,3 +167,9 @@ export function generateImplementationArtifactForWorkObject(workObjectId: string
     method: "POST",
   });
 }
+
+export function generateTaskBreakdownArtifactForWorkObject(workObjectId: string): Effect.Effect<Artifact, Error> {
+  return jsonFetch<Artifact>(`/api/work-objects/${encodeURIComponent(workObjectId)}/task-breakdown-artifact`, {
+    method: "POST",
+  });
+}

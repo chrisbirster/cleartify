@@ -4,7 +4,11 @@ import { Link, useParams } from "react-router-dom";
 
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
-import { generateImplementationArtifactForWorkObject, loadDraftPlanForWorkObject } from "../lib/api";
+import {
+  generateImplementationArtifactForWorkObject,
+  generateTaskBreakdownArtifactForWorkObject,
+  loadDraftPlanForWorkObject,
+} from "../lib/api";
 import type { Artifact, Cluster, DraftPlan, WorkObject } from "../lib/types";
 
 type AgentWorkspacePageProps = {
@@ -38,6 +42,8 @@ function mergeArtifacts(artifacts: Artifact[], createdArtifacts: Artifact[]) {
   return merged;
 }
 
+const agentArtifactTypes = new Set(["implementation_brief", "task_breakdown"]);
+
 export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated }: AgentWorkspacePageProps) {
   const { workObjectId } = useParams();
   const workObject = workObjects.find((entry) => entry.id === workObjectId);
@@ -45,7 +51,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
   const [draftPlan, setDraftPlan] = useState<DraftPlan | null>(null);
   const [createdArtifacts, setCreatedArtifacts] = useState<Artifact[]>([]);
   const [isLoadingDraftPlan, setIsLoadingDraftPlan] = useState(true);
-  const [isGeneratingArtifact, setIsGeneratingArtifact] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"implementation" | "task-breakdown" | null>(null);
   const [draftPlanError, setDraftPlanError] = useState<string | null>(null);
   const [artifactError, setArtifactError] = useState<string | null>(null);
 
@@ -92,18 +98,22 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
   }
 
   const visibleArtifacts = mergeArtifacts(
-    workObject.artifacts.filter((artifact) => artifact.artifactType === "implementation_brief"),
+    workObject.artifacts.filter((artifact) => agentArtifactTypes.has(artifact.artifactType)),
     createdArtifacts,
   );
 
-  const handleGenerateArtifact = () => {
-    setIsGeneratingArtifact(true);
+  const runArtifactAction = (
+    kind: "implementation" | "task-breakdown",
+    effect: Effect.Effect<Artifact, Error>,
+    failureMessage: string,
+  ) => {
+    setPendingAction(kind);
     setArtifactError(null);
 
-    Effect.runPromise(generateImplementationArtifactForWorkObject(workObject.id))
+    Effect.runPromise(effect)
       .then((artifact) => {
         const nextVisibleArtifacts = mergeArtifacts(workObject.artifacts, [...createdArtifacts, artifact]);
-        setIsGeneratingArtifact(false);
+        setPendingAction(null);
         setArtifactError(null);
         setCreatedArtifacts((current) => mergeArtifacts(current, [artifact]));
         onWorkObjectUpdated?.({
@@ -112,16 +122,30 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
         });
       })
       .catch(() => {
-        setIsGeneratingArtifact(false);
-        setArtifactError("Unable to generate implementation Artifact.");
+        setPendingAction(null);
+        setArtifactError(failureMessage);
       });
   };
+
+  const handleGenerateImplementationArtifact = () =>
+    runArtifactAction(
+      "implementation",
+      generateImplementationArtifactForWorkObject(workObject.id),
+      "Unable to generate implementation Artifact.",
+    );
+
+  const handleGenerateTaskBreakdownArtifact = () =>
+    runArtifactAction(
+      "task-breakdown",
+      generateTaskBreakdownArtifactForWorkObject(workObject.id),
+      "Unable to generate task-breakdown Artifact.",
+    );
 
   return (
     <div>
       <PageHeader
         title="Agent Workspace"
-        description="Run a deterministic mock action that turns the current Work Object and persisted draft plan into a concrete Artifact."
+        description="Run deterministic mock actions that turn the current Work Object and persisted draft plan into concrete Artifacts."
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.95fr)]">
@@ -135,27 +159,53 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
           <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Mock agent action</p>
-                <h2 className="mt-2 text-xl font-medium text-foreground">Generate implementation Artifact</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Mock agent actions</p>
+                <h2 className="mt-2 text-xl font-medium text-foreground">Generate deterministic Artifacts</h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Use the persisted Work Object and Prototype-to-Plan context to generate a deterministic implementation brief without agent orchestration.
+                  Use the persisted Work Object and Prototype-to-Plan context to generate deterministic outputs without agent orchestration.
                 </p>
               </div>
-              <button
-                className="inline-flex h-11 items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-5 text-sm font-medium text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isGeneratingArtifact || isLoadingDraftPlan || !draftPlan}
-                onClick={handleGenerateArtifact}
-                type="button"
-              >
-                {isGeneratingArtifact ? "Generating implementation Artifact..." : "Generate implementation Artifact"}
-              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              <article className="rounded-2xl border border-border/80 bg-background/55 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Implementation Artifact</p>
+                <h3 className="mt-2 text-base font-medium text-foreground">Generate implementation Artifact</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Produce an implementation brief grounded in the current Work Object, linked Cluster context, and persisted draft plan.
+                </p>
+                <button
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-5 text-sm font-medium text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={pendingAction !== null || isLoadingDraftPlan || !draftPlan}
+                  onClick={handleGenerateImplementationArtifact}
+                  type="button"
+                >
+                  {pendingAction === "implementation" ? "Generating implementation Artifact..." : "Generate implementation Artifact"}
+                </button>
+              </article>
+
+              <article className="rounded-2xl border border-border/80 bg-background/55 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Task-breakdown Artifact</p>
+                <h3 className="mt-2 text-base font-medium text-foreground">Generate task-breakdown Artifact</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Produce a deterministic task breakdown from the persisted draft plan sections so the next implementation pass feels concrete.
+                </p>
+                <button
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-5 text-sm font-medium text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={pendingAction !== null || isLoadingDraftPlan || !draftPlan}
+                  onClick={handleGenerateTaskBreakdownArtifact}
+                  type="button"
+                >
+                  {pendingAction === "task-breakdown" ? "Generating task-breakdown Artifact..." : "Generate task-breakdown Artifact"}
+                </button>
+              </article>
             </div>
 
             {!draftPlan && !isLoadingDraftPlan && !draftPlanError ? (
               <div className="mt-5 rounded-2xl border border-dashed border-border/80 bg-background/40 px-4 py-5">
                 <p className="text-sm font-medium text-foreground">Persist a draft plan first</p>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  This mock agent action depends on the current persisted draft plan before it can create an implementation Artifact.
+                  These mock agent actions depend on the current persisted draft plan before they can create persisted Artifacts.
                 </p>
                 <Link
                   className="mt-4 inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
@@ -185,7 +235,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
               <div className="mt-5 rounded-2xl border border-dashed border-border/80 bg-background/40 px-4 py-5">
                 <p className="text-sm font-medium text-foreground">No generated Artifacts yet</p>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Run the mock agent action to create a persisted implementation brief from the current product context.
+                  Run a mock agent action to create a persisted implementation brief or task breakdown from the current product context.
                 </p>
               </div>
             ) : (

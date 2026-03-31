@@ -110,6 +110,12 @@ func (s *Server) handleWorkObjectActions(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		s.handleWorkObjectImplementationArtifactGenerate(w, r, workObjectID)
+	case "task-breakdown-artifact":
+		if r.Method != http.MethodPost {
+			httpx.MethodNotAllowed(w)
+			return
+		}
+		s.handleWorkObjectTaskBreakdownArtifactGenerate(w, r, workObjectID)
 	default:
 		http.NotFound(w, r)
 	}
@@ -339,6 +345,23 @@ func (s *Server) handleWorkObjectImplementationArtifactGenerate(w http.ResponseW
 			httpx.WriteError(w, http.StatusNotFound, "work_object_not_found", "Work Object not found.")
 		default:
 			httpx.WriteError(w, http.StatusInternalServerError, "generate_implementation_artifact_failed", "Unable to generate implementation Artifact.")
+		}
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, artifact)
+}
+
+func (s *Server) handleWorkObjectTaskBreakdownArtifactGenerate(w http.ResponseWriter, r *http.Request, workObjectID string) {
+	artifact, err := s.store.GenerateTaskBreakdownArtifactForWorkObject(r.Context(), workObjectID)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrDraftPlanNotFound):
+			httpx.WriteError(w, http.StatusNotFound, "draft_plan_not_found", "Draft plan not found.")
+		case errors.Is(err, sql.ErrNoRows):
+			httpx.WriteError(w, http.StatusNotFound, "work_object_not_found", "Work Object not found.")
+		default:
+			httpx.WriteError(w, http.StatusInternalServerError, "generate_task_breakdown_artifact_failed", "Unable to generate task-breakdown Artifact.")
 		}
 		return
 	}

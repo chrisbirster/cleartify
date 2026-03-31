@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-31
 
-Current target: Phase 4 - Agent Workspace
+Current target: Phase 5 - Review and Release
 
 ## Status Summary
 
@@ -12,7 +12,7 @@ Current target: Phase 4 - Agent Workspace
 | 1 | Context Inbox | Done | Polished `/app/inbox` and `/app/inbox/:clusterId` views are in place, `work_objects.cluster_id` is persisted, and Cluster -> Work Object creation now lands on the new Work Object detail route. |
 | 2 | Work Objects | Done | The MVP Work Object loop is complete: seeded examples, richer detail page, evidence panel, linked Cluster context, status and priority transitions, core editing, and lightweight Decision and Artifact capture all work end to end. Further Work Object slices should be treated as future enhancements unless explicitly required. |
 | 3 | Prototype-to-Plan | Done | Prototype attach, deterministic draft plan generation, and lightweight persisted draft plan editing are now implemented end to end for MVP review. |
-| 4 | Agent Workspace | In progress | Agent Workspace now supports one deterministic persisted mock action that turns a Work Object plus its persisted draft plan into an `implementation_brief` Artifact. Additional mock actions and timeline behavior are still pending. |
+| 4 | Agent Workspace | Done | Agent Workspace now supports two deterministic persisted mock actions that turn a Work Object plus its persisted draft plan into `implementation_brief` and `task_breakdown` Artifacts. Treat broader agent scope as future enhancement unless explicitly required. |
 | 5 | Review and Release | Scaffolded | Stable review and release routes exist, but release/review workflows are not implemented yet. |
 | 6 | Polish | Not started | No dedicated polish pass yet beyond Phase 0 baseline styling and shell quality. |
 
@@ -111,20 +111,27 @@ Deferred:
 
 ### Phase 4 - Agent Workspace
 
-Status: In progress
+Status: Done
 
 Completed:
 - `/app/agents/:workObjectId`
 - persisted mock Agent Workspace action for generating an `implementation_brief` Artifact
+- persisted mock Agent Workspace action for generating a `task_breakdown` Artifact
 - deterministic Artifact derivation from persisted Work Object, linked Cluster context, prototype context, and draft plan sections
 - `POST /api/work-objects/:id/implementation-artifact`
+- `POST /api/work-objects/:id/task-breakdown-artifact`
 - Agent Workspace rendering of current Work Object context and draft plan summary
 - immediate and persisted Artifact visibility on the Agent Workspace route
+- compact multi-action Agent Workspace UI with pending and inline error states
 
-Remaining:
-- second mock action such as task breakdown or test plan generation
-- lightweight activity/timeline treatment for generated outputs
-- clearer relationship between multiple mock actions and generated Artifacts
+Exit criteria met:
+- Agent Workspace can now read persisted product context and draft plan context to generate more than one concrete deterministic Artifact
+- the MVP Agent Workspace feels real without introducing orchestration, background jobs, or real agent logic
+
+Deferred:
+- lightweight activity or timeline treatment for generated outputs
+- additional mock actions beyond the MVP pair
+- any real agent execution, orchestration, or background processing
 
 ### Phase 5 - Review and Release
 
@@ -154,6 +161,6 @@ Planned:
 
 ## Next Recommended Focus
 
-1. Add one more narrow deterministic Phase 4 action, preferably a task-breakdown or test-plan Artifact generated from the same persisted draft plan context.
-2. Keep Agent Workspace narrow and product-facing instead of introducing orchestration, background jobs, or real agent logic.
-3. Treat Phase 4 as incomplete until there is at least one additional mock action or a lightweight activity history for generated outputs.
+1. Start the first real Phase 5 slice with a narrow review surface that lets a Work Object show a compact pre-release summary of its Decisions and Artifacts.
+2. Keep Review and Release lightweight and product-facing instead of introducing workflow engines, approvals infrastructure, or background jobs.
+3. Treat broader Agent Workspace scope as future enhancement unless a specific MVP gap appears during review.

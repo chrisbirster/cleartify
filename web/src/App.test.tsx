@@ -16,6 +16,7 @@ let createDecisionForWorkObjectMock: any;
 let createArtifactForWorkObjectMock: any;
 let loadDraftPlanForWorkObjectMock: any;
 let generateImplementationArtifactForWorkObjectMock: any;
+let generateTaskBreakdownArtifactForWorkObjectMock: any;
 
 const persistedDraftPlan = {
   workObjectId: "wo_onboarding_refresh",
@@ -52,6 +53,7 @@ describe("App", () => {
     createArtifactForWorkObjectMock = vi.spyOn(api, "createArtifactForWorkObject");
     loadDraftPlanForWorkObjectMock = vi.spyOn(api, "loadDraftPlanForWorkObject");
     generateImplementationArtifactForWorkObjectMock = vi.spyOn(api, "generateImplementationArtifactForWorkObject");
+    generateTaskBreakdownArtifactForWorkObjectMock = vi.spyOn(api, "generateTaskBreakdownArtifactForWorkObject");
   });
 
   afterEach(() => {
@@ -315,5 +317,34 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Prototype-to-Plan onboarding refresh" })).toBeInTheDocument();
     expect(screen.getByText("Prototype-to-Plan onboarding refresh implementation brief")).toBeInTheDocument();
+  });
+
+  it("keeps generated task-breakdown Artifacts in sync after running the mock agent action and opening the Work Object", async () => {
+    const user = userEvent.setup();
+    window.history.pushState({}, "", "/app/agents/wo_onboarding_refresh");
+    loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
+    loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(persistedDraftPlan));
+    generateTaskBreakdownArtifactForWorkObjectMock.mockReturnValue(
+      Effect.succeed({
+        id: "art_tasks_sync",
+        workObjectId: "wo_onboarding_refresh",
+        artifactType: "task_breakdown",
+        title: "Prototype-to-Plan onboarding refresh task breakdown",
+        body: "Execution tasks\n1. Review the Work Object goal.",
+        createdAt: "2026-03-31T09:30:00Z",
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Generate task-breakdown Artifact" }));
+
+    expect(await screen.findByText("Prototype-to-Plan onboarding refresh task breakdown")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Open Work Object" }));
+
+    expect(await screen.findByRole("heading", { name: "Prototype-to-Plan onboarding refresh" })).toBeInTheDocument();
+    expect(screen.getByText("Prototype-to-Plan onboarding refresh task breakdown")).toBeInTheDocument();
   });
 });
