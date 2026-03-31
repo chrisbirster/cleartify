@@ -7,6 +7,7 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("/api/clusters", s.allowMethod("GET", s.handleClusters))
 	s.mux.HandleFunc("/api/clusters/", s.handleClusterActions)
 	s.mux.HandleFunc("/api/work-objects", s.allowMethod("GET", s.handleWorkObjects))
+	s.mux.HandleFunc("/api/work-objects/", s.handleWorkObjectActions)
 	s.mux.HandleFunc("/app", s.handleApp)
 	s.mux.HandleFunc("/app/", s.handleApp)
 	s.mux.HandleFunc("/", s.handleRoot)

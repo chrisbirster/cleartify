@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { PrototypeNewPage } from "./PrototypeNewPage";
 
 describe("PrototypeNewPage", () => {
-  it("renders the prototype attach scaffold", () => {
+  it("renders the future bulk import scaffold", () => {
     render(<PrototypeNewPage />);
 
     expect(screen.getByRole("heading", { name: "Attach prototype" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Attach flow coming next" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Bulk import coming later" })).toBeInTheDocument();
   });
 });

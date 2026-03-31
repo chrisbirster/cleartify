@@ -194,42 +194,45 @@ func seedClusters(tx *sql.Tx) error {
 
 func seedWorkObjects(tx *sql.Tx) error {
 	type workObjectSeed struct {
-		ClusterID    string
-		ID           string
-		Title        string
-		Summary      string
-		Goal         string
-		Status       string
-		Priority     string
-		OwnerType    string
-		OwnerID      string
-		PrototypeURL string
+		ClusterID     string
+		ID            string
+		Title         string
+		Summary       string
+		Goal          string
+		Status        string
+		Priority      string
+		OwnerType     string
+		OwnerID       string
+		PrototypeURL  string
+		PrototypeNote string
 	}
 
 	workObjects := []workObjectSeed{
 		{
-			ClusterID:    "clu_mobile_perf",
-			ID:           "wo_mobile_perf",
-			Title:        "Speed up mobile dashboard rendering",
-			Summary:      "Improve dashboard responsiveness on small screens without losing analytical depth.",
-			Goal:         "Reduce perceived latency for mobile dashboard visits.",
-			Status:       "planning",
-			Priority:     "high",
-			OwnerType:    "user",
-			OwnerID:      "usr_demo",
-			PrototypeURL: "https://example.com/prototype/mobile-perf",
+			ClusterID:     "clu_mobile_perf",
+			ID:            "wo_mobile_perf",
+			Title:         "Speed up mobile dashboard rendering",
+			Summary:       "Improve dashboard responsiveness on small screens without losing analytical depth.",
+			Goal:          "Reduce perceived latency for mobile dashboard visits.",
+			Status:        "planning",
+			Priority:      "high",
+			OwnerType:     "user",
+			OwnerID:       "usr_demo",
+			PrototypeURL:  "https://example.com/prototype/mobile-perf",
+			PrototypeNote: "",
 		},
 		{
-			ClusterID:    "clu_onboarding_refresh",
-			ID:           "wo_onboarding_refresh",
-			Title:        "Prototype-to-Plan onboarding refresh",
-			Summary:      "Translate the new onboarding prototype into a reviewed implementation plan.",
-			Goal:         "Ship a cleaner first-run experience grounded in the new prototype set.",
-			Status:       "review",
-			Priority:     "medium",
-			OwnerType:    "user",
-			OwnerID:      "usr_demo",
-			PrototypeURL: "https://example.com/prototype/onboarding-refresh",
+			ClusterID:     "clu_onboarding_refresh",
+			ID:            "wo_onboarding_refresh",
+			Title:         "Prototype-to-Plan onboarding refresh",
+			Summary:       "Translate the new onboarding prototype into a reviewed implementation plan.",
+			Goal:          "Ship a cleaner first-run experience grounded in the new prototype set.",
+			Status:        "in_review",
+			Priority:      "medium",
+			OwnerType:     "user",
+			OwnerID:       "usr_demo",
+			PrototypeURL:  "https://example.com/prototype/onboarding-refresh",
+			PrototypeNote: "Five approved onboarding screens anchor the first Prototype-to-Plan pass for this Work Object.",
 		},
 	}
 
@@ -246,6 +249,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 			workObject.OwnerType,
 			workObject.OwnerID,
 			workObject.PrototypeURL,
+			workObject.PrototypeNote,
 			demoTimestamp.Format(time.RFC3339),
 			demoTimestamp.Add(45*time.Minute).Format(time.RFC3339),
 		); err != nil {

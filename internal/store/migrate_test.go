@@ -24,6 +24,7 @@ func TestMigrateIsIdempotentAndCreatesTables(t *testing.T) {
 		"clusters",
 		"cluster_signals",
 		"work_objects",
+		"draft_plans",
 		"decisions",
 		"artifacts",
 	} {
@@ -38,6 +39,14 @@ func TestMigrateIsIdempotentAndCreatesTables(t *testing.T) {
 	}
 	if !hasClusterID {
 		t.Fatal("expected work_objects.cluster_id column to exist")
+	}
+
+	hasPrototypeNote, err := tableHasColumn(store.DB, "work_objects", "prototype_note")
+	if err != nil {
+		t.Fatalf("expected work_objects table info query: %v", err)
+	}
+	if !hasPrototypeNote {
+		t.Fatal("expected work_objects.prototype_note column to exist")
 	}
 }
 
@@ -59,7 +68,7 @@ func TestMigrateReturnsRecordErrorWhenMigrationsTableIsMissing(t *testing.T) {
 	t.Cleanup(func() { phase0MigrationStatements = originalStatements })
 
 	phase0MigrationStatements = []string{
-		`CREATE TABLE IF NOT EXISTS work_objects (id TEXT PRIMARY KEY, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, created_at TEXT, updated_at TEXT);`,
+		`CREATE TABLE IF NOT EXISTS work_objects (id TEXT PRIMARY KEY, title TEXT, summary TEXT, goal TEXT, status TEXT, priority TEXT, owner_type TEXT, owner_id TEXT, prototype_url TEXT, prototype_note TEXT, created_at TEXT, updated_at TEXT);`,
 	}
 	store := openRawStore(t)
 
@@ -97,6 +106,18 @@ func TestEnsureNullableTextColumnAddsMissingColumn(t *testing.T) {
 	if !hasClusterID {
 		t.Fatal("expected work_objects.cluster_id column to exist")
 	}
+
+	if err := ensureNullableTextColumn(store.DB, "work_objects", "prototype_note"); err != nil {
+		t.Fatalf("expected prototype_note column to be added: %v", err)
+	}
+
+	hasPrototypeNote, err := tableHasColumn(store.DB, "work_objects", "prototype_note")
+	if err != nil {
+		t.Fatalf("expected work_objects table info query: %v", err)
+	}
+	if !hasPrototypeNote {
+		t.Fatal("expected work_objects.prototype_note column to exist")
+	}
 }
 
 func TestMigrateReturnsPhase1RecordError(t *testing.T) {
@@ -118,6 +139,28 @@ func TestMigrateReturnsPhase1RecordError(t *testing.T) {
 	}
 	if callCount != 2 {
 		t.Fatalf("expected 2 record migration calls, got %d", callCount)
+	}
+}
+
+func TestMigrateReturnsPhase3RecordError(t *testing.T) {
+	originalRecordMigration := recordMigration
+	t.Cleanup(func() { recordMigration = originalRecordMigration })
+
+	callCount := 0
+	recordMigration = func(_ *sql.DB, name, _ string) error {
+		callCount++
+		if name == "phase3_work_objects_prototype_note" {
+			return errors.New("phase3 failed")
+		}
+		return nil
+	}
+
+	store := openRawStore(t)
+	if err := store.Migrate(); err == nil {
+		t.Fatal("expected phase3 migration record error")
+	}
+	if callCount != 3 {
+		t.Fatalf("expected 3 record migration calls, got %d", callCount)
 	}
 }
 

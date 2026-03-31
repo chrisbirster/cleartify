@@ -22,7 +22,7 @@ describe("router", () => {
     render(<AppMemoryRouter data={appDataFixture} initialEntries={["/agents/wo_mobile_perf"]} />);
 
     expect(screen.getByRole("heading", { name: "Agent Workspace" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Agent execution scaffold" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Generate implementation Artifact" })).toBeInTheDocument();
   });
 
   it("renders the release detail route", () => {

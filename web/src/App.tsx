@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Effect } from "effect";
 
 import { loadAppData } from "./lib/api";
-import type { AppData } from "./lib/types";
+import type { AppData, WorkObject } from "./lib/types";
 import { AppRouter } from "./router";
 
 type AppState =
@@ -32,6 +32,24 @@ export function App() {
       isActive = false;
     };
   }, []);
+
+  const handleWorkObjectUpdated = (updatedWorkObject: WorkObject) => {
+    setState((currentState) => {
+      if (currentState.status !== "ready") {
+        return currentState;
+      }
+
+      return {
+        status: "ready",
+        data: {
+          ...currentState.data,
+          workObjects: currentState.data.workObjects.map((entry) =>
+            entry.id === updatedWorkObject.id ? updatedWorkObject : entry,
+          ),
+        },
+      };
+    });
+  };
 
   if (state.status === "loading") {
     return (
@@ -67,7 +85,7 @@ export function App() {
     );
   }
 
-  return <AppRouter data={state.data} />;
+  return <AppRouter data={state.data} onWorkObjectUpdated={handleWorkObjectUpdated} />;
 }
 
 export default App;

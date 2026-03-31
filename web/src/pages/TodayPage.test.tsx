@@ -18,7 +18,10 @@ describe("TodayPage", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Today" })).toBeInTheDocument();
-    expect(screen.getAllByText(String(appDataFixture.signals.length))).toHaveLength(2);
+    expect(screen.getByText("Signals")).toBeInTheDocument();
+    expect(screen.getByText("Clusters")).toBeInTheDocument();
+    expect(screen.getByText("Work Objects")).toBeInTheDocument();
+    expect(screen.getAllByText(String(appDataFixture.workObjects.length))).toHaveLength(3);
     expect(screen.getByRole("link", { name: /Open Mobile performance improvements/i })).toBeInTheDocument();
   });
 });

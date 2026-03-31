@@ -4,6 +4,56 @@ export type User = {
   displayName: string;
 };
 
+export const WORK_OBJECT_STATUSES = ["planning", "ready", "in_progress", "in_review", "shipped"] as const;
+export const WORK_OBJECT_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
+
+export type WorkObjectStatus = (typeof WORK_OBJECT_STATUSES)[number];
+export type WorkObjectPriority = (typeof WORK_OBJECT_PRIORITIES)[number];
+export type WorkObjectCoreFieldsInput = {
+  title: string;
+  summary: string;
+  goal: string;
+};
+export type WorkObjectPrototypeInput = {
+  prototypeUrl: string;
+  prototypeNote: string;
+};
+export type DecisionInput = {
+  title: string;
+  summary: string;
+  rationale: string;
+};
+export type ArtifactInput = {
+  type: string;
+  title: string;
+  body: string;
+};
+
+export type DraftPlan = {
+  workObjectId: string;
+  overview: string;
+  implementationSteps: string[];
+  edgeCases: string[];
+  openQuestions: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DraftPlanInput = {
+  overview: string;
+  implementationSteps: string[];
+  edgeCases: string[];
+  openQuestions: string[];
+};
+
+export function formatWorkObjectStatus(status: string) {
+  return status.replaceAll("_", " ");
+}
+
+export function formatWorkObjectPriority(priority: string) {
+  return priority;
+}
+
 export type Organization = {
   id: string;
   slug: string;
@@ -63,11 +113,12 @@ export type WorkObject = {
   title: string;
   summary: string;
   goal: string;
-  status: string;
-  priority: string;
+  status: WorkObjectStatus;
+  priority: WorkObjectPriority;
   ownerType: string;
   ownerId: string;
   prototypeUrl?: string;
+  prototypeNote?: string;
   decisions: Decision[];
   artifacts: Artifact[];
   createdAt: string;

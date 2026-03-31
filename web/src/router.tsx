@@ -1,6 +1,6 @@
 import { BrowserRouter, MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 
-import type { AppData } from "./lib/types";
+import type { AppData, WorkObject } from "./lib/types";
 import { AppShell } from "./layouts/AppShell";
 import { AgentWorkspacePage } from "./pages/AgentWorkspacePage";
 import { ClusterDetailPage } from "./pages/ClusterDetailPage";
@@ -25,6 +25,7 @@ export const NAV_ITEMS = [
 
 type AppRoutesProps = {
   data: AppData;
+  onWorkObjectUpdated?: (workObject: WorkObject) => void;
 };
 
 function ShellRoute({ data }: AppRoutesProps) {
@@ -35,19 +36,25 @@ function ShellRoute({ data }: AppRoutesProps) {
   );
 }
 
-export function AppRoutes({ data }: AppRoutesProps) {
+export function AppRoutes({ data, onWorkObjectUpdated }: AppRoutesProps) {
   return (
     <Routes>
       <Route path="/" element={<ShellRoute data={data} />}>
         <Route index element={<TodayPage signals={data.signals} clusters={data.clusters} workObjects={data.workObjects} />} />
         <Route path="inbox" element={<InboxPage clusters={data.clusters} />} />
         <Route path="inbox/:clusterId" element={<ClusterDetailPage clusters={data.clusters} />} />
-        <Route path="work" element={<WorkObjectsPage workObjects={data.workObjects} />} />
-        <Route path="work/:workObjectId" element={<WorkObjectDetailPage workObjects={data.workObjects} />} />
-        <Route path="prototypes" element={<PrototypesPage />} />
+        <Route path="work" element={<WorkObjectsPage workObjects={data.workObjects} clusters={data.clusters} />} />
+        <Route
+          path="work/:workObjectId"
+          element={<WorkObjectDetailPage workObjects={data.workObjects} clusters={data.clusters} onWorkObjectUpdated={onWorkObjectUpdated} />}
+        />
+        <Route path="prototypes" element={<PrototypesPage workObjects={data.workObjects} />} />
         <Route path="prototypes/new" element={<PrototypeNewPage />} />
-        <Route path="plans/:workObjectId" element={<PlanPage />} />
-        <Route path="agents/:workObjectId" element={<AgentWorkspacePage />} />
+        <Route path="plans/:workObjectId" element={<PlanPage workObjects={data.workObjects} clusters={data.clusters} />} />
+        <Route
+          path="agents/:workObjectId"
+          element={<AgentWorkspacePage workObjects={data.workObjects} clusters={data.clusters} onWorkObjectUpdated={onWorkObjectUpdated} />}
+        />
         <Route path="review/:workObjectId" element={<ReviewPage />} />
         <Route path="releases" element={<ReleasesPage />} />
         <Route path="releases/:releaseId" element={<ReleaseDetailPage />} />
@@ -56,18 +63,18 @@ export function AppRoutes({ data }: AppRoutesProps) {
   );
 }
 
-export function AppRouter({ data }: AppRoutesProps) {
+export function AppRouter({ data, onWorkObjectUpdated }: AppRoutesProps) {
   return (
     <BrowserRouter basename="/app">
-      <AppRoutes data={data} />
+      <AppRoutes data={data} onWorkObjectUpdated={onWorkObjectUpdated} />
     </BrowserRouter>
   );
 }
 
-export function AppMemoryRouter({ data, initialEntries = ["/"] }: AppRoutesProps & { initialEntries?: string[] }) {
+export function AppMemoryRouter({ data, onWorkObjectUpdated, initialEntries = ["/"] }: AppRoutesProps & { initialEntries?: string[] }) {
   return (
     <MemoryRouter initialEntries={initialEntries}>
-      <AppRoutes data={data} />
+      <AppRoutes data={data} onWorkObjectUpdated={onWorkObjectUpdated} />
     </MemoryRouter>
   );
 }

@@ -11,6 +11,7 @@ var insertMigrationStatement = sqldata.MustQuery("insert_migration.sql")
 var pragmaTableInfoTemplate = sqldata.MustQuery("pragma_table_info.sql")
 var addNullableTextColumnTemplate = sqldata.MustQuery("add_nullable_text_column.sql")
 var phase1WorkObjectsClusterIDMigration = sqldata.MustMigration("001_phase1_work_objects_cluster_id.sql")
+var phase3WorkObjectsPrototypeNoteMigration = sqldata.MustMigration("002_phase3_work_objects_prototype_note.sql")
 
 var recordMigration = func(db *sql.DB, name, appliedAt string) error {
 	_, err := db.Exec(insertMigrationStatement, name, appliedAt)
@@ -35,12 +36,18 @@ func (s *Store) Migrate() error {
 	if err := ensureNullableTextColumn(s.DB, "work_objects", "cluster_id"); err != nil {
 		return fmt.Errorf("ensure work_objects.cluster_id: %w", err)
 	}
+	if err := ensureNullableTextColumn(s.DB, "work_objects", "prototype_note"); err != nil {
+		return fmt.Errorf("ensure work_objects.prototype_note: %w", err)
+	}
 
 	if err := recordMigration(s.DB, "phase0_init", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		return fmt.Errorf("record migration: %w", err)
 	}
 	if err := recordMigration(s.DB, "phase1_work_objects_cluster_id", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		return fmt.Errorf("record phase1 migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "phase3_work_objects_prototype_note", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record phase3 migration: %w", err)
 	}
 
 	return nil
@@ -61,6 +68,9 @@ func ensureNullableTextColumn(db *sql.DB, table, column string) error {
 	})
 	if table == "work_objects" && column == "cluster_id" {
 		statement = phase1WorkObjectsClusterIDMigration
+	}
+	if table == "work_objects" && column == "prototype_note" {
+		statement = phase3WorkObjectsPrototypeNoteMigration
 	}
 
 	if _, err := db.Exec(statement); err != nil {
