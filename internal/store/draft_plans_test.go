@@ -40,13 +40,13 @@ func TestGenerateDraftPlanForWorkObjectPersistsDeterministicPlan(t *testing.T) {
 	if draftPlan.WorkObjectID != "wo_onboarding_refresh" {
 		t.Fatalf("expected work object id, got %q", draftPlan.WorkObjectID)
 	}
-	if !strings.Contains(draftPlan.Overview, "Prototype-to-Plan onboarding refresh") {
+	if !strings.Contains(draftPlan.Overview, "Guided onboarding refresh") {
 		t.Fatalf("expected overview to reference work object title, got %q", draftPlan.Overview)
 	}
 	if !strings.Contains(draftPlan.Overview, "attached prototype link and note") {
 		t.Fatalf("expected overview to reference prototype context, got %q", draftPlan.Overview)
 	}
-	if !strings.Contains(draftPlan.Overview, "Linked Cluster context from \"Onboarding refresh\"") {
+	if !strings.Contains(draftPlan.Overview, "Linked Cluster context from \"Onboarding activation clarity\"") {
 		t.Fatalf("expected overview to reference linked cluster, got %q", draftPlan.Overview)
 	}
 	if len(draftPlan.ImplementationSteps) != 4 {

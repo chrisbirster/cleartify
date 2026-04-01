@@ -43,19 +43,19 @@ describe("WorkObjectDetailPage", () => {
 
     expect(screen.getByRole("heading", { name: "Speed up mobile dashboard rendering" })).toBeInTheDocument();
     expect(screen.getAllByText("Improve dashboard responsiveness on small screens without losing analytical depth.")).toHaveLength(2);
-    expect(screen.getByText("Core details")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit details" })).toBeInTheDocument();
-    expect(screen.getByText("Prototype-to-Plan context")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit prototype" })).toBeInTheDocument();
+    expect(screen.getByText("Work Object details")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Work Object" })).toBeInTheDocument();
+    expect(screen.getByText("Prototype context")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit prototype context" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open prototype" })).toHaveAttribute("href", "https://example.com/prototype/mobile-perf");
-    expect(screen.getByText("Execution status")).toBeInTheDocument();
-    expect(screen.getByText("Execution priority")).toBeInTheDocument();
+    expect(screen.getByText("Status")).toBeInTheDocument();
+    expect(screen.getByText("Priority")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "planning" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "high" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Linked Cluster")).toBeInTheDocument();
     expect(screen.getByText("Mobile performance improvements")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open Cluster context" })).toHaveAttribute("href", "/inbox/clu_mobile_perf");
-    expect(screen.getByText("Evidence")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open Context Inbox" })).toHaveAttribute("href", "/inbox/clu_mobile_perf");
+    expect(screen.getByText("Signal evidence")).toBeInTheDocument();
     expect(screen.getByText("PR #234 needs context from original spec")).toBeInTheDocument();
     expect(screen.getByText("Virtualize heavy dashboard sections")).toBeInTheDocument();
     expect(screen.getByText("Prioritize virtualization before a full chart rewrite.")).toBeInTheDocument();
@@ -149,11 +149,11 @@ describe("WorkObjectDetailPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Work Object" }));
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Sharper mobile dashboard rendering" } });
     fireEvent.change(screen.getByLabelText("Summary"), { target: { value: "A tighter summary for the seeded work object." } });
     fireEvent.change(screen.getByLabelText("Goal"), { target: { value: "Keep the mobile dashboard crisp under real data load." } });
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save Work Object" }));
 
     await waitFor(() =>
       expect(updateWorkObjectCoreFieldsMock).toHaveBeenCalledWith("wo_mobile_perf", {
@@ -186,7 +186,7 @@ describe("WorkObjectDetailPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Work Object" }));
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Discarded title" } });
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
@@ -246,7 +246,7 @@ describe("WorkObjectDetailPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "ready" }));
 
-    expect(screen.getByText("Updating…")).toBeInTheDocument();
+    expect(screen.getByText("Saving status...")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "shipped" })).toBeDisabled();
   });
 
@@ -264,10 +264,10 @@ describe("WorkObjectDetailPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Work Object" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save Work Object" }));
 
-    expect(screen.getByRole("button", { name: "Saving details..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Saving Work Object..." })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
   });
 
@@ -304,8 +304,8 @@ describe("WorkObjectDetailPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Work Object" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save Work Object" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to update Work Object details.");
   });
@@ -338,12 +338,12 @@ describe("WorkObjectDetailPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit prototype" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit prototype context" }));
     fireEvent.change(screen.getByLabelText("Prototype link"), { target: { value: "https://example.com/prototype/mobile-perf-v2" } });
     fireEvent.change(screen.getByLabelText("Prototype note"), {
       target: { value: "Updated prototype note for the first Prototype-to-Plan pass." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save prototype" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save prototype context" }));
 
     await waitFor(() =>
       expect(updateWorkObjectPrototypeMock).toHaveBeenCalledWith("wo_mobile_perf", {
@@ -374,7 +374,7 @@ describe("WorkObjectDetailPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit prototype" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit prototype context" }));
     fireEvent.change(screen.getByLabelText("Prototype note"), { target: { value: "Discarded note" } });
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
@@ -397,10 +397,10 @@ describe("WorkObjectDetailPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit prototype" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save prototype" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit prototype context" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save prototype context" }));
 
-    expect(screen.getByRole("button", { name: "Saving prototype..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Saving prototype context..." })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
   });
 
@@ -418,8 +418,8 @@ describe("WorkObjectDetailPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit prototype" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save prototype" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit prototype context" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save prototype context" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to update Work Object prototype context.");
   });

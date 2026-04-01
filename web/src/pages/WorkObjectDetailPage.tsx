@@ -16,6 +16,8 @@ import {
 import {
   WORK_OBJECT_PRIORITIES,
   WORK_OBJECT_STATUSES,
+  formatArtifactType,
+  formatClusterStatus,
   formatWorkObjectPriority,
   formatWorkObjectStatus,
   type Artifact,
@@ -398,7 +400,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
 
   return (
     <div>
-      <PageHeader title={workObject.title} description={workObject.summary} />
+      <PageHeader eyebrow="Work Object" title={workObject.title} description={workObject.summary} />
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
         <div className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl">
@@ -416,8 +418,8 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
           <div className="mt-5 rounded-2xl border border-border/80 bg-background/55 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Core details</p>
-                <p className="mt-1 text-sm text-muted-foreground">Keep the title, summary, and goal aligned with the current product context.</p>
+                <p className="text-sm font-medium text-foreground">Work Object details</p>
+                <p className="mt-1 text-sm text-muted-foreground">Keep the title, summary, and goal aligned with the product outcome this Work Object owns.</p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="rounded-2xl border border-border/80 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
@@ -430,7 +432,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
                     className="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15"
                     onClick={beginEditingCore}
                   >
-                    Edit details
+                    Edit Work Object
                   </button>
                 ) : null}
               </div>
@@ -480,7 +482,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
                     className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={isSavingCore}
                   >
-                    {isSavingCore ? "Saving details..." : "Save changes"}
+                    {isSavingCore ? "Saving Work Object..." : "Save Work Object"}
                   </button>
                   <button
                     type="button"
@@ -518,8 +520,10 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
           <div className="mt-5 rounded-2xl border border-border/80 bg-background/55 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Prototype-to-Plan context</p>
-                <p className="mt-1 text-sm text-muted-foreground">Attach the current prototype link or note so this Work Object stays anchored in design context.</p>
+                <p className="text-sm font-medium text-foreground">Prototype context</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Attach the current prototype link or note so the next Prototype-to-Plan pass stays anchored in product context.
+                </p>
               </div>
               {!isEditingPrototype ? (
                 <button
@@ -527,7 +531,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
                   className="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15"
                   onClick={beginEditingPrototype}
                 >
-                  {workObject.prototypeUrl || workObject.prototypeNote ? "Edit prototype" : "Attach prototype"}
+                  {workObject.prototypeUrl || workObject.prototypeNote ? "Edit prototype context" : "Attach prototype context"}
                 </button>
               ) : null}
             </div>
@@ -564,7 +568,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
                     className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={isSavingPrototype}
                   >
-                    {isSavingPrototype ? "Saving prototype..." : "Save prototype"}
+                    {isSavingPrototype ? "Saving prototype context..." : "Save prototype context"}
                   </button>
                   <button
                     type="button"
@@ -619,12 +623,12 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
           <div className="mt-5 rounded-2xl border border-border/80 bg-background/55 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Execution status</p>
-                <p className="mt-1 text-sm text-muted-foreground">Move the Work Object forward as its scope becomes clearer.</p>
+                <p className="text-sm font-medium text-foreground">Status</p>
+                <p className="mt-1 text-sm text-muted-foreground">Show where this Work Object sits in the current execution flow.</p>
               </div>
               {pendingStatus ? (
                 <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                  Updating…
+                  Saving status...
                 </span>
               ) : null}
             </div>
@@ -655,8 +659,8 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
           <div className="mt-5 rounded-2xl border border-border/80 bg-background/55 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Execution priority</p>
-                <p className="mt-1 text-sm text-muted-foreground">Keep urgency legible as the Work Object moves from planning to shipped work.</p>
+                <p className="text-sm font-medium text-foreground">Priority</p>
+                <p className="mt-1 text-sm text-muted-foreground">Keep urgency legible as the Work Object moves from planning toward release.</p>
               </div>
               {pendingPriority ? (
                 <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
@@ -690,16 +694,17 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
         </div>
 
         <aside className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Linked Cluster</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Context origin</p>
           {linkedCluster ? (
             <div className="mt-4 space-y-4">
               <div>
-                <h2 className="text-lg font-medium text-foreground">{linkedCluster.title}</h2>
+                <h2 className="text-lg font-medium text-foreground">Linked Cluster</h2>
+                <p className="mt-2 text-sm font-medium text-foreground">{linkedCluster.title}</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{linkedCluster.summary}</p>
               </div>
               <div className="flex flex-wrap gap-2 text-xs font-medium">
                 <span className={`rounded-full border px-3 py-1 capitalize ${panelTone(linkedCluster.severity)}`}>{linkedCluster.severity}</span>
-                <span className={`rounded-full border px-3 py-1 capitalize ${panelTone(linkedCluster.status)}`}>{linkedCluster.status}</span>
+                <span className={`rounded-full border px-3 py-1 capitalize ${panelTone(linkedCluster.status)}`}>{formatClusterStatus(linkedCluster.status)}</span>
                 <span className="rounded-full border border-border bg-secondary/70 px-3 py-1 text-muted-foreground">
                   {countLabel(linkedCluster.signals.length, "Signal")}
                 </span>
@@ -708,7 +713,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
                 className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15"
                 to={`/inbox/${linkedCluster.id}`}
               >
-                Open Cluster context
+                Open Context Inbox
               </Link>
             </div>
           ) : (
@@ -727,8 +732,8 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
         <div className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-medium text-foreground">Evidence</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Signals currently attached to this Work Object through its linked Cluster.</p>
+              <h2 className="text-lg font-medium text-foreground">Signal evidence</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Signals attached through the linked Cluster that still explain why this Work Object exists.</p>
             </div>
             <span className="rounded-full border border-border bg-secondary/70 px-3 py-1 text-xs font-medium text-muted-foreground">
               {countLabel(evidenceSignals.length, "Signal")}
@@ -772,7 +777,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-medium text-foreground">Decisions</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Judgment calls already shaping this execution path.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Product judgment already recorded on this Work Object.</p>
             </div>
             <div className="flex items-center gap-3">
               <span className="rounded-full border border-border bg-secondary/70 px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -877,7 +882,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-medium text-foreground">Artifacts</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Outputs and working material already attached to this Work Object.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Execution output and working material already attached to this Work Object.</p>
             </div>
             <div className="flex items-center gap-3">
               <span className="rounded-full border border-border bg-secondary/70 px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -961,7 +966,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
               visibleArtifacts.map((artifact) => (
                 <article key={artifact.id} className="rounded-2xl border border-border/80 bg-background/50 p-4">
                   <span className="rounded-full border border-border bg-secondary/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {artifact.artifactType}
+                    {formatArtifactType(artifact.artifactType)}
                   </span>
                   <h3 className="mt-3 text-sm font-medium text-foreground">{artifact.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{artifact.body}</p>

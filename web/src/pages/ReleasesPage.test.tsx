@@ -13,7 +13,7 @@ describe("ReleasesPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "Releases" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Release queue" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No release-ready Work Objects yet" })).toBeInTheDocument();
   });
 
@@ -33,8 +33,8 @@ describe("ReleasesPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Prototype-to-Plan onboarding refresh")).toBeInTheDocument();
-    expect(screen.getByText(/Ready on Mar 31, 2026/i)).toBeInTheDocument();
+    expect(screen.getByText("Guided onboarding refresh")).toBeInTheDocument();
+    expect(screen.getByText(/Release-ready on Mar 31, 2026/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open review" })).toBeInTheDocument();
   });
 });

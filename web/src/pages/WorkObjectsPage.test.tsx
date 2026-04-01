@@ -21,7 +21,7 @@ describe("WorkObjectsPage", () => {
     expect(screen.getByText("medium priority")).toBeInTheDocument();
     expect(screen.getByText("Mobile performance improvements")).toBeInTheDocument();
     expect(screen.getByText("high severity")).toBeInTheDocument();
-    expect(screen.getByText("Onboarding refresh")).toBeInTheDocument();
+    expect(screen.getByText("Onboarding activation clarity")).toBeInTheDocument();
     expect(screen.getByText("medium severity")).toBeInTheDocument();
   });
 });

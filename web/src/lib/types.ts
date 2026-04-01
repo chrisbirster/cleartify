@@ -54,6 +54,14 @@ export function formatWorkObjectPriority(priority: string) {
   return priority;
 }
 
+export function formatArtifactType(artifactType: string) {
+  return artifactType.replaceAll("_", " ");
+}
+
+export function formatClusterStatus(status: string) {
+  return status.replaceAll("_", " ");
+}
+
 export type Organization = {
   id: string;
   slug: string;

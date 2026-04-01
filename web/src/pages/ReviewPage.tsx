@@ -6,7 +6,15 @@ import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { StatePanel } from "../components/StatePanel";
 import { loadDraftPlanForWorkObject, markWorkObjectReadyForRelease } from "../lib/api";
-import { formatWorkObjectPriority, formatWorkObjectStatus, type Cluster, type DraftPlan, type WorkObject } from "../lib/types";
+import {
+  formatArtifactType,
+  formatClusterStatus,
+  formatWorkObjectPriority,
+  formatWorkObjectStatus,
+  type Cluster,
+  type DraftPlan,
+  type WorkObject,
+} from "../lib/types";
 
 type ReviewPageProps = {
   workObjects: WorkObject[];
@@ -130,8 +138,9 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
   return (
     <div>
       <PageHeader
+        eyebrow="Review and release"
         title="Review"
-        description="Review the final execution context before release and confirm the Work Object is ready to move forward."
+        description="Inspect the final execution context before this Work Object enters the release queue."
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.95fr)]">
@@ -145,7 +154,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
           <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Final review checkpoint</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Work Object summary</p>
                 <h2 className="mt-2 text-2xl font-medium text-foreground">{visibleWorkObject.title}</h2>
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">{visibleWorkObject.summary}</p>
               </div>
@@ -156,10 +165,10 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
                 type="button"
               >
                 {visibleWorkObject.releaseReadyAt
-                  ? "Ready for release"
+                  ? "Release-ready"
                   : isMarkingReady
-                    ? "Marking ready for release..."
-                    : "Mark ready for release"}
+                    ? "Marking release-ready..."
+                    : "Mark release-ready"}
               </button>
             </div>
 
@@ -172,11 +181,11 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
               </span>
               {visibleWorkObject.releaseReadyAt ? (
                 <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200">
-                  Ready for release on {formatTimestamp(visibleWorkObject.releaseReadyAt)}
+                  Release-ready on {formatTimestamp(visibleWorkObject.releaseReadyAt)}
                 </span>
               ) : (
                 <span className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground">
-                  Awaiting release-ready review
+                  Not release-ready yet
                 </span>
               )}
             </div>
@@ -190,8 +199,8 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
           <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Persisted draft plan</p>
-                <h2 className="mt-2 text-xl font-medium text-foreground">Execution summary</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prototype-to-Plan draft</p>
+                <h2 className="mt-2 text-xl font-medium text-foreground">Plan summary</h2>
               </div>
               <Link
                 className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
@@ -210,7 +219,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
             {isLoadingDraftPlan ? (
               <div className="mt-4">
                 <StatePanel
-                  description="Loading the persisted draft plan so this release checkpoint reflects the latest planning context."
+                  description="Loading the persisted draft so this review reflects the latest planning context."
                   eyebrow="Draft plan summary"
                   role="status"
                   title="Loading persisted draft plan..."
@@ -261,8 +270,8 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
           <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Linked Cluster</p>
-                <h2 className="mt-2 text-xl font-medium text-foreground">Context origin</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Context origin</p>
+                <h2 className="mt-2 text-xl font-medium text-foreground">Linked Cluster</h2>
               </div>
               <Link
                 className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
@@ -280,7 +289,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
                     {linkedCluster.severity} severity
                   </span>
                   <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${panelTone(linkedCluster.status)}`}>
-                    {linkedCluster.status}
+                    {formatClusterStatus(linkedCluster.status)}
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">{linkedCluster.summary}</p>
@@ -297,7 +306,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
         </div>
 
         <aside className="space-y-5">
-          <section className="rounded-3xl border border-border bg-card/95 p-5 shadow-xl shadow-black/10">
+          <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Decisions</p>
             <h2 className="mt-2 text-lg font-medium text-foreground">{countLabel(visibleWorkObject.decisions.length, "Decision")}</h2>
 
@@ -325,7 +334,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
             )}
           </section>
 
-          <section className="rounded-3xl border border-border bg-card/95 p-5 shadow-xl shadow-black/10">
+          <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Artifacts</p>
             <h2 className="mt-2 text-lg font-medium text-foreground">{countLabel(visibleWorkObject.artifacts.length, "Artifact")}</h2>
 
@@ -345,7 +354,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-sm font-medium text-foreground">{artifact.title}</h3>
                         <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                          {artifact.artifactType}
+                          {formatArtifactType(artifact.artifactType)}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">{formatTimestamp(artifact.createdAt)}</p>

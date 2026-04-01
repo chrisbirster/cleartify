@@ -16,7 +16,7 @@ describe("PrototypesPage", () => {
     expect(screen.getByRole("heading", { name: "Prototypes" })).toBeInTheDocument();
     expect(screen.getByText("Speed up mobile dashboard rendering")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Open prototype" })).toHaveLength(2);
-    expect(screen.getByText("Five approved onboarding screens anchor the first Prototype-to-Plan pass for this Work Object.")).toBeInTheDocument();
+    expect(screen.getByText("The approved prototype covers five screens: welcome, workspace setup, teammate invite, empty state, and success confirmation.")).toBeInTheDocument();
   });
 
   it("renders an empty state when no Work Objects have prototype context", () => {

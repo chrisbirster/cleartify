@@ -226,12 +226,12 @@ func TestGenerateImplementationArtifactForWorkObjectPersistsArtifact(t *testing.
 	if artifact.ArtifactType != "implementation_brief" {
 		t.Fatalf("expected implementation_brief artifact type, got %q", artifact.ArtifactType)
 	}
-	if artifact.Title != "Prototype-to-Plan onboarding refresh implementation brief" {
+	if artifact.Title != "Guided onboarding refresh implementation brief" {
 		t.Fatalf("expected derived artifact title, got %q", artifact.Title)
 	}
 	if !strings.Contains(artifact.Body, "Overview") ||
 		!strings.Contains(artifact.Body, "Open questions") ||
-		!strings.Contains(artifact.Body, "Onboarding refresh (medium severity)") ||
+		!strings.Contains(artifact.Body, "Onboarding activation clarity (medium severity)") ||
 		!strings.Contains(artifact.Body, "https://example.com/prototype/onboarding-refresh") ||
 		!strings.Contains(artifact.Body, "Which prototype screens or states must ship in the first implementation pass?") {
 		t.Fatalf("expected derived artifact body to include persisted context, got %q", artifact.Body)
@@ -305,12 +305,12 @@ func TestGenerateTaskBreakdownArtifactForWorkObjectPersistsArtifact(t *testing.T
 	if artifact.ArtifactType != "task_breakdown" {
 		t.Fatalf("expected task_breakdown artifact type, got %q", artifact.ArtifactType)
 	}
-	if artifact.Title != "Prototype-to-Plan onboarding refresh task breakdown" {
+	if artifact.Title != "Guided onboarding refresh task breakdown" {
 		t.Fatalf("expected derived artifact title, got %q", artifact.Title)
 	}
 	if !strings.Contains(artifact.Body, "Execution tasks") ||
 		!strings.Contains(artifact.Body, "1. Review the Work Object goal for") ||
-		!strings.Contains(artifact.Body, "Linked Cluster: Onboarding refresh (medium severity)") ||
+		!strings.Contains(artifact.Body, "Linked Cluster: Onboarding activation clarity (medium severity)") ||
 		!strings.Contains(artifact.Body, "Prototype link: https://example.com/prototype/onboarding-refresh") ||
 		!strings.Contains(artifact.Body, "Open questions to resolve") {
 		t.Fatalf("expected derived task breakdown body to include persisted context, got %q", artifact.Body)

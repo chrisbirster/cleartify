@@ -25,7 +25,7 @@ function PlanSection({ title, items, ordered = false }: { title: string; items: 
   const ListTag = ordered ? "ol" : "ul";
 
   return (
-    <section className="rounded-3xl border border-border bg-card/90 p-5 shadow-xl shadow-black/10">
+    <section className="rounded-3xl border border-border bg-card/90 p-6 shadow-xl shadow-black/10">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{title}</p>
       <ListTag className={ordered ? "mt-4 space-y-3 list-decimal pl-5" : "mt-4 space-y-3 list-disc pl-5"}>
         {items.map((item) => (
@@ -214,8 +214,9 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
     <div>
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <PageHeader
+          eyebrow="Prototype-to-Plan"
           title="Draft plan"
-          description="Generate a deterministic first-pass plan from the current Work Object and Prototype-to-Plan context."
+          description="Generate or refine the persisted draft that turns this Work Object and prototype context into the next execution pass."
         />
         <div className="flex flex-wrap gap-3">
           {draftPlan && !isEditing ? (
@@ -224,7 +225,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
               onClick={beginEditing}
               type="button"
             >
-              Edit draft
+              Edit plan
             </button>
           ) : null}
           {isEditing ? (
@@ -235,7 +236,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
                 onClick={handleSave}
                 type="button"
               >
-                {isSaving ? "Saving edits..." : "Save edits"}
+                {isSaving ? "Saving plan..." : "Save plan"}
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-background/70 px-5 text-sm font-medium text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
@@ -253,7 +254,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
               onClick={handleGenerate}
               type="button"
             >
-              {isGenerating ? "Generating draft plan..." : draftPlan ? "Refresh Draft Plan" : "Generate Draft Plan"}
+              {isGenerating ? "Generating draft plan..." : draftPlan ? "Refresh draft plan" : "Generate draft plan"}
             </button>
           )}
         </div>
@@ -269,7 +270,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
 
           {isLoading ? (
             <StatePanel
-              description="Bringing the current Prototype-to-Plan context into view for this Work Object."
+              description="Loading the persisted draft so the current Work Object, prototype context, and next execution pass stay in one view."
               eyebrow="Prototype-to-Plan"
               role="status"
               surface="page"
@@ -283,7 +284,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
                   <section className="rounded-3xl border border-border bg-card/90 p-6 shadow-xl shadow-black/10">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Overview</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Plan overview</p>
                         <h2 className="mt-2 text-xl font-medium text-foreground">{workObject.title}</h2>
                       </div>
                       <p className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -339,7 +340,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
                   <section className="rounded-3xl border border-border bg-card/90 p-6 shadow-xl shadow-black/10">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Overview</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Plan overview</p>
                         <h2 className="mt-2 text-xl font-medium text-foreground">{workObject.title}</h2>
                         <p className="mt-4 max-w-3xl text-sm leading-7 text-foreground/90">{draftPlan.overview}</p>
                       </div>
@@ -365,8 +366,8 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
         </div>
 
         <aside className="space-y-5">
-          <section className="rounded-3xl border border-border bg-card/90 p-5 shadow-xl shadow-black/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Work Object</p>
+          <section className="rounded-3xl border border-border bg-card/90 p-6 shadow-xl shadow-black/10">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Work Object context</p>
             <h2 className="mt-2 text-lg font-medium text-foreground">{workObject.title}</h2>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{workObject.summary}</p>
             <p className="mt-4 text-sm text-foreground/90">{workObject.goal}</p>
@@ -380,8 +381,8 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border bg-card/90 p-5 shadow-xl shadow-black/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prototype-to-Plan context</p>
+          <section className="rounded-3xl border border-border bg-card/90 p-6 shadow-xl shadow-black/10">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prototype context</p>
             {prototypeContext ? (
               <div className="mt-4 space-y-4">
                 <div>
@@ -417,8 +418,8 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
             )}
           </section>
 
-          <section className="rounded-3xl border border-border bg-card/90 p-5 shadow-xl shadow-black/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Linked Cluster</p>
+          <section className="rounded-3xl border border-border bg-card/90 p-6 shadow-xl shadow-black/10">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Context origin</p>
             {linkedCluster ? (
               <div className="mt-4 space-y-3">
                 <div className="flex items-center gap-3">
@@ -432,7 +433,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
                   className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
                   to={`/inbox/${linkedCluster.id}`}
                 >
-                  Open Cluster context
+                  Open Context Inbox
                 </Link>
               </div>
             ) : (

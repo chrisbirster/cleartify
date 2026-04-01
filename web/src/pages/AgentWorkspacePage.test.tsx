@@ -10,11 +10,11 @@ import { AgentWorkspacePage } from "./AgentWorkspacePage";
 const persistedDraftPlan = {
   workObjectId: "wo_onboarding_refresh",
   overview:
-    'This draft plan turns "Prototype-to-Plan onboarding refresh" into executable work using the current summary, goal, and prototype context.',
+    'This draft plan turns "Guided onboarding refresh" into executable work using the current summary, goal, and prototype context.',
   implementationSteps: [
     "Review the Work Object goal.",
     "Translate the current summary into the smallest useful implementation slice.",
-    'Carry forward the linked Cluster context from "Onboarding refresh".',
+    'Carry forward the linked Cluster context from "Onboarding activation clarity".',
     "Use the attached prototype link as the review reference while the first implementation pass is clarified.",
   ],
   edgeCases: [
@@ -25,7 +25,7 @@ const persistedDraftPlan = {
   openQuestions: [
     "Which prototype screens or states must ship in the first implementation pass?",
     "What implementation details are still implied, but not stated explicitly, in the prototype note?",
-    'Which Signals from "Onboarding refresh" should still shape acceptance criteria during implementation?',
+    'Which Signals from "Onboarding activation clarity" should still shape acceptance criteria during implementation?',
   ],
   createdAt: "2026-03-31T09:00:00Z",
   updatedAt: "2026-03-31T09:05:00Z",
@@ -62,10 +62,10 @@ describe("AgentWorkspacePage", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Agent Workspace" })).toBeInTheDocument();
-    expect(await screen.findByText(/This draft plan turns "Prototype-to-Plan onboarding refresh"/i)).toBeInTheDocument();
-    expect(screen.getByText("Onboarding refresh")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate implementation Artifact" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
+    expect(await screen.findByText(/This draft plan turns "Guided onboarding refresh"/i)).toBeInTheDocument();
+    expect(screen.getByText("Onboarding activation clarity")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate implementation brief" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate task breakdown" })).toBeInTheDocument();
   });
 
   it("renders a polished loading state while the persisted draft plan is loading", () => {
@@ -83,9 +83,7 @@ describe("AgentWorkspacePage", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent("Loading persisted draft plan...");
-    expect(
-      screen.getByText("Loading the persisted draft plan so the Agent Workspace actions stay grounded in the latest planning context."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Loading the persisted draft so these actions stay grounded in the latest plan.")).toBeInTheDocument();
   });
 
   it("renders an empty draft plan state when none exists yet", async () => {
@@ -103,8 +101,8 @@ describe("AgentWorkspacePage", () => {
     );
 
     expect(await screen.findAllByText("Persist a draft plan first")).toHaveLength(2);
-    expect(screen.getByRole("button", { name: "Generate implementation Artifact" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Generate task-breakdown Artifact" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate implementation brief" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate task breakdown" })).toBeDisabled();
   });
 
   it("runs the implementation artifact action and renders the new Artifact immediately", async () => {
@@ -114,7 +112,7 @@ describe("AgentWorkspacePage", () => {
         id: "art_impl_1",
         workObjectId: "wo_onboarding_refresh",
         artifactType: "implementation_brief",
-        title: "Prototype-to-Plan onboarding refresh implementation brief",
+        title: "Guided onboarding refresh implementation brief",
         body: "Overview\nDeterministic implementation brief body.",
         createdAt: "2026-03-31T09:15:00Z",
       }),
@@ -138,11 +136,11 @@ describe("AgentWorkspacePage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("button", { name: "Generate implementation Artifact" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate implementation Artifact" }));
+    expect(await screen.findByRole("button", { name: "Generate implementation brief" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate implementation brief" }));
 
     await waitFor(() => expect(generateImplementationArtifactForWorkObjectMock).toHaveBeenCalledWith("wo_onboarding_refresh"));
-    expect(await screen.findByText("Prototype-to-Plan onboarding refresh implementation brief")).toBeInTheDocument();
+    expect(await screen.findByText("Guided onboarding refresh implementation brief")).toBeInTheDocument();
     expect(onWorkObjectUpdated).toHaveBeenCalled();
   });
 
@@ -161,11 +159,11 @@ describe("AgentWorkspacePage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("button", { name: "Generate implementation Artifact" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate implementation Artifact" }));
+    expect(await screen.findByRole("button", { name: "Generate implementation brief" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate implementation brief" }));
 
-    expect(screen.getByRole("button", { name: "Generating implementation Artifact..." })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Generate task-breakdown Artifact" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generating implementation brief..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate task breakdown" })).toBeDisabled();
   });
 
   it("shows an inline error when implementation artifact generation fails", async () => {
@@ -183,8 +181,8 @@ describe("AgentWorkspacePage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("button", { name: "Generate implementation Artifact" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate implementation Artifact" }));
+    expect(await screen.findByRole("button", { name: "Generate implementation brief" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate implementation brief" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to generate implementation Artifact.");
   });
@@ -196,7 +194,7 @@ describe("AgentWorkspacePage", () => {
         id: "art_tasks_1",
         workObjectId: "wo_onboarding_refresh",
         artifactType: "task_breakdown",
-        title: "Prototype-to-Plan onboarding refresh task breakdown",
+        title: "Guided onboarding refresh task breakdown",
         body: "Execution tasks\n1. Review the Work Object goal.",
         createdAt: "2026-03-31T09:16:00Z",
       }),
@@ -220,11 +218,11 @@ describe("AgentWorkspacePage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate task-breakdown Artifact" }));
+    expect(await screen.findByRole("button", { name: "Generate task breakdown" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate task breakdown" }));
 
     await waitFor(() => expect(generateTaskBreakdownArtifactForWorkObjectMock).toHaveBeenCalledWith("wo_onboarding_refresh"));
-    expect(await screen.findByText("Prototype-to-Plan onboarding refresh task breakdown")).toBeInTheDocument();
+    expect(await screen.findByText("Guided onboarding refresh task breakdown")).toBeInTheDocument();
     expect(onWorkObjectUpdated).toHaveBeenCalled();
   });
 
@@ -243,11 +241,11 @@ describe("AgentWorkspacePage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate task-breakdown Artifact" }));
+    expect(await screen.findByRole("button", { name: "Generate task breakdown" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate task breakdown" }));
 
-    expect(screen.getByRole("button", { name: "Generating task-breakdown Artifact..." })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Generate implementation Artifact" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generating task breakdown..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Generate implementation brief" })).toBeDisabled();
   });
 
   it("shows an inline error when task-breakdown artifact generation fails", async () => {
@@ -265,8 +263,8 @@ describe("AgentWorkspacePage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generate task-breakdown Artifact" }));
+    expect(await screen.findByRole("button", { name: "Generate task breakdown" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generate task breakdown" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to generate task-breakdown Artifact.");
   });

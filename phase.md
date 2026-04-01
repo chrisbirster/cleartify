@@ -1,8 +1,8 @@
 # Cleartify Phase Tracker
 
-Last updated: 2026-03-31
+Last updated: 2026-04-01
 
-Current target: Phase 6 - Polish
+Current target: MVP complete
 
 ## Status Summary
 
@@ -14,7 +14,7 @@ Current target: Phase 6 - Polish
 | 3 | Prototype-to-Plan | Done | Prototype attach, deterministic draft plan generation, and lightweight persisted draft plan editing are now implemented end to end for MVP review. |
 | 4 | Agent Workspace | Done | Agent Workspace now supports two deterministic persisted mock actions that turn a Work Object plus its persisted draft plan into `implementation_brief` and `task_breakdown` Artifacts. Treat broader agent scope as future enhancement unless explicitly required. |
 | 5 | Review and Release | Done | The MVP review loop is complete: `/app/review/:workObjectId` is a real checkpoint, `release_ready_at` persists, `POST /api/work-objects/:id/release-ready` exists, and `/app/releases` surfaces release-ready Work Objects. Treat release detail and outcome-note scope as optional future enhancement unless explicitly required. |
-| 6 | Polish | In progress | Start with a narrow MVP polish pass focused on loading states, empty states, tighter copy, visual consistency, and small seeded demo-data refinements across the key execution routes. |
+| 6 | Polish | Done | Shared state polish, cross-page copy/hierarchy polish, and seeded demo-data refinement now make the MVP flow read clearly from Work Object to plan, agent output, review, and releases. |
 
 ## Phase Breakdown
 
@@ -158,7 +158,7 @@ Deferred:
 
 ### Phase 6 - Polish
 
-Status: In progress
+Status: Done
 
 MVP polish focus:
 - improve loading and empty states on the key execution routes
@@ -170,6 +170,14 @@ Completed:
 - shared loading and empty-state polish across `/app/work/:workObjectId`, `/app/plans/:workObjectId`, `/app/agents/:workObjectId`, `/app/review/:workObjectId`, and `/app/releases`
 - reusable state-surface treatment for route-level empty states and section-level missing/loading panels
 - tighter empty-state copy and more consistent panel framing across the key execution routes
+- cross-page copy and hierarchy polish across `/app/work/:workObjectId`, `/app/plans/:workObjectId`, `/app/agents/:workObjectId`, `/app/review/:workObjectId`, and `/app/releases`
+- more consistent page eyebrows, section labels, action copy, badge wording, and card spacing across the key MVP flow
+- seeded demo-data polish focused on one clear hero Work Object for `/app/work -> /app/plans -> /app/agents -> /app/review -> /app/releases`
+- tighter seeded Cluster, prototype, draft-plan, Decision, Artifact, and release-ready story for the onboarding demo path
+
+Exit criteria met:
+- the MVP execution flow reads clearly end to end with seeded demo content
+- the app feels intentional and demo-ready without reopening earlier phases or adding new features
 
 Proposed slices:
 1. Shared loading and empty-state polish
@@ -182,12 +190,13 @@ Proposed slices:
    - tune a few seeded `Decision`, `Artifact`, and plan examples so the core demo path reads more clearly end to end
    - avoid expanding the schema or adding new feature scope
 
-First slice:
-- shared loading and empty-state polish on `/app/work/:workObjectId`, `/app/plans/:workObjectId`, `/app/agents/:workObjectId`, `/app/review/:workObjectId`, and `/app/releases` is complete
-- next up is cross-page copy and hierarchy polish
+Completed slices:
+- shared loading and empty-state polish
+- cross-page copy and hierarchy polish
+- seeded demo-data polish
 
 ## Next Recommended Focus
 
-1. Start Phase 6 with shared loading and empty-state polish across the key execution routes.
-2. Follow that with a small copy and visual-consistency pass so Work Object, Plan, Agent Workspace, Review, and Releases feel like one coherent product.
-3. Treat optional release-detail, outcome-note, and broader workflow automation as future enhancements unless explicitly required.
+1. Treat the MVP as complete across Phases 0 through 6.
+2. Keep future work narrow and intentional: hosted provider integration, external agent/tool surface, and optional release-detail/outcome-note enhancements.
+3. Avoid reopening completed MVP phases unless a concrete demo or product gap appears.

@@ -10,7 +10,7 @@ import {
   generateTaskBreakdownArtifactForWorkObject,
   loadDraftPlanForWorkObject,
 } from "../lib/api";
-import type { Artifact, Cluster, DraftPlan, WorkObject } from "../lib/types";
+import { formatArtifactType, type Artifact, type Cluster, type DraftPlan, type WorkObject } from "../lib/types";
 
 type AgentWorkspacePageProps = {
   workObjects: WorkObject[];
@@ -151,8 +151,9 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
   return (
     <div>
       <PageHeader
+        eyebrow="Agent Workspace"
         title="Agent Workspace"
-        description="Run deterministic mock actions that turn the current Work Object and persisted draft plan into concrete Artifacts."
+        description="Create deterministic execution artifacts from the current Work Object and persisted draft plan."
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.95fr)]">
@@ -166,18 +167,18 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
           <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Mock agent actions</p>
-                <h2 className="mt-2 text-xl font-medium text-foreground">Generate deterministic Artifacts</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Deterministic actions</p>
+                <h2 className="mt-2 text-xl font-medium text-foreground">Create execution artifacts</h2>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Use the persisted Work Object and Prototype-to-Plan context to generate deterministic outputs without agent orchestration.
+                  Use the current Work Object, Context Inbox link, prototype context, and persisted draft plan to create deterministic outputs.
                 </p>
               </div>
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
               <article className="rounded-2xl border border-border/80 bg-background/55 p-4">
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Implementation Artifact</p>
-                <h3 className="mt-2 text-base font-medium text-foreground">Generate implementation Artifact</h3>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Implementation brief</p>
+                <h3 className="mt-2 text-base font-medium text-foreground">Summarize the next implementation pass</h3>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Produce an implementation brief grounded in the current Work Object, linked Cluster context, and persisted draft plan.
                 </p>
@@ -187,13 +188,13 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
                   onClick={handleGenerateImplementationArtifact}
                   type="button"
                 >
-                  {pendingAction === "implementation" ? "Generating implementation Artifact..." : "Generate implementation Artifact"}
+                  {pendingAction === "implementation" ? "Generating implementation brief..." : "Generate implementation brief"}
                 </button>
               </article>
 
               <article className="rounded-2xl border border-border/80 bg-background/55 p-4">
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Task-breakdown Artifact</p>
-                <h3 className="mt-2 text-base font-medium text-foreground">Generate task-breakdown Artifact</h3>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Task breakdown</p>
+                <h3 className="mt-2 text-base font-medium text-foreground">Break the draft into concrete tasks</h3>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Produce a deterministic task breakdown from the persisted draft plan sections so the next implementation pass feels concrete.
                 </p>
@@ -203,7 +204,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
                   onClick={handleGenerateTaskBreakdownArtifact}
                   type="button"
                 >
-                  {pendingAction === "task-breakdown" ? "Generating task-breakdown Artifact..." : "Generate task-breakdown Artifact"}
+                  {pendingAction === "task-breakdown" ? "Generating task breakdown..." : "Generate task breakdown"}
                 </button>
               </article>
             </div>
@@ -230,7 +231,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
           <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Generated Artifacts</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Agent outputs</p>
                 <h2 className="mt-2 text-xl font-medium text-foreground">{countLabel(visibleArtifacts.length, "Artifact")}</h2>
               </div>
               <Link
@@ -257,7 +258,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-sm font-medium text-foreground">{artifact.title}</h3>
                         <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                          {artifact.artifactType}
+                          {formatArtifactType(artifact.artifactType)}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">Created {formatTimestamp(artifact.createdAt)}</p>
@@ -271,7 +272,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
         </div>
 
         <aside className="space-y-5">
-          <section className="rounded-3xl border border-border bg-card/95 p-5 shadow-xl shadow-black/10">
+          <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Work Object context</p>
             <h2 className="mt-2 text-lg font-medium text-foreground">{workObject.title}</h2>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{workObject.summary}</p>
@@ -288,11 +289,11 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
             ) : null}
           </section>
 
-          <section className="rounded-3xl border border-border bg-card/95 p-5 shadow-xl shadow-black/10">
+          <section className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl shadow-black/10">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Persisted draft plan</p>
-                <h2 className="mt-2 text-lg font-medium text-foreground">Current planning context</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Prototype-to-Plan draft</p>
+                <h2 className="mt-2 text-lg font-medium text-foreground">Current plan context</h2>
               </div>
               <Link
                 className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
@@ -311,7 +312,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
             {isLoadingDraftPlan ? (
               <div className="mt-4">
                 <StatePanel
-                  description="Loading the persisted draft plan so the Agent Workspace actions stay grounded in the latest planning context."
+                  description="Loading the persisted draft so these actions stay grounded in the latest plan."
                   eyebrow="Draft plan context"
                   role="status"
                   title="Loading persisted draft plan..."

@@ -5,8 +5,9 @@ import { PageHeader } from "./PageHeader";
 
 describe("PageHeader", () => {
   it("renders a title and description", () => {
-    render(<PageHeader title="Context Inbox" description="Review clustered context." />);
+    render(<PageHeader eyebrow="Product flow" title="Context Inbox" description="Review clustered context." />);
 
+    expect(screen.getByText("Product flow")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Context Inbox" })).toBeInTheDocument();
     expect(screen.getByText("Review clustered context.")).toBeInTheDocument();
   });

@@ -10,7 +10,7 @@ import { ReviewPage } from "./ReviewPage";
 const persistedDraftPlan = {
   workObjectId: "wo_onboarding_refresh",
   overview:
-    'This draft plan turns "Prototype-to-Plan onboarding refresh" into executable work using the current summary, goal, and prototype context.',
+    'This draft plan turns "Guided onboarding refresh" into executable work using the current summary, goal, and prototype context.',
   implementationSteps: [
     "Review the Work Object goal.",
     "Translate the current summary into the smallest useful implementation slice.",
@@ -50,10 +50,10 @@ describe("ReviewPage", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Review" })).toBeInTheDocument();
-    expect(await screen.findByText(/This draft plan turns "Prototype-to-Plan onboarding refresh"/i)).toBeInTheDocument();
-    expect(screen.getByText("Keep the onboarding refresh to five key screens")).toBeInTheDocument();
-    expect(screen.getByText("Onboarding refresh execution outline")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mark ready for release" })).toBeInTheDocument();
+    expect(await screen.findByText(/This draft plan turns "Guided onboarding refresh"/i)).toBeInTheDocument();
+    expect(screen.getByText("Ship the five-screen onboarding slice first")).toBeInTheDocument();
+    expect(screen.getByText("Onboarding scope review notes")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark release-ready" })).toBeInTheDocument();
   });
 
   it("renders a polished loading state while the persisted draft plan is loading", () => {
@@ -68,9 +68,7 @@ describe("ReviewPage", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent("Loading persisted draft plan...");
-    expect(
-      screen.getByText("Loading the persisted draft plan so this release checkpoint reflects the latest planning context."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Loading the persisted draft so this review reflects the latest planning context.")).toBeInTheDocument();
   });
 
   it("renders a draft plan prerequisite state when no persisted plan exists yet", async () => {
@@ -85,7 +83,7 @@ describe("ReviewPage", () => {
     );
 
     expect(await screen.findByText("Persist a draft plan first")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mark ready for release" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Mark release-ready" })).toBeDisabled();
   });
 
   it("marks the Work Object ready for release and renders the persisted state immediately", async () => {
@@ -112,12 +110,12 @@ describe("ReviewPage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("button", { name: "Mark ready for release" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Mark ready for release" }));
+    expect(await screen.findByRole("button", { name: "Mark release-ready" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mark release-ready" }));
 
     await waitFor(() => expect(markWorkObjectReadyForReleaseMock).toHaveBeenCalledWith("wo_onboarding_refresh"));
-    expect(await screen.findByText(/Ready for release on Mar 31, 2026/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ready for release" })).toBeDisabled();
+    expect(await screen.findByText(/Release-ready on Mar 31, 2026/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Release-ready" })).toBeDisabled();
     expect(onWorkObjectUpdated).toHaveBeenCalled();
   });
 
@@ -133,11 +131,11 @@ describe("ReviewPage", () => {
       </MemoryRouter>,
     );
 
-    const actionButton = await screen.findByRole("button", { name: "Mark ready for release" });
+    const actionButton = await screen.findByRole("button", { name: "Mark release-ready" });
     await waitFor(() => expect(actionButton).toBeEnabled());
     fireEvent.click(actionButton);
 
-    expect(screen.getByRole("button", { name: "Marking ready for release..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Marking release-ready..." })).toBeDisabled();
   });
 
   it("shows an inline error when the release-ready action fails", async () => {
@@ -152,8 +150,8 @@ describe("ReviewPage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("button", { name: "Mark ready for release" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Mark ready for release" }));
+    expect(await screen.findByRole("button", { name: "Mark release-ready" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mark release-ready" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unable to mark the Work Object ready for release.");
   });

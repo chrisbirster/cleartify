@@ -22,11 +22,11 @@ let markWorkObjectReadyForReleaseMock: any;
 const persistedDraftPlan = {
   workObjectId: "wo_onboarding_refresh",
   overview:
-    'This draft plan turns "Prototype-to-Plan onboarding refresh" into executable work using the current summary, goal, and prototype context.',
+    'This draft plan turns "Guided onboarding refresh" into executable work using the current summary, goal, and prototype context.',
   implementationSteps: [
     "Review the Work Object goal.",
     "Translate the current summary into the smallest useful implementation slice.",
-    'Carry forward the linked Cluster context from "Onboarding refresh".',
+    'Carry forward the linked Cluster context from "Onboarding activation clarity".',
     "Use the attached prototype link as the review reference while the first implementation pass is clarified.",
   ],
   edgeCases: [
@@ -37,7 +37,7 @@ const persistedDraftPlan = {
   openQuestions: [
     "Which prototype screens or states must ship in the first implementation pass?",
     "What implementation details are still implied, but not stated explicitly, in the prototype note?",
-    'Which Signals from "Onboarding refresh" should still shape acceptance criteria during implementation?',
+    'Which Signals from "Onboarding activation clarity" should still shape acceptance criteria during implementation?',
   ],
   createdAt: "2026-03-31T09:00:00Z",
   updatedAt: "2026-03-31T09:05:00Z",
@@ -172,14 +172,14 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Speed up mobile dashboard rendering" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Edit details" }));
+    await user.click(screen.getByRole("button", { name: "Edit Work Object" }));
     await user.clear(screen.getByLabelText("Title"));
     await user.type(screen.getByLabelText("Title"), "Sharper mobile dashboard rendering");
     await user.clear(screen.getByLabelText("Summary"));
     await user.type(screen.getByLabelText("Summary"), "A tighter summary for the seeded work object.");
     await user.clear(screen.getByLabelText("Goal"));
     await user.type(screen.getByLabelText("Goal"), "Keep the mobile dashboard crisp under real data load.");
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await user.click(screen.getByRole("button", { name: "Save Work Object" }));
 
     expect(await screen.findByRole("heading", { name: "Sharper mobile dashboard rendering" })).toBeInTheDocument();
 
@@ -243,12 +243,12 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Speed up mobile dashboard rendering" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Edit prototype" }));
+    await user.click(screen.getByRole("button", { name: "Edit prototype context" }));
     await user.clear(screen.getByLabelText("Prototype link"));
     await user.type(screen.getByLabelText("Prototype link"), "https://example.com/prototype/mobile-perf-v2");
     await user.clear(screen.getByLabelText("Prototype note"));
     await user.type(screen.getByLabelText("Prototype note"), "Updated prototype note for the first Prototype-to-Plan pass.");
-    await user.click(screen.getByRole("button", { name: "Save prototype" }));
+    await user.click(screen.getByRole("button", { name: "Save prototype context" }));
 
     expect(await screen.findByText("Updated prototype note for the first Prototype-to-Plan pass.")).toBeInTheDocument();
 
@@ -302,7 +302,7 @@ describe("App", () => {
         id: "art_impl_sync",
         workObjectId: "wo_onboarding_refresh",
         artifactType: "implementation_brief",
-        title: "Prototype-to-Plan onboarding refresh implementation brief",
+        title: "Guided onboarding refresh implementation brief",
         body: "Overview\nDeterministic implementation brief body.",
         createdAt: "2026-03-31T09:25:00Z",
       }),
@@ -310,15 +310,15 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("button", { name: "Generate implementation Artifact" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Generate implementation Artifact" }));
+    expect(await screen.findByRole("button", { name: "Generate implementation brief" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Generate implementation brief" }));
 
-    expect(await screen.findByText("Prototype-to-Plan onboarding refresh implementation brief")).toBeInTheDocument();
+    expect(await screen.findByText("Guided onboarding refresh implementation brief")).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Open Work Object" }));
 
-    expect(await screen.findByRole("heading", { name: "Prototype-to-Plan onboarding refresh" })).toBeInTheDocument();
-    expect(screen.getByText("Prototype-to-Plan onboarding refresh implementation brief")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Guided onboarding refresh" })).toBeInTheDocument();
+    expect(screen.getByText("Guided onboarding refresh implementation brief")).toBeInTheDocument();
   });
 
   it("keeps generated task-breakdown Artifacts in sync after running the mock agent action and opening the Work Object", async () => {
@@ -331,7 +331,7 @@ describe("App", () => {
         id: "art_tasks_sync",
         workObjectId: "wo_onboarding_refresh",
         artifactType: "task_breakdown",
-        title: "Prototype-to-Plan onboarding refresh task breakdown",
+        title: "Guided onboarding refresh task breakdown",
         body: "Execution tasks\n1. Review the Work Object goal.",
         createdAt: "2026-03-31T09:30:00Z",
       }),
@@ -339,15 +339,15 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("button", { name: "Generate task-breakdown Artifact" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Generate task-breakdown Artifact" }));
+    expect(await screen.findByRole("button", { name: "Generate task breakdown" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Generate task breakdown" }));
 
-    expect(await screen.findByText("Prototype-to-Plan onboarding refresh task breakdown")).toBeInTheDocument();
+    expect(await screen.findByText("Guided onboarding refresh task breakdown")).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Open Work Object" }));
 
-    expect(await screen.findByRole("heading", { name: "Prototype-to-Plan onboarding refresh" })).toBeInTheDocument();
-    expect(screen.getByText("Prototype-to-Plan onboarding refresh task breakdown")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Guided onboarding refresh" })).toBeInTheDocument();
+    expect(screen.getByText("Guided onboarding refresh task breakdown")).toBeInTheDocument();
   });
 
   it("keeps the Releases list in sync after marking a Work Object ready for release", async () => {
@@ -365,15 +365,15 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("button", { name: "Mark ready for release" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Mark ready for release" }));
+    expect(await screen.findByRole("button", { name: "Mark release-ready" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Mark release-ready" }));
 
-    expect(await screen.findByText(/Ready for release on Mar 31, 2026/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Release-ready on Mar 31, 2026/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Releases" }));
 
-    expect(await screen.findByRole("heading", { name: "Releases" })).toBeInTheDocument();
-    expect(screen.getByText("Prototype-to-Plan onboarding refresh")).toBeInTheDocument();
-    expect(screen.getByText(/Ready on Mar 31, 2026/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Release queue" })).toBeInTheDocument();
+    expect(screen.getByText("Guided onboarding refresh")).toBeInTheDocument();
+    expect(screen.getByText(/Release-ready on Mar 31, 2026/i)).toBeInTheDocument();
   });
 });

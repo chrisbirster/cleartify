@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
-import type { Cluster, WorkObject } from "../lib/types";
+import { formatWorkObjectPriority, formatWorkObjectStatus, type Cluster, type WorkObject } from "../lib/types";
 
 type ReleasesPageProps = {
   workObjects: WorkObject[];
@@ -47,8 +47,9 @@ export function ReleasesPage({ workObjects, clusters }: ReleasesPageProps) {
   return (
     <div>
       <PageHeader
-        title="Releases"
-        description="A lightweight list of Work Objects that have cleared the current human review checkpoint."
+        eyebrow="Review and release"
+        title="Release queue"
+        description="Track the Work Objects that have cleared the MVP review checkpoint."
       />
 
       {releaseReadyWorkObjects.length === 0 ? (
@@ -66,16 +67,16 @@ export function ReleasesPage({ workObjects, clusters }: ReleasesPageProps) {
               <article key={workObject.id} className="rounded-3xl border border-border bg-card/95 p-5 shadow-xl shadow-black/10">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Release-ready Work Object</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Release-ready</p>
                     <h2 className="mt-2 text-xl font-medium text-foreground">{workObject.title}</h2>
                     <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">{workObject.summary}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200">
-                      Ready on {formatTimestamp(workObject.releaseReadyAt ?? "")}
+                      Release-ready on {formatTimestamp(workObject.releaseReadyAt ?? "")}
                     </span>
-                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${panelTone(workObject.status)}`}>{workObject.status.replaceAll("_", " ")}</span>
-                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${panelTone(workObject.priority)}`}>{workObject.priority} priority</span>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${panelTone(workObject.status)}`}>{formatWorkObjectStatus(workObject.status)}</span>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${panelTone(workObject.priority)}`}>{formatWorkObjectPriority(workObject.priority)} priority</span>
                   </div>
                 </div>
 

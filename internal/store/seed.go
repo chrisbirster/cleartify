@@ -96,10 +96,10 @@ func seedSignals(tx *sql.Tx) error {
 
 	signals := []signalSeed{
 		{"sig_mobile_feedback", "feedback", "fb-100", "Mobile performance issues reported", "Dashboard feels slow on mobile during chart rendering.", "https://example.com/feedback/100", map[string]any{"priority": "high"}, demoTimestamp},
-		{"sig_design_thread", "slack", "sl-222", "Design review thread from #product", "Team discussed a lighter onboarding sequence for first-run users.", "https://example.com/slack/222", map[string]any{"channel": "#product"}, demoTimestamp.Add(5 * time.Minute)},
+		{"sig_design_thread", "slack", "sl-222", "Onboarding design review highlighted setup friction", "The team agreed the current first-run flow feels dense and hides the success moment.", "https://example.com/slack/222", map[string]any{"channel": "#product"}, demoTimestamp.Add(5 * time.Minute)},
 		{"sig_pr_context", "github", "pr-234", "PR #234 needs context from original spec", "Code review is missing the original rationale for loading-state behavior.", "https://example.com/pr/234", map[string]any{"repo": "cleartify/web"}, demoTimestamp.Add(10 * time.Minute)},
 		{"sig_comp_notes", "note", "nt-45", "Competitor analysis notes from team sync", "Notes highlight how competitor teams connect prototypes to shipped changes.", "", map[string]any{"author": "Demo User"}, demoTimestamp.Add(15 * time.Minute)},
-		{"sig_proto_attach", "prototype", "pt-17", "Prototype attached for onboarding refresh", "Five mobile onboarding screens were attached for implementation planning.", "https://example.com/prototype/17", map[string]any{"screens": 5.0}, demoTimestamp.Add(20 * time.Minute)},
+		{"sig_proto_attach", "prototype", "pt-17", "Prototype attached for guided onboarding refresh", "Five approved screens cover welcome, workspace setup, teammate invite, empty state, and confirmation.", "https://example.com/prototype/17", map[string]any{"screens": 5.0}, demoTimestamp.Add(20 * time.Minute)},
 		{"sig_release_post", "release", "rl-9", "Release retro flagged missing product memory", "Recent release notes lost the decision trail behind a copy change.", "", map[string]any{"release": "2026.03.1"}, demoTimestamp.Add(25 * time.Minute)},
 	}
 
@@ -148,8 +148,8 @@ func seedClusters(tx *sql.Tx) error {
 		},
 		{
 			ID:        "clu_onboarding_refresh",
-			Title:     "Onboarding refresh",
-			Summary:   "Design review and prototype signals suggest a lighter onboarding flow.",
+			Title:     "Onboarding activation clarity",
+			Summary:   "Design review and prototype feedback point to first-run users losing momentum before they reach the success state.",
 			Severity:  "medium",
 			Status:    "active",
 			SignalIDs: []string{"sig_design_thread", "sig_proto_attach"},
@@ -225,15 +225,15 @@ func seedWorkObjects(tx *sql.Tx) error {
 		{
 			ClusterID:     "clu_onboarding_refresh",
 			ID:            "wo_onboarding_refresh",
-			Title:         "Prototype-to-Plan onboarding refresh",
-			Summary:       "Translate the new onboarding prototype into a reviewed implementation plan.",
-			Goal:          "Ship a cleaner first-run experience grounded in the new prototype set.",
+			Title:         "Guided onboarding refresh",
+			Summary:       "Turn the approved five-screen onboarding prototype into a small, reviewable implementation slice for first-run users.",
+			Goal:          "Reduce setup drop-off by shipping a calmer first-run flow with a clear success moment.",
 			Status:        "in_review",
 			Priority:      "medium",
 			OwnerType:     "user",
 			OwnerID:       "usr_demo",
 			PrototypeURL:  "https://example.com/prototype/onboarding-refresh",
-			PrototypeNote: "Five approved onboarding screens anchor the first Prototype-to-Plan pass for this Work Object.",
+			PrototypeNote: "The approved prototype covers five screens: welcome, workspace setup, teammate invite, empty state, and success confirmation.",
 		},
 	}
 
@@ -263,7 +263,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 		ID, WorkObjectID, Title, Summary, Rationale string
 	}{
 		{"dec_mobile_virtualize", "wo_mobile_perf", "Virtualize heavy dashboard sections", "Prioritize virtualization before a full chart rewrite.", "It improves mobile responsiveness quickly and reduces scope risk."},
-		{"dec_onboarding_scope", "wo_onboarding_refresh", "Keep the onboarding refresh to five key screens", "Limit the first pass to the prototype set already reviewed.", "This keeps the plan aligned with approved design context."},
+		{"dec_onboarding_scope", "wo_onboarding_refresh", "Ship the five-screen onboarding slice first", "Keep the MVP aligned to the approved prototype instead of expanding into adjacent onboarding cleanup.", "This keeps the release focused on the highest-friction setup path and gives review a clear scope boundary."},
 	}
 	for _, decision := range decisions {
 		if _, err := tx.Exec(
@@ -284,7 +284,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 		Metadata                                    map[string]any
 	}{
 		{"art_mobile_plan", "wo_mobile_perf", "plan", "Mobile optimization implementation plan", "Draft plan generated from mobile performance context.", map[string]any{"source": "prototype-to-plan"}},
-		{"art_onboarding_notes", "wo_onboarding_refresh", "review_notes", "Onboarding review checklist", "Review notes for the five-screen onboarding refresh.", map[string]any{"reviewer": "Demo User"}},
+		{"art_onboarding_notes", "wo_onboarding_refresh", "review_notes", "Onboarding scope review notes", "Review notes confirm the five-screen slice, success state, and copy polish before release.", map[string]any{"reviewer": "Demo User"}},
 	}
 	for _, artifact := range artifacts {
 		metadataJSON, err := jsonMarshal(artifact.Metadata)
