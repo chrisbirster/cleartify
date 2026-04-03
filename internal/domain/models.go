@@ -14,10 +14,31 @@ type Organization struct {
 	Name string `json:"name"`
 }
 
+type Workspace struct {
+	ID   string `json:"id"`
+	Slug string `json:"slug"`
+	Name string `json:"name"`
+}
+
 type AuthSession struct {
-	Authenticated bool          `json:"authenticated"`
-	User          *User         `json:"user,omitempty"`
-	Organization  *Organization `json:"organization,omitempty"`
+	Authenticated   bool          `json:"authenticated"`
+	User            *User         `json:"user,omitempty"`
+	Organization    *Organization `json:"organization,omitempty"`
+	Workspace       *Workspace    `json:"workspace,omitempty"`
+	NeedsOnboarding bool          `json:"needsOnboarding"`
+}
+
+type Me struct {
+	User            User          `json:"user"`
+	Organization    *Organization `json:"organization,omitempty"`
+	Workspace       *Workspace    `json:"workspace,omitempty"`
+	NeedsOnboarding bool          `json:"needsOnboarding"`
+}
+
+type Team struct {
+	Workspace    Workspace      `json:"workspace"`
+	Organization *Organization  `json:"organization,omitempty"`
+	CurrentUser  *User          `json:"currentUser,omitempty"`
 }
 
 type Signal struct {
@@ -57,6 +78,8 @@ type Artifact struct {
 	ArtifactType string         `json:"artifactType"`
 	Title        string         `json:"title"`
 	Body         string         `json:"body"`
+	LinkType     string         `json:"linkType,omitempty"`
+	URL          string         `json:"url,omitempty"`
 	Metadata     map[string]any `json:"metadata,omitempty"`
 	CreatedAt    time.Time      `json:"createdAt"`
 }

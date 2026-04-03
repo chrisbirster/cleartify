@@ -18,9 +18,13 @@ func TestRoutesRegisterKnownAPIEndpoints(t *testing.T) {
 	for _, path := range []string{
 		"/api/health",
 		"/api/auth/session",
+		"/api/me/onboarding/complete",
 		"/api/signals",
 		"/api/clusters",
 		"/api/work-objects",
+		"/login",
+		"/auth/callback",
+		"/logout",
 		"/api/work-objects/wo_1/core",
 		"/api/work-objects/wo_1/prototype",
 		"/api/work-objects/wo_1/status",
@@ -32,7 +36,7 @@ func TestRoutesRegisterKnownAPIEndpoints(t *testing.T) {
 		"/api/work-objects/wo_1/task-breakdown-artifact",
 	} {
 		method := http.MethodGet
-		if path == "/api/work-objects/wo_1/core" || path == "/api/work-objects/wo_1/prototype" || path == "/api/work-objects/wo_1/status" || path == "/api/work-objects/wo_1/priority" || path == "/api/work-objects/wo_1/release-ready" || path == "/api/work-objects/wo_1/decisions" || path == "/api/work-objects/wo_1/artifacts" || path == "/api/work-objects/wo_1/implementation-artifact" || path == "/api/work-objects/wo_1/task-breakdown-artifact" {
+		if path == "/api/me/onboarding/complete" || path == "/api/work-objects/wo_1/core" || path == "/api/work-objects/wo_1/prototype" || path == "/api/work-objects/wo_1/status" || path == "/api/work-objects/wo_1/priority" || path == "/api/work-objects/wo_1/release-ready" || path == "/api/work-objects/wo_1/decisions" || path == "/api/work-objects/wo_1/artifacts" || path == "/api/work-objects/wo_1/implementation-artifact" || path == "/api/work-objects/wo_1/task-breakdown-artifact" {
 			method = http.MethodPost
 		}
 		request := httptest.NewRequest(method, path, nil)

@@ -12,8 +12,23 @@ import (
 
 type DataStore interface {
 	ListSignals(ctx context.Context) ([]domain.Signal, error)
+	LookupSignal(ctx context.Context, signalID string) (domain.Signal, error)
+	CreateSignal(ctx context.Context, sourceType string, sourceID string, title string, body string, externalURL string) (domain.Signal, error)
+	UpdateSignal(ctx context.Context, signalID string, sourceType string, sourceID string, title string, body string, externalURL string) (domain.Signal, error)
+	DeleteSignal(ctx context.Context, signalID string) error
 	ListClusters(ctx context.Context) ([]domain.Cluster, error)
+	ResolveCluster(ctx context.Context, clusterID string) (domain.Cluster, error)
 	ListWorkObjects(ctx context.Context) ([]domain.WorkObject, error)
+	ListDecisions(ctx context.Context) ([]domain.Decision, error)
+	LookupDecision(ctx context.Context, decisionID string) (domain.Decision, error)
+	CreateDecision(ctx context.Context, workObjectID string, title string, summary string, rationale string) (domain.Decision, error)
+	UpdateDecision(ctx context.Context, decisionID string, workObjectID string, title string, summary string, rationale string) (domain.Decision, error)
+	DeleteDecision(ctx context.Context, decisionID string) error
+	ListArtifacts(ctx context.Context) ([]domain.Artifact, error)
+	LookupArtifact(ctx context.Context, artifactID string) (domain.Artifact, error)
+	CreateArtifact(ctx context.Context, workObjectID string, artifactType string, title string, body string, linkType string, externalURL string) (domain.Artifact, error)
+	UpdateArtifact(ctx context.Context, artifactID string, workObjectID string, artifactType string, title string, body string, linkType string, externalURL string) (domain.Artifact, error)
+	DeleteArtifact(ctx context.Context, artifactID string) error
 	LookupDraftPlanForWorkObject(ctx context.Context, workObjectID string) (*domain.DraftPlan, error)
 	GenerateDraftPlanForWorkObject(ctx context.Context, workObjectID string) (domain.DraftPlan, error)
 	UpdateDraftPlanForWorkObject(ctx context.Context, workObjectID string, overview string, implementationSteps []string, edgeCases []string, openQuestions []string) (domain.DraftPlan, error)
@@ -46,7 +61,7 @@ func New(cfg config.Config, store DataStore, authService auth.Service, frontend 
 		frontend:    frontend,
 		mux:         http.NewServeMux(),
 	}
-	server.staticAssets = http.StripPrefix("/app/", http.FileServer(http.FS(frontend)))
+	server.staticAssets = http.FileServer(http.FS(frontend))
 	server.registerRoutes()
 	return server, nil
 }

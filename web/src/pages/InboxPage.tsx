@@ -1,14 +1,30 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Effect } from "effect";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { resolveCluster } from "../lib/api";
 import type { Cluster } from "../lib/types";
 
 type InboxPageProps = {
   clusters: Cluster[];
+  onDataChanged?: () => Promise<unknown>;
 };
 
-export function InboxPage({ clusters }: InboxPageProps) {
+export function InboxPage({ clusters, onDataChanged }: InboxPageProps) {
+  const [resolving, setResolving] = useState<Record<string, boolean>>({});
+
+  async function handleResolve(clusterId: string) {
+    setResolving((current) => ({ ...current, [clusterId]: true }));
+    try {
+      await Effect.runPromise(resolveCluster(clusterId));
+      await onDataChanged?.();
+    } finally {
+      setResolving((current) => ({ ...current, [clusterId]: false }));
+    }
+  }
+
   if (clusters.length === 0) {
     return <EmptyState title="No Clusters yet" description="Seeded Signals will appear here as soon as they are grouped into a Context Inbox." />;
   }
@@ -55,9 +71,23 @@ export function InboxPage({ clusters }: InboxPageProps) {
                     {cluster.status}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-primary transition-transform group-hover:translate-x-0.5">
-                  Open cluster
-                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition hover:border-border/70 hover:text-foreground"
+                    disabled={Boolean(resolving[cluster.id])}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      void handleResolve(cluster.id);
+                    }}
+                    type="button"
+                  >
+                    {resolving[cluster.id] ? "Resolving…" : "Resolve"}
+                  </button>
+                  <span className="text-sm font-medium text-primary transition-transform group-hover:translate-x-0.5">
+                    Open cluster
+                  </span>
+                </div>
               </div>
             </div>
           </Link>

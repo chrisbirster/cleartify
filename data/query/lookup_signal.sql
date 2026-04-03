@@ -1,0 +1,3 @@
+SELECT id, source_type, source_id, title, body, COALESCE(url, ''), metadata_json, created_at
+FROM signals
+WHERE id = ?;

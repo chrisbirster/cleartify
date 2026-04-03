@@ -100,6 +100,17 @@ func decodeJSONMap(raw sql.NullString) (map[string]any, error) {
 	return value, nil
 }
 
+func encodeJSONMap(value map[string]any) (any, error) {
+	if len(value) == 0 {
+		return nil, nil
+	}
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	return string(encoded), nil
+}
+
 func decodeTime(raw string) (time.Time, error) {
 	return time.Parse(time.RFC3339, raw)
 }

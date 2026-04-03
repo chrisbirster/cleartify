@@ -74,7 +74,7 @@ describe("PlanPage", () => {
     expect(screen.getByRole("button", { name: "Refresh draft plan" })).toBeInTheDocument();
     expect(screen.getByText("Implementation steps")).toBeInTheDocument();
     expect(screen.getByText('Carry forward the linked Cluster context from "Onboarding activation clarity".')).toBeInTheDocument();
-    expect(screen.getByText("Open prototype")).toHaveAttribute("href", "https://example.com/prototype/onboarding-refresh");
+    expect(screen.getByText("Open prototype")).toHaveAttribute("href", "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1");
     expect(screen.getByText("Onboarding activation clarity")).toBeInTheDocument();
   });
 

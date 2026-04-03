@@ -54,6 +54,7 @@ describe("ReviewPage", () => {
     expect(screen.getByText("Ship the five-screen onboarding slice first")).toBeInTheDocument();
     expect(screen.getByText("Onboarding scope review notes")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mark release-ready" })).toBeInTheDocument();
+    expect(screen.getByText(/marked release-ready and sent into the release queue/i)).toBeInTheDocument();
   });
 
   it("renders a polished loading state while the persisted draft plan is loading", () => {

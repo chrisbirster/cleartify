@@ -21,7 +21,28 @@ func NewDemoAuthService() *DemoAuthService {
 
 func (s *DemoAuthService) CurrentSession(context.Context, *http.Request) (domain.AuthSession, error) {
 	return domain.AuthSession{
-		Authenticated: true,
-		User:          demoUser,
+		Authenticated:   true,
+		User:            demoUser,
+		Workspace:       demoWorkspace(),
+		NeedsOnboarding: false,
 	}, nil
+}
+
+func (s *DemoAuthService) LoginURL(context.Context, *http.Request) (string, error) {
+	return "/", nil
+}
+
+func (s *DemoAuthService) Authenticate(context.Context, *http.Request) (CallbackResult, error) {
+	return CallbackResult{
+		SessionID: "ses_demo",
+		ReturnTo:  "/",
+	}, nil
+}
+
+func (s *DemoAuthService) LogoutURL(context.Context, *http.Request) (string, error) {
+	return "/", nil
+}
+
+func (s *DemoAuthService) CompleteOnboarding(context.Context, *http.Request) (domain.AuthSession, error) {
+	return s.CurrentSession(context.Background(), nil)
 }

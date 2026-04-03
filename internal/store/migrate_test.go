@@ -56,6 +56,26 @@ func TestMigrateIsIdempotentAndCreatesTables(t *testing.T) {
 	if !hasReleaseReadyAt {
 		t.Fatal("expected work_objects.release_ready_at column to exist")
 	}
+
+	for _, columnCheck := range []struct {
+		table  string
+		column string
+	}{
+		{table: "users", column: "onboarding_completed_at"},
+		{table: "sessions", column: "refresh_token"},
+		{table: "sessions", column: "workos_session_id"},
+		{table: "sessions", column: "organization_id"},
+		{table: "sessions", column: "organization_name"},
+		{table: "sessions", column: "access_token_expires_at"},
+	} {
+		hasColumn, err := tableHasColumn(store.DB, columnCheck.table, columnCheck.column)
+		if err != nil {
+			t.Fatalf("expected %s.%s table info query: %v", columnCheck.table, columnCheck.column, err)
+		}
+		if !hasColumn {
+			t.Fatalf("expected %s.%s column to exist", columnCheck.table, columnCheck.column)
+		}
+	}
 }
 
 func TestMigrateReturnsStatementError(t *testing.T) {
@@ -102,6 +122,8 @@ func TestEnsureNullableTextColumnAddsMissingColumn(t *testing.T) {
 
 	store := openRawStore(t)
 	mustExec(t, store.DB, `CREATE TABLE work_objects (id TEXT PRIMARY KEY);`)
+	mustExec(t, store.DB, `CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT, display_name TEXT, created_at TEXT);`)
+	mustExec(t, store.DB, `CREATE TABLE sessions (id TEXT PRIMARY KEY, user_id TEXT, created_at TEXT);`)
 
 	if err := ensureNullableTextColumn(store.DB, "work_objects", "cluster_id"); err != nil {
 		t.Fatalf("expected cluster_id column to be added: %v", err)
@@ -137,6 +159,36 @@ func TestEnsureNullableTextColumnAddsMissingColumn(t *testing.T) {
 	}
 	if !hasReleaseReadyAt {
 		t.Fatal("expected work_objects.release_ready_at column to exist")
+	}
+
+	if err := ensureNullableTextColumn(store.DB, "users", "onboarding_completed_at"); err != nil {
+		t.Fatalf("expected users.onboarding_completed_at column to be added: %v", err)
+	}
+	hasOnboardingCompletedAt, err := tableHasColumn(store.DB, "users", "onboarding_completed_at")
+	if err != nil {
+		t.Fatalf("expected users table info query: %v", err)
+	}
+	if !hasOnboardingCompletedAt {
+		t.Fatal("expected users.onboarding_completed_at column to exist")
+	}
+
+	for _, column := range []string{
+		"refresh_token",
+		"workos_session_id",
+		"organization_id",
+		"organization_name",
+		"access_token_expires_at",
+	} {
+		if err := ensureNullableTextColumn(store.DB, "sessions", column); err != nil {
+			t.Fatalf("expected sessions.%s column to be added: %v", column, err)
+		}
+		hasColumn, err := tableHasColumn(store.DB, "sessions", column)
+		if err != nil {
+			t.Fatalf("expected sessions table info query for %s: %v", column, err)
+		}
+		if !hasColumn {
+			t.Fatalf("expected sessions.%s column to exist", column)
+		}
 	}
 }
 
@@ -203,6 +255,28 @@ func TestMigrateReturnsPhase5RecordError(t *testing.T) {
 	}
 	if callCount != 4 {
 		t.Fatalf("expected 4 record migration calls, got %d", callCount)
+	}
+}
+
+func TestMigrateReturnsTrancheBRecordError(t *testing.T) {
+	originalRecordMigration := recordMigration
+	t.Cleanup(func() { recordMigration = originalRecordMigration })
+
+	callCount := 0
+	recordMigration = func(_ *sql.DB, name, _ string) error {
+		callCount++
+		if name == "tranche_b_users_onboarding_completed_at" {
+			return errors.New("tranche b failed")
+		}
+		return nil
+	}
+
+	store := openRawStore(t)
+	if err := store.Migrate(); err == nil {
+		t.Fatal("expected tranche b migration record error")
+	}
+	if callCount != 5 {
+		t.Fatalf("expected 5 record migration calls, got %d", callCount)
 	}
 }
 

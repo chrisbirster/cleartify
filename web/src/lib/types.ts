@@ -4,11 +4,37 @@ export type User = {
   displayName: string;
 };
 
+export const SIGNAL_SOURCE_TYPES = [
+  "feedback",
+  "github",
+  "google_doc",
+  "jira",
+  "linear",
+  "note",
+  "notion",
+  "prototype",
+  "release",
+  "slack",
+] as const;
+
+export const ARTIFACT_LINK_TYPES = [
+  "confluence",
+  "figma",
+  "github_issue",
+  "github_pr",
+  "google_doc",
+  "generic",
+  "notion",
+  "slack_thread",
+] as const;
+
 export const WORK_OBJECT_STATUSES = ["planning", "ready", "in_progress", "in_review", "shipped"] as const;
 export const WORK_OBJECT_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 
 export type WorkObjectStatus = (typeof WORK_OBJECT_STATUSES)[number];
 export type WorkObjectPriority = (typeof WORK_OBJECT_PRIORITIES)[number];
+export type SignalSourceType = (typeof SIGNAL_SOURCE_TYPES)[number];
+export type ArtifactLinkType = (typeof ARTIFACT_LINK_TYPES)[number];
 export type WorkObjectCoreFieldsInput = {
   title: string;
   summary: string;
@@ -24,9 +50,25 @@ export type DecisionInput = {
   rationale: string;
 };
 export type ArtifactInput = {
+  workObjectId?: string;
   type: string;
   title: string;
   body: string;
+  linkType?: ArtifactLinkType | "";
+  url?: string;
+};
+export type SignalInput = {
+  sourceType: SignalSourceType;
+  sourceId: string;
+  title: string;
+  body: string;
+  url?: string;
+};
+export type DecisionRecordInput = {
+  workObjectId: string;
+  title: string;
+  summary: string;
+  rationale: string;
 };
 
 export type DraftPlan = {
@@ -58,6 +100,14 @@ export function formatArtifactType(artifactType: string) {
   return artifactType.replaceAll("_", " ");
 }
 
+export function formatSignalSourceType(sourceType: string) {
+  return sourceType.replaceAll("_", " ");
+}
+
+export function formatArtifactLinkType(linkType: string) {
+  return linkType.replaceAll("_", " ");
+}
+
 export function formatClusterStatus(status: string) {
   return status.replaceAll("_", " ");
 }
@@ -68,10 +118,31 @@ export type Organization = {
   name: string;
 };
 
+export type Workspace = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+export type MeResponse = {
+  user: User;
+  organization?: Organization;
+  workspace?: Workspace;
+  needsOnboarding: boolean;
+};
+
+export type TeamResponse = {
+  workspace: Workspace;
+  organization?: Organization;
+  currentUser?: User;
+};
+
 export type AuthSessionResponse = {
   authenticated: boolean;
   user?: User;
   organization?: Organization;
+  workspace?: Workspace;
+  needsOnboarding: boolean;
 };
 
 export type Signal = {
@@ -111,6 +182,8 @@ export type Artifact = {
   artifactType: string;
   title: string;
   body: string;
+  linkType?: string;
+  url?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
 };

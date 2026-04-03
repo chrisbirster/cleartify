@@ -11,8 +11,10 @@ type Config struct {
 	DatabasePath         string
 	AppPublicURL         string
 	AppMarketingURL      string
+	AuthMode             string
 	WorkOSAPIKey         string
 	WorkOSClientID       string
+	WorkOSRedirectURI    string
 	WorkOSCookiePassword string
 	SeedDemo             bool
 }
@@ -28,13 +30,22 @@ func Load(getenv func(string) string) (Config, error) {
 		return Config{}, fmt.Errorf("invalid SEED_DEMO: %w", err)
 	}
 
+	authMode := firstNonEmpty(getenv("AUTH_MODE"), "workos")
+	if authMode != "workos" && authMode != "demo" {
+		return Config{}, fmt.Errorf("invalid AUTH_MODE %q", authMode)
+	}
+
+	appPublicURL := firstNonEmpty(getenv("APP_PUBLIC_URL"), "http://localhost:3000")
+
 	return Config{
 		Port:                 port,
 		DatabasePath:         firstNonEmpty(getenv("DATABASE_PATH"), ".tasktmp/dev.sqlite.db"),
-		AppPublicURL:         firstNonEmpty(getenv("APP_PUBLIC_URL"), "http://localhost:3000"),
+		AppPublicURL:         appPublicURL,
 		AppMarketingURL:      firstNonEmpty(getenv("APP_MARKETING_URL"), "http://localhost:4173"),
+		AuthMode:             authMode,
 		WorkOSAPIKey:         strings.TrimSpace(getenv("WORKOS_API_KEY")),
 		WorkOSClientID:       strings.TrimSpace(getenv("WORKOS_CLIENT_ID")),
+		WorkOSRedirectURI:    firstNonEmpty(getenv("WORKOS_REDIRECT_URI"), appPublicURL+"/auth/callback"),
 		WorkOSCookiePassword: strings.TrimSpace(getenv("WORKOS_COOKIE_PASSWORD")),
 		SeedDemo:             seedDemo,
 	}, nil
@@ -46,6 +57,14 @@ func (c Config) Addr() string {
 
 func (c Config) WorkOSConfigured() bool {
 	return c.WorkOSAPIKey != "" && c.WorkOSClientID != "" && c.WorkOSCookiePassword != ""
+}
+
+func (c Config) DemoAuthEnabled() bool {
+	return c.AuthMode == "demo"
+}
+
+func (c Config) WorkOSAuthEnabled() bool {
+	return c.AuthMode == "workos"
 }
 
 func firstNonEmpty(values ...string) string {

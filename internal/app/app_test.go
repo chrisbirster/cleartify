@@ -22,7 +22,7 @@ func testFrontendFS() fs.FS {
 	}
 }
 
-func TestNewUsesDemoAuthByDefault(t *testing.T) {
+func TestNewUsesUnavailableAuthByDefault(t *testing.T) {
 	t.Parallel()
 
 	cfg := config.Config{
@@ -38,11 +38,35 @@ func TestNewUsesDemoAuthByDefault(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = application.Close() })
 
-	if _, ok := application.Auth.(*auth.DemoAuthService); !ok {
-		t.Fatalf("expected demo auth service, got %T", application.Auth)
+	if _, ok := application.Auth.(*auth.UnavailableAuthService); !ok {
+		t.Fatalf("expected unavailable auth service, got %T", application.Auth)
 	}
 	if application.Handler == nil {
 		t.Fatal("expected handler to be initialized")
+	}
+}
+
+func TestNewUsesExplicitDemoMode(t *testing.T) {
+	t.Parallel()
+
+	cfg := config.Config{
+		Port:                 "0",
+		DatabasePath:         t.TempDir() + "/cleartify.db",
+		AppPublicURL:         "http://localhost:3000",
+		AppMarketingURL:      "http://localhost:4173",
+		AuthMode:             "demo",
+		WorkOSCookiePassword: "demo-secret",
+		SeedDemo:             true,
+	}
+
+	application, err := New(cfg, testFrontendFS())
+	if err != nil {
+		t.Fatalf("expected app to build: %v", err)
+	}
+	t.Cleanup(func() { _ = application.Close() })
+
+	if _, ok := application.Auth.(*auth.DemoModeAuthService); !ok {
+		t.Fatalf("expected demo mode auth service, got %T", application.Auth)
 	}
 }
 
@@ -52,16 +76,19 @@ func TestNewUsesWorkOSWhenConfigured(t *testing.T) {
 	originalFactory := newWorkOSService
 	t.Cleanup(func() { newWorkOSService = originalFactory })
 
-	newWorkOSService = func(config.Config) (auth.Service, error) {
+	newWorkOSService = func(config.Config, auth.SessionStore) (auth.Service, error) {
 		return auth.NewDemoAuthService(), nil
 	}
 
 	cfg := config.Config{
 		Port:                 "0",
 		DatabasePath:         t.TempDir() + "/cleartify.db",
+		AppPublicURL:         "http://localhost:3000",
 		AppMarketingURL:      "http://localhost:4173",
+		AuthMode:             "workos",
 		WorkOSAPIKey:         "api",
 		WorkOSClientID:       "client",
+		WorkOSRedirectURI:    "http://localhost:3000/auth/callback",
 		WorkOSCookiePassword: "cookie",
 	}
 
@@ -124,16 +151,19 @@ func TestNewReturnsWorkOSError(t *testing.T) {
 	originalFactory := newWorkOSService
 	t.Cleanup(func() { newWorkOSService = originalFactory })
 
-	newWorkOSService = func(config.Config) (auth.Service, error) {
+	newWorkOSService = func(config.Config, auth.SessionStore) (auth.Service, error) {
 		return nil, errors.New("workos failed")
 	}
 
 	cfg := config.Config{
 		Port:                 "0",
 		DatabasePath:         filepath.Join(t.TempDir(), "cleartify.db"),
+		AppPublicURL:         "http://localhost:3000",
 		AppMarketingURL:      "http://localhost:4173",
+		AuthMode:             "workos",
 		WorkOSAPIKey:         "api",
 		WorkOSClientID:       "client",
+		WorkOSRedirectURI:    "http://localhost:3000/auth/callback",
 		WorkOSCookiePassword: "cookie",
 	}
 

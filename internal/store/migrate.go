@@ -13,6 +13,12 @@ var addNullableTextColumnTemplate = sqldata.MustQuery("add_nullable_text_column.
 var phase1WorkObjectsClusterIDMigration = sqldata.MustMigration("001_phase1_work_objects_cluster_id.sql")
 var phase3WorkObjectsPrototypeNoteMigration = sqldata.MustMigration("002_phase3_work_objects_prototype_note.sql")
 var phase5WorkObjectsReleaseReadyAtMigration = sqldata.MustMigration("003_phase5_work_objects_release_ready_at.sql")
+var trancheBUsersOnboardingCompletedAtMigration = sqldata.MustMigration("004_tranche_b_users_onboarding_completed_at.sql")
+var trancheBSessionsRefreshTokenMigration = sqldata.MustMigration("005_tranche_b_sessions_refresh_token.sql")
+var trancheBSessionsWorkOSSessionIDMigration = sqldata.MustMigration("006_tranche_b_sessions_workos_session_id.sql")
+var trancheBSessionsOrganizationIDMigration = sqldata.MustMigration("007_tranche_b_sessions_organization_id.sql")
+var trancheBSessionsOrganizationNameMigration = sqldata.MustMigration("008_tranche_b_sessions_organization_name.sql")
+var trancheBSessionsAccessTokenExpiresAtMigration = sqldata.MustMigration("009_tranche_b_sessions_access_token_expires_at.sql")
 
 var recordMigration = func(db *sql.DB, name, appliedAt string) error {
 	_, err := db.Exec(insertMigrationStatement, name, appliedAt)
@@ -43,6 +49,24 @@ func (s *Store) Migrate() error {
 	if err := ensureNullableTextColumn(s.DB, "work_objects", "release_ready_at"); err != nil {
 		return fmt.Errorf("ensure work_objects.release_ready_at: %w", err)
 	}
+	if err := ensureNullableTextColumn(s.DB, "users", "onboarding_completed_at"); err != nil {
+		return fmt.Errorf("ensure users.onboarding_completed_at: %w", err)
+	}
+	if err := ensureNullableTextColumn(s.DB, "sessions", "refresh_token"); err != nil {
+		return fmt.Errorf("ensure sessions.refresh_token: %w", err)
+	}
+	if err := ensureNullableTextColumn(s.DB, "sessions", "workos_session_id"); err != nil {
+		return fmt.Errorf("ensure sessions.workos_session_id: %w", err)
+	}
+	if err := ensureNullableTextColumn(s.DB, "sessions", "organization_id"); err != nil {
+		return fmt.Errorf("ensure sessions.organization_id: %w", err)
+	}
+	if err := ensureNullableTextColumn(s.DB, "sessions", "organization_name"); err != nil {
+		return fmt.Errorf("ensure sessions.organization_name: %w", err)
+	}
+	if err := ensureNullableTextColumn(s.DB, "sessions", "access_token_expires_at"); err != nil {
+		return fmt.Errorf("ensure sessions.access_token_expires_at: %w", err)
+	}
 
 	if err := recordMigration(s.DB, "phase0_init", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		return fmt.Errorf("record migration: %w", err)
@@ -55,6 +79,24 @@ func (s *Store) Migrate() error {
 	}
 	if err := recordMigration(s.DB, "phase5_work_objects_release_ready_at", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		return fmt.Errorf("record phase5 migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "tranche_b_users_onboarding_completed_at", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record tranche b users migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "tranche_b_sessions_refresh_token", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record tranche b sessions refresh token migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "tranche_b_sessions_workos_session_id", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record tranche b sessions workos session id migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "tranche_b_sessions_organization_id", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record tranche b sessions organization id migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "tranche_b_sessions_organization_name", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record tranche b sessions organization name migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "tranche_b_sessions_access_token_expires_at", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record tranche b sessions access token expiry migration: %w", err)
 	}
 
 	return nil
@@ -81,6 +123,24 @@ func ensureNullableTextColumn(db *sql.DB, table, column string) error {
 	}
 	if table == "work_objects" && column == "release_ready_at" {
 		statement = phase5WorkObjectsReleaseReadyAtMigration
+	}
+	if table == "users" && column == "onboarding_completed_at" {
+		statement = trancheBUsersOnboardingCompletedAtMigration
+	}
+	if table == "sessions" && column == "refresh_token" {
+		statement = trancheBSessionsRefreshTokenMigration
+	}
+	if table == "sessions" && column == "workos_session_id" {
+		statement = trancheBSessionsWorkOSSessionIDMigration
+	}
+	if table == "sessions" && column == "organization_id" {
+		statement = trancheBSessionsOrganizationIDMigration
+	}
+	if table == "sessions" && column == "organization_name" {
+		statement = trancheBSessionsOrganizationNameMigration
+	}
+	if table == "sessions" && column == "access_token_expires_at" {
+		statement = trancheBSessionsAccessTokenExpiresAtMigration
 	}
 
 	if _, err := db.Exec(statement); err != nil {

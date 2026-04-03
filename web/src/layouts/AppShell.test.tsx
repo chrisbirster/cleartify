@@ -9,7 +9,7 @@ describe("AppShell", () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
         <AppShell
-          session={{ authenticated: true, user: { id: "u1", email: "demo@cleartify.com", displayName: "Demo User" } }}
+          session={{ authenticated: true, needsOnboarding: false, user: { id: "u1", email: "demo@cleartify.com", displayName: "Demo User" } }}
           navItems={[{ label: "Today", to: "/" }]}
     >
       <div>Shell child</div>

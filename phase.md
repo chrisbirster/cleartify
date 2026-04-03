@@ -1,8 +1,8 @@
 # Cleartify Phase Tracker
 
-Last updated: 2026-04-01
+Last updated: 2026-04-02
 
-Current target: MVP complete
+Current target: Production readiness verification and launch prep
 
 ## Status Summary
 
@@ -198,5 +198,9 @@ Completed slices:
 ## Next Recommended Focus
 
 1. Treat the MVP as complete across Phases 0 through 6.
-2. Keep future work narrow and intentional: hosted provider integration, external agent/tool surface, and optional release-detail/outcome-note enhancements.
-3. Avoid reopening completed MVP phases unless a concrete demo or product gap appears.
+2. Use `docs/production-readiness-a.md`, `docs/production-readiness-b.md`, and `docs/production-readiness-c.md` for staged production-readiness work.
+3. Tranche A is complete: Work Object detail no longer crashes on missing collections, badge contrast is corrected, seeded demo links are coherent, release queue copy is explicit, and the hero-path smoke test is in place.
+4. Tranche B is complete in code: hosted WorkOS AuthKit login/callback/logout routes are in place, session storage is persisted and reused, the session payload now includes authenticated user, workspace context, and `needsOnboarding`, and first-run onboarding completion persists through `POST /api/me/onboarding/complete`. Live WorkOS tenant verification remains a manual production verification item before rollout.
+5. Tranche C is complete: `/me`, `/team`, top-bar profile and workspace links, `POST /api/clusters/:id/resolve`, default inbox filtering for resolved Clusters, `Signal`/`Decision`/`Artifact` CRUD, and lightweight external link typing and validation are all in place.
+6. Keep hosted WorkOS AuthKit as the auth direction, treat feedback/docs as external integrations first, and treat “articles” as Artifacts.
+7. Next focus: run live WorkOS tenant verification, bug-bash the new operational surfaces, and then decide whether to move into deployment/feedback collection or the next post-MVP product expansion.

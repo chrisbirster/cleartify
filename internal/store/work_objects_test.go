@@ -187,6 +187,35 @@ func TestCreateWorkObjectFromClusterPersistsClusterLink(t *testing.T) {
 	}
 }
 
+func TestLookupWorkObjectNormalizesEmptyDecisionAndArtifactCollections(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t, true)
+
+	workObject, err := store.CreateWorkObjectFromCluster(context.Background(), "clu_product_memory")
+	if err != nil {
+		t.Fatalf("expected work object creation: %v", err)
+	}
+
+	loadedWorkObject, err := store.lookupWorkObject(context.Background(), workObject.ID)
+	if err != nil {
+		t.Fatalf("expected work object lookup: %v", err)
+	}
+
+	if loadedWorkObject.Decisions == nil {
+		t.Fatal("expected decisions to be normalized to an empty slice")
+	}
+	if loadedWorkObject.Artifacts == nil {
+		t.Fatal("expected artifacts to be normalized to an empty slice")
+	}
+	if len(loadedWorkObject.Decisions) != 0 {
+		t.Fatalf("expected no decisions, got %#v", loadedWorkObject.Decisions)
+	}
+	if len(loadedWorkObject.Artifacts) != 0 {
+		t.Fatalf("expected no artifacts, got %#v", loadedWorkObject.Artifacts)
+	}
+}
+
 func TestCreateWorkObjectFromClusterReturnsNotFound(t *testing.T) {
 	t.Parallel()
 
@@ -232,7 +261,7 @@ func TestGenerateImplementationArtifactForWorkObjectPersistsArtifact(t *testing.
 	if !strings.Contains(artifact.Body, "Overview") ||
 		!strings.Contains(artifact.Body, "Open questions") ||
 		!strings.Contains(artifact.Body, "Onboarding activation clarity (medium severity)") ||
-		!strings.Contains(artifact.Body, "https://example.com/prototype/onboarding-refresh") ||
+		!strings.Contains(artifact.Body, "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1") ||
 		!strings.Contains(artifact.Body, "Which prototype screens or states must ship in the first implementation pass?") {
 		t.Fatalf("expected derived artifact body to include persisted context, got %q", artifact.Body)
 	}
@@ -311,7 +340,7 @@ func TestGenerateTaskBreakdownArtifactForWorkObjectPersistsArtifact(t *testing.T
 	if !strings.Contains(artifact.Body, "Execution tasks") ||
 		!strings.Contains(artifact.Body, "1. Review the Work Object goal for") ||
 		!strings.Contains(artifact.Body, "Linked Cluster: Onboarding activation clarity (medium severity)") ||
-		!strings.Contains(artifact.Body, "Prototype link: https://example.com/prototype/onboarding-refresh") ||
+		!strings.Contains(artifact.Body, "Prototype link: https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1") ||
 		!strings.Contains(artifact.Body, "Open questions to resolve") {
 		t.Fatalf("expected derived task breakdown body to include persisted context, got %q", artifact.Body)
 	}
@@ -504,14 +533,14 @@ func TestUpdateWorkObjectPrototypePersistsChanges(t *testing.T) {
 	workObject, err := store.UpdateWorkObjectPrototype(
 		context.Background(),
 		"wo_mobile_perf",
-		"https://example.com/prototype/mobile-perf-v2",
+		"https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2",
 		"Updated prototype note for the first Prototype-to-Plan pass.",
 	)
 	if err != nil {
 		t.Fatalf("expected work object prototype update: %v", err)
 	}
 
-	if workObject.PrototypeURL != "https://example.com/prototype/mobile-perf-v2" {
+	if workObject.PrototypeURL != "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2" {
 		t.Fatalf("expected updated prototype url, got %q", workObject.PrototypeURL)
 	}
 	if workObject.PrototypeNote != "Updated prototype note for the first Prototype-to-Plan pass." {
@@ -527,7 +556,7 @@ func TestUpdateWorkObjectPrototypePersistsChanges(t *testing.T) {
 	if err := store.DB.QueryRow(`SELECT prototype_url, COALESCE(prototype_note, ''), updated_at FROM work_objects WHERE id = ?`, "wo_mobile_perf").Scan(&persistedURL, &persistedNote, &persistedUpdatedAt); err != nil {
 		t.Fatalf("expected persisted work object prototype: %v", err)
 	}
-	if persistedURL != "https://example.com/prototype/mobile-perf-v2" {
+	if persistedURL != "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2" {
 		t.Fatalf("expected persisted prototype url, got %q", persistedURL)
 	}
 	if persistedNote != "Updated prototype note for the first Prototype-to-Plan pass." {
@@ -551,7 +580,7 @@ func TestUpdateWorkObjectPrototypeReturnsNotFound(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t, true)
-	if _, err := store.UpdateWorkObjectPrototype(context.Background(), "missing", "https://example.com/prototype/missing", "Prototype note"); !errors.Is(err, sql.ErrNoRows) {
+	if _, err := store.UpdateWorkObjectPrototype(context.Background(), "missing", "https://www.figma.com/proto/cleartify-missing-work-object", "Prototype note"); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows, got %v", err)
 	}
 }

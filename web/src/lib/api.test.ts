@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it, vi, afterEach } from "vitest";
 
 import {
+  completeOnboarding,
   createArtifactForWorkObject,
   createDecisionForWorkObject,
   createWorkObjectFromCluster,
@@ -49,17 +50,51 @@ describe("api helpers", () => {
     vi.stubGlobal(
       "fetch",
       fetchMock
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ authenticated: true }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ authenticated: true, needsOnboarding: false }) })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "sig_1" }] })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "clu_1" }] })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "wo_1" }] }),
     );
 
     await expect(Effect.runPromise(loadAppData())).resolves.toEqual({
-      session: { authenticated: true },
+      session: { authenticated: true, needsOnboarding: false },
       signals: [{ id: "sig_1" }],
       clusters: [{ id: "clu_1" }],
       workObjects: [{ id: "wo_1" }],
+    });
+  });
+
+  it("loadAppData stops after the session fetch when the user is unauthenticated", async () => {
+    vi.stubGlobal(
+      "fetch",
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ authenticated: false, needsOnboarding: false }) }),
+    );
+
+    await expect(Effect.runPromise(loadAppData())).resolves.toEqual({
+      session: { authenticated: false, needsOnboarding: false },
+      signals: [],
+      clusters: [],
+      workObjects: [],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("completeOnboarding posts to the onboarding completion endpoint", async () => {
+    vi.stubGlobal(
+      "fetch",
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({ authenticated: true, needsOnboarding: false }),
+      }),
+    );
+
+    await expect(Effect.runPromise(completeOnboarding())).resolves.toEqual({
+      authenticated: true,
+      needsOnboarding: false,
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/me/onboarding/complete", {
+      method: "POST",
+      headers: expect.any(Headers),
     });
   });
 
@@ -245,26 +280,26 @@ describe("api helpers", () => {
       "fetch",
       fetchMock.mockResolvedValue({
         ok: true,
-        json: async () => ({ id: "wo_mobile_perf", prototypeUrl: "https://example.com/prototype/mobile-perf-v2" }),
+        json: async () => ({ id: "wo_mobile_perf", prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2" }),
       }),
     );
 
     await expect(
       Effect.runPromise(
         updateWorkObjectPrototype("wo_mobile_perf", {
-          prototypeUrl: "https://example.com/prototype/mobile-perf-v2",
+          prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2",
           prototypeNote: "Updated prototype note",
         }),
       ),
     ).resolves.toEqual({
       id: "wo_mobile_perf",
-      prototypeUrl: "https://example.com/prototype/mobile-perf-v2",
+      prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2",
     });
     expect(fetchMock).toHaveBeenCalledWith("/api/work-objects/wo_mobile_perf/prototype", {
       method: "POST",
       headers: expect.any(Headers),
       body: JSON.stringify({
-        prototypeUrl: "https://example.com/prototype/mobile-perf-v2",
+        prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2",
         prototypeNote: "Updated prototype note",
       }),
     });

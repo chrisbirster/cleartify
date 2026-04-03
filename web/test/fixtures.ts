@@ -3,10 +3,16 @@ import type { AppData } from "../src/lib/types";
 export const appDataFixture: AppData = {
   session: {
     authenticated: true,
+    needsOnboarding: false,
     user: {
       id: "usr_demo",
       email: "demo@cleartify.com",
       displayName: "Demo User",
+    },
+    workspace: {
+      id: "wrk_demo",
+      slug: "cleartify-demo-team",
+      name: "Cleartify Demo Team",
     },
   },
   signals: [
@@ -16,7 +22,7 @@ export const appDataFixture: AppData = {
       sourceId: "pr-234",
       title: "PR #234 needs context from original spec",
       body: "Code review is missing the original rationale for loading-state behavior.",
-      url: "https://example.com/pr/234",
+      url: "https://github.com/cleartifyhq/cleartify/pull/234",
       createdAt: "2026-03-01T09:10:00Z",
     },
     {
@@ -33,7 +39,7 @@ export const appDataFixture: AppData = {
       sourceId: "sl-222",
       title: "Onboarding design review highlighted setup friction",
       body: "The team agreed the current first-run flow feels dense and hides the success moment.",
-      url: "https://example.com/slack/222",
+      url: "https://acmehq.slack.com/archives/C02PRODUCT/p1710000002220000",
       createdAt: "2026-03-01T09:05:00Z",
     },
     {
@@ -42,7 +48,7 @@ export const appDataFixture: AppData = {
       sourceId: "pt-17",
       title: "Prototype attached for guided onboarding refresh",
       body: "Five approved screens cover welcome, workspace setup, teammate invite, empty state, and confirmation.",
-      url: "https://example.com/prototype/17",
+      url: "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1",
       createdAt: "2026-03-01T09:20:00Z",
     },
   ],
@@ -62,7 +68,7 @@ export const appDataFixture: AppData = {
           sourceId: "pr-234",
           title: "PR #234 needs context from original spec",
           body: "Code review is missing the original rationale for loading-state behavior.",
-          url: "https://example.com/pr/234",
+          url: "https://github.com/cleartifyhq/cleartify/pull/234",
           createdAt: "2026-03-01T09:10:00Z",
         },
       ],
@@ -82,7 +88,7 @@ export const appDataFixture: AppData = {
           sourceId: "sl-222",
           title: "Onboarding design review highlighted setup friction",
           body: "The team agreed the current first-run flow feels dense and hides the success moment.",
-          url: "https://example.com/slack/222",
+          url: "https://acmehq.slack.com/archives/C02PRODUCT/p1710000002220000",
           createdAt: "2026-03-01T09:05:00Z",
         },
         {
@@ -91,7 +97,7 @@ export const appDataFixture: AppData = {
           sourceId: "pt-17",
           title: "Prototype attached for guided onboarding refresh",
           body: "Five approved screens cover welcome, workspace setup, teammate invite, empty state, and confirmation.",
-          url: "https://example.com/prototype/17",
+          url: "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1",
           createdAt: "2026-03-01T09:20:00Z",
         },
       ],
@@ -108,7 +114,7 @@ export const appDataFixture: AppData = {
       priority: "high",
       ownerType: "user",
       ownerId: "usr_demo",
-      prototypeUrl: "https://example.com/prototype/mobile-perf",
+      prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v1",
       prototypeNote: "",
       createdAt: "2026-03-01T09:00:00Z",
       updatedAt: "2026-03-01T09:45:00Z",
@@ -143,7 +149,7 @@ export const appDataFixture: AppData = {
       priority: "medium",
       ownerType: "user",
       ownerId: "usr_demo",
-      prototypeUrl: "https://example.com/prototype/onboarding-refresh",
+      prototypeUrl: "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1",
       prototypeNote: "The approved prototype covers five screens: welcome, workspace setup, teammate invite, empty state, and success confirmation.",
       createdAt: "2026-03-01T09:05:00Z",
       updatedAt: "2026-03-01T10:15:00Z",

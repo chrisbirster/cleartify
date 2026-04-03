@@ -108,8 +108,9 @@ const appOrigin = (
   (import.meta.env.DEV ? getDevAppOrigin() : 'https://app.cleartify.com')
 ).replace(/\/$/, '')
 
-const signupHref = `${appOrigin}/signup`
-const loginHref = `${appOrigin}/login`
+const appHref = `${appOrigin}/`
+const signupHref = `${appOrigin}/login?screenHint=sign-up`
+const loginHref = `${appOrigin}/login?screenHint=sign-in`
 const demoHref = '#demo'
 
 function getDevAppOrigin() {

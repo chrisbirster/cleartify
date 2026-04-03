@@ -24,6 +24,8 @@ type ReviewPageProps = {
 
 function panelTone(value: string) {
   switch (value) {
+    case "planning":
+      return "border-zinc-400/30 bg-zinc-400/16 text-zinc-100";
     case "urgent":
       return "border-rose-400/30 bg-rose-400/10 text-rose-100";
     case "high":
@@ -38,7 +40,7 @@ function panelTone(value: string) {
     case "shipped":
       return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
     case "low":
-      return "border-slate-400/20 bg-slate-400/10 text-slate-200";
+      return "border-slate-300/35 bg-slate-300/16 text-slate-100";
     default:
       return "border-border bg-secondary/70 text-muted-foreground";
   }
@@ -140,7 +142,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
       <PageHeader
         eyebrow="Review and release"
         title="Review"
-        description="Inspect the final execution context before this Work Object enters the release queue."
+        description="Inspect the final execution context before this Work Object is marked release-ready and sent into the release queue."
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.95fr)]">
@@ -193,6 +195,9 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
             <div className="mt-5 rounded-2xl border border-border/80 bg-background/55 p-4">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Goal</p>
               <p className="mt-2 text-sm leading-6 text-foreground/90">{visibleWorkObject.goal}</p>
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                Marking this Work Object release-ready adds it to <span className="text-foreground">Releases</span> so the team can review what is queued next.
+              </p>
             </div>
           </section>
 

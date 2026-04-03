@@ -15,6 +15,7 @@ describe("ReleasesPage", () => {
 
     expect(screen.getByRole("heading", { name: "Release queue" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No release-ready Work Objects yet" })).toBeInTheDocument();
+    expect(screen.getByText(/appears here after the Review checkpoint marks it release-ready/i)).toBeInTheDocument();
   });
 
   it("renders a simple list of release-ready Work Objects", () => {
@@ -34,6 +35,7 @@ describe("ReleasesPage", () => {
     );
 
     expect(screen.getByText("Guided onboarding refresh")).toBeInTheDocument();
+    expect(screen.getAllByText(/appear here after Review marks them release-ready/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Release-ready on Mar 31, 2026/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open review" })).toBeInTheDocument();
   });

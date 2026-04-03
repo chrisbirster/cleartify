@@ -42,6 +42,8 @@ func run(getenv func(string) string, stderr io.Writer) int {
 	}
 	defer application.Close()
 
+	_, _ = fmt.Fprintf(stderr, "Cleartify server listening on http://localhost:%s\n", cfg.Port)
+
 	if err := application.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		_, _ = fmt.Fprintf(stderr, "listen and serve: %v\n", err)
 		return 1

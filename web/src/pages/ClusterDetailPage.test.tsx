@@ -25,7 +25,7 @@ describe("ClusterDetailPage", () => {
     expect(screen.getByRole("heading", { name: "Mobile performance improvements" })).toBeInTheDocument();
     expect(screen.getByText("PR #234 needs context from original spec")).toBeInTheDocument();
     expect(screen.getByText("active")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open source" })).toHaveAttribute("href", "https://example.com/pr/234");
+    expect(screen.getByRole("link", { name: "Open source" })).toHaveAttribute("href", "https://github.com/cleartifyhq/cleartify/pull/234");
     expect(screen.getByRole("button", { name: "Create Work Object" })).toBeInTheDocument();
   });
 
@@ -201,13 +201,13 @@ describe("ClusterDetailPage", () => {
       updatedAt: "2026-03-29T14:30:00Z",
     });
 
-    expect(assignSpy).toHaveBeenCalledWith("/app/work/wo_new");
+    expect(assignSpy).toHaveBeenCalledWith("/work/wo_new");
   });
 
   it("uses the browser location assign helper", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    browserRedirect.assign("/app/work/wo_new");
+    browserRedirect.assign("/work/wo_new");
 
     expect(errorSpy).toHaveBeenCalled();
   });

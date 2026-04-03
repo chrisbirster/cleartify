@@ -38,8 +38,14 @@ type WorkObjectDetailPageProps = {
   onWorkObjectUpdated?: (workObject: WorkObject) => void;
 };
 
+function normalizeCollection<T>(items: T[] | null | undefined) {
+  return Array.isArray(items) ? items : [];
+}
+
 function panelTone(value: string) {
   switch (value) {
+    case "planning":
+      return "border-zinc-400/30 bg-zinc-400/16 text-zinc-100";
     case "urgent":
       return "border-rose-400/30 bg-rose-400/10 text-rose-100";
     case "high":
@@ -55,7 +61,7 @@ function panelTone(value: string) {
     case "shipped":
       return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
     case "low":
-      return "border-slate-400/20 bg-slate-400/10 text-slate-200";
+      return "border-slate-300/35 bg-slate-300/16 text-slate-100";
     default:
       return "border-border bg-secondary/70 text-muted-foreground";
   }
@@ -104,9 +110,10 @@ function buildArtifactDraft(): ArtifactInput {
   };
 }
 
-function mergeDecisions(decisions: Decision[], createdDecisions: Decision[]) {
-  const seen = new Set(decisions.map((decision) => decision.id));
-  const merged = [...decisions];
+function mergeDecisions(decisions: Decision[] | null | undefined, createdDecisions: Decision[]) {
+  const normalizedDecisions = normalizeCollection(decisions);
+  const seen = new Set(normalizedDecisions.map((decision) => decision.id));
+  const merged = [...normalizedDecisions];
   for (const decision of createdDecisions) {
     if (seen.has(decision.id)) {
       continue;
@@ -117,9 +124,10 @@ function mergeDecisions(decisions: Decision[], createdDecisions: Decision[]) {
   return merged;
 }
 
-function mergeArtifacts(artifacts: Artifact[], createdArtifacts: Artifact[]) {
-  const seen = new Set(artifacts.map((artifact) => artifact.id));
-  const merged = [...artifacts];
+function mergeArtifacts(artifacts: Artifact[] | null | undefined, createdArtifacts: Artifact[]) {
+  const normalizedArtifacts = normalizeCollection(artifacts);
+  const seen = new Set(normalizedArtifacts.map((artifact) => artifact.id));
+  const merged = [...normalizedArtifacts];
   for (const artifact of createdArtifacts) {
     if (seen.has(artifact.id)) {
       continue;
@@ -184,11 +192,13 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
   }
 
   const linkedCluster = workObject.clusterId ? clusters.find((entry) => entry.id === workObject.clusterId) : undefined;
+  const persistedDecisions = normalizeCollection(workObject.decisions);
+  const persistedArtifacts = normalizeCollection(workObject.artifacts);
   const evidenceSignals = linkedCluster?.signals ?? [];
   const visibleStatus = pendingStatus ?? workObject.status;
   const visiblePriority = pendingPriority ?? workObject.priority;
-  const visibleDecisions = mergeDecisions(workObject.decisions, createdDecisions);
-  const visibleArtifacts = mergeArtifacts(workObject.artifacts, createdArtifacts);
+  const visibleDecisions = mergeDecisions(persistedDecisions, createdDecisions);
+  const visibleArtifacts = mergeArtifacts(persistedArtifacts, createdArtifacts);
 
   const beginEditingCore = () => {
     setCoreDraft(buildCoreDraft(workObject));
@@ -355,7 +365,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
 
     Effect.runPromise(createDecisionForWorkObject(workObject.id, decisionDraft))
       .then((decision) => {
-        const nextVisibleDecisions = mergeDecisions(workObject.decisions, [...createdDecisions, decision]);
+        const nextVisibleDecisions = mergeDecisions(persistedDecisions, [...createdDecisions, decision]);
         setIsSavingDecision(false);
         setDecisionDraft(buildDecisionDraft());
         setDecisionError(null);
@@ -380,7 +390,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
 
     Effect.runPromise(createArtifactForWorkObject(workObject.id, artifactDraft))
       .then((artifact) => {
-        const nextVisibleArtifacts = mergeArtifacts(workObject.artifacts, [...createdArtifacts, artifact]);
+        const nextVisibleArtifacts = mergeArtifacts(persistedArtifacts, [...createdArtifacts, artifact]);
         setIsSavingArtifact(false);
         setArtifactDraft(buildArtifactDraft());
         setArtifactError(null);

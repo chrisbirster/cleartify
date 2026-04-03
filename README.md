@@ -104,19 +104,19 @@ For MVP, build the app with auth boundaries and route protection in mind, but do
 
 Marketing
 / -> marketing site
-Product app
-/app -> Today / overview
-/app/inbox -> Context Inbox
-/app/inbox/:clusterId -> Cluster detail
-/app/work -> Work Objects list
-/app/work/:workObjectId -> Work Object detail
-/app/prototypes -> Prototype list
-/app/prototypes/new -> Attach prototype
-/app/plans/:workObjectId -> Generated plan
-/app/agents/:workObjectId -> Agent Workspace
-/app/review/:workObjectId -> Review flow
-/app/releases -> Release list
-/app/releases/:releaseId -> Release detail
+Product app (app origin)
+/ -> Today / overview
+/inbox -> Context Inbox
+/inbox/:clusterId -> Cluster detail
+/work -> Work Objects list
+/work/:workObjectId -> Work Object detail
+/prototypes -> Prototype list
+/prototypes/new -> Attach prototype
+/plans/:workObjectId -> Generated plan
+/agents/:workObjectId -> Agent Workspace
+/review/:workObjectId -> Review flow
+/releases -> Release list
+/releases/:releaseId -> Release detail
 Planned API routes
 GET /api/signals
 GET /api/clusters
@@ -195,13 +195,58 @@ Local development
 
 Final commands may evolve, but the intended local workflow is:
 
-Frontend dev
+Recommended local ports:
 
-Run the Vite dev server from `web/`.
+- app shell: `http://localhost:3000/`
+- marketing: `http://localhost:4173/`
+- Go API/server: `http://localhost:8000`
 
-Backend dev
+Task-based local dev:
 
-Run the Go server from `cmd/cleartify`.
+```bash
+task bootstrap
+task build:env
+```
+
+Then fill in `WORKOS_API_KEY` and `WORKOS_CLIENT_ID` inside `.env`.
+
+For hosted WorkOS AuthKit local development, run:
+
+```bash
+task dev:e2e
+```
+
+Why the ports are split:
+
+- `http://localhost:3000/` is the app UI
+- `http://localhost:4173/` is marketing
+- `http://localhost:8000` is the Go backend
+
+The browser should use the app origin at `3000`. Vite proxies `/login`, `/logout`, `/auth/*`, and `/api/*` to the Go server on `8000`.
+
+If you want local demo mode without WorkOS, use:
+
+```bash
+task dev:sqlite
+```
+
+`task dev:e2e` respects your current `.env`.
+
+- use `AUTH_MODE=workos` there for real hosted WorkOS AuthKit testing
+- use `AUTH_MODE=demo` there only if you intentionally want the isolated local demo auth path
+
+That starts:
+
+- the Go server on `8000`
+- the authenticated app shell on `3000`
+- the marketing site on `4173`
+- explicit local demo auth mode via `AUTH_MODE=demo`
+
+If you only need the app shell plus backend:
+
+```bash
+task dev:sqlite:app
+```
 
 Production build
 build the frontend
@@ -218,6 +263,7 @@ WORKOS_API_KEY
 WORKOS_CLIENT_ID
 WORKOS_REDIRECT_URI
 WORKOS_COOKIE_PASSWORD or session secret equivalent
+AUTH_MODE (`demo` for local/demo usage, `workos` for hosted WorkOS AuthKit)
 additional auth/session config as needed
 
 Add a .env.example file early and keep it updated.

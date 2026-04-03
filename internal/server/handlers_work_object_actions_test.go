@@ -401,7 +401,7 @@ func TestHandleWorkObjectActionsUpdatesPrototype(t *testing.T) {
 			updatedWorkObject: domain.WorkObject{
 				ID:            "wo_1",
 				Title:         "Updated Work Object",
-				PrototypeURL:  "https://example.com/prototype/1",
+				PrototypeURL:  "https://www.figma.com/proto/cleartify-work-object-prototype-v1",
 				PrototypeNote: "Prototype note",
 			},
 		},
@@ -416,14 +416,14 @@ func TestHandleWorkObjectActionsUpdatesPrototype(t *testing.T) {
 	request := httptest.NewRequest(
 		http.MethodPost,
 		"/api/work-objects/wo_1/prototype",
-		strings.NewReader(`{"prototypeUrl":"https://example.com/prototype/1","prototypeNote":"Prototype note"}`),
+		strings.NewReader(`{"prototypeUrl":"https://www.figma.com/proto/cleartify-work-object-prototype-v1","prototypeNote":"Prototype note"}`),
 	)
 	server.handleWorkObjectActions(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", recorder.Code)
 	}
-	if !strings.Contains(recorder.Body.String(), `"prototypeUrl":"https://example.com/prototype/1"`) {
+	if !strings.Contains(recorder.Body.String(), `"prototypeUrl":"https://www.figma.com/proto/cleartify-work-object-prototype-v1"`) {
 		t.Fatalf("expected updated prototype in response, got %q", recorder.Body.String())
 	}
 }
@@ -511,7 +511,7 @@ func TestHandleWorkObjectActionsReturnsNotFoundForMissingPrototypeWorkObject(t *
 	request := httptest.NewRequest(
 		http.MethodPost,
 		"/api/work-objects/missing/prototype",
-		strings.NewReader(`{"prototypeUrl":"https://example.com/prototype/missing","prototypeNote":"Prototype note"}`),
+		strings.NewReader(`{"prototypeUrl":"https://www.figma.com/proto/cleartify-missing-work-object","prototypeNote":"Prototype note"}`),
 	)
 	server.handleWorkObjectActions(recorder, request)
 

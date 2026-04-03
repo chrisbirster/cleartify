@@ -1,20 +1,21 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Effect } from "effect";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
-import { createWorkObjectFromCluster } from "../lib/api";
+import { createWorkObjectFromCluster, resolveCluster } from "../lib/api";
 import type { Cluster, WorkObject } from "../lib/types";
 
 type ClusterDetailPageProps = {
   clusters: Cluster[];
   createWorkObject?: (clusterId: string) => Effect.Effect<WorkObject, Error>;
   onCreateSuccess?: (workObject: WorkObject) => void;
+  onDataChanged?: () => Promise<unknown>;
 };
 
 export function redirectToWorkObject(workObject: WorkObject) {
-  browserRedirect.assign(`/app/work/${workObject.id}`);
+  browserRedirect.assign(`/work/${workObject.id}`);
 }
 
 export const browserRedirect = {
@@ -27,11 +28,15 @@ export function ClusterDetailPage({
   clusters,
   createWorkObject = createWorkObjectFromCluster,
   onCreateSuccess = redirectToWorkObject,
+  onDataChanged,
 }: ClusterDetailPageProps) {
+  const navigate = useNavigate();
   const { clusterId } = useParams();
   const cluster = clusters.find((entry) => entry.id === clusterId);
   const [isCreating, setIsCreating] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
 
   if (!cluster) {
     return <EmptyState title="Cluster not found" description="Select a Cluster from the Context Inbox to inspect it." />;
@@ -48,6 +53,20 @@ export function ClusterDetailPage({
     } catch {
       setCreateError("Unable to create Work Object.");
       setIsCreating(false);
+    }
+  }
+
+  async function handleResolveCluster() {
+    setIsResolving(true);
+    setResolveError(null);
+
+    try {
+      await Effect.runPromise(resolveCluster(currentCluster.id));
+      await onDataChanged?.();
+      navigate("/inbox");
+    } catch {
+      setResolveError("Unable to resolve Cluster.");
+      setIsResolving(false);
     }
   }
 
@@ -80,7 +99,16 @@ export function ClusterDetailPage({
           >
             {isCreating ? "Creating Work Object..." : "Create Work Object"}
           </button>
+          <button
+            className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground transition hover:border-border/70 hover:bg-card/70 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isResolving}
+            onClick={handleResolveCluster}
+            type="button"
+          >
+            {isResolving ? "Resolving Cluster..." : "Resolve Cluster"}
+          </button>
           {createError ? <p className="text-sm text-red-300">{createError}</p> : null}
+          {resolveError ? <p className="text-sm text-red-300">{resolveError}</p> : null}
         </div>
       </div>
 

@@ -47,7 +47,7 @@ describe("WorkObjectDetailPage", () => {
     expect(screen.getByRole("button", { name: "Edit Work Object" })).toBeInTheDocument();
     expect(screen.getByText("Prototype context")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit prototype context" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open prototype" })).toHaveAttribute("href", "https://example.com/prototype/mobile-perf");
+    expect(screen.getByRole("link", { name: "Open prototype" })).toHaveAttribute("href", "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v1");
     expect(screen.getByText("Status")).toBeInTheDocument();
     expect(screen.getByText("Priority")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "planning" })).toHaveAttribute("aria-pressed", "true");
@@ -97,11 +97,11 @@ describe("WorkObjectDetailPage", () => {
                     summary: "A detached seeded work object.",
                     goal: "Clarify the fallback states for orphaned execution work.",
                     status: "planning",
-                    priority: "medium",
+                    priority: "low",
                     ownerType: "user",
                     ownerId: "usr_demo",
-                    decisions: [],
-                    artifacts: [],
+                    decisions: null as unknown as [],
+                    artifacts: null as unknown as [],
                     createdAt: "2026-03-01T09:00:00Z",
                     updatedAt: "2026-03-01T09:45:00Z",
                   },
@@ -118,6 +118,8 @@ describe("WorkObjectDetailPage", () => {
     expect(screen.getByText("No supporting Signals yet")).toBeInTheDocument();
     expect(screen.getByText("No Decisions yet")).toBeInTheDocument();
     expect(screen.getByText("No Artifacts yet")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "planning" })).toHaveClass("bg-zinc-400/16");
+    expect(screen.getByRole("button", { name: "low" })).toHaveClass("bg-slate-300/16");
   });
 
   it("runs the core field mutation and reports the updated Work Object", async () => {
@@ -315,7 +317,7 @@ describe("WorkObjectDetailPage", () => {
     updateWorkObjectPrototypeMock.mockReturnValue(
       Effect.succeed({
         ...appDataFixture.workObjects[0],
-        prototypeUrl: "https://example.com/prototype/mobile-perf-v2",
+        prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2",
         prototypeNote: "Updated prototype note for the first Prototype-to-Plan pass.",
         updatedAt: "2026-03-29T16:32:00Z",
       }),
@@ -339,7 +341,7 @@ describe("WorkObjectDetailPage", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Edit prototype context" }));
-    fireEvent.change(screen.getByLabelText("Prototype link"), { target: { value: "https://example.com/prototype/mobile-perf-v2" } });
+    fireEvent.change(screen.getByLabelText("Prototype link"), { target: { value: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2" } });
     fireEvent.change(screen.getByLabelText("Prototype note"), {
       target: { value: "Updated prototype note for the first Prototype-to-Plan pass." },
     });
@@ -347,7 +349,7 @@ describe("WorkObjectDetailPage", () => {
 
     await waitFor(() =>
       expect(updateWorkObjectPrototypeMock).toHaveBeenCalledWith("wo_mobile_perf", {
-        prototypeUrl: "https://example.com/prototype/mobile-perf-v2",
+        prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2",
         prototypeNote: "Updated prototype note for the first Prototype-to-Plan pass.",
       }),
     );
@@ -355,7 +357,7 @@ describe("WorkObjectDetailPage", () => {
       expect(onWorkObjectUpdated).toHaveBeenCalledWith(
         expect.objectContaining({
           id: "wo_mobile_perf",
-          prototypeUrl: "https://example.com/prototype/mobile-perf-v2",
+          prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2",
           prototypeNote: "Updated prototype note for the first Prototype-to-Plan pass.",
         }),
       ),

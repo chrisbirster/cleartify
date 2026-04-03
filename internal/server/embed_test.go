@@ -13,7 +13,7 @@ func TestHandleAppServesSPAAndAssets(t *testing.T) {
 
 	server := newTestServer(t)
 
-	for _, path := range []string{"/app", "/app/", "/app/inbox", "/app/work/wo_mobile_perf"} {
+	for _, path := range []string{"/", "/inbox", "/work/wo_mobile_perf"} {
 		recorder := httptest.NewRecorder()
 		server.handleApp(recorder, httptest.NewRequest(http.MethodGet, path, nil))
 		if recorder.Code != http.StatusOK {
@@ -25,37 +25,40 @@ func TestHandleAppServesSPAAndAssets(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	server.handleApp(recorder, httptest.NewRequest(http.MethodGet, "/app/assets/app.js", nil))
+	server.handleApp(recorder, httptest.NewRequest(http.MethodGet, "/assets/app.js", nil))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected asset to be served, got %d", recorder.Code)
 	}
 
 	fileRecorder := httptest.NewRecorder()
-	server.handleApp(fileRecorder, httptest.NewRequest(http.MethodGet, "/app/favicon.ico", nil))
+	server.handleApp(fileRecorder, httptest.NewRequest(http.MethodGet, "/favicon.ico", nil))
 	if fileRecorder.Code != http.StatusOK {
 		t.Fatalf("expected extension asset to be served, got %d", fileRecorder.Code)
 	}
 }
 
-func TestHandleRootRedirectsAndReturnsAPINotFound(t *testing.T) {
+func TestHandleAppRedirectsLegacyAppPathsAndReturnsAPINotFound(t *testing.T) {
 	t.Parallel()
 
 	server := newTestServer(t)
 
 	recorder := httptest.NewRecorder()
-	server.handleRoot(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
+	server.handleApp(recorder, httptest.NewRequest(http.MethodGet, "/app/work/wo_mobile_perf", nil))
 	if recorder.Code != http.StatusTemporaryRedirect {
-		t.Fatalf("expected marketing redirect, got %d", recorder.Code)
+		t.Fatalf("expected legacy app redirect, got %d", recorder.Code)
+	}
+	if location := recorder.Header().Get("Location"); location != "/work/wo_mobile_perf" {
+		t.Fatalf("expected legacy redirect to /work/wo_mobile_perf, got %q", location)
 	}
 
 	apiRecorder := httptest.NewRecorder()
-	server.handleRoot(apiRecorder, httptest.NewRequest(http.MethodGet, "/api/missing", nil))
+	server.handleApp(apiRecorder, httptest.NewRequest(http.MethodGet, "/api/missing", nil))
 	if apiRecorder.Code != http.StatusNotFound {
 		t.Fatalf("expected api 404, got %d", apiRecorder.Code)
 	}
 
 	notFoundRecorder := httptest.NewRecorder()
-	server.handleRoot(notFoundRecorder, httptest.NewRequest(http.MethodPost, "/missing", nil))
+	server.handleApp(notFoundRecorder, httptest.NewRequest(http.MethodPost, "/missing", nil))
 	if notFoundRecorder.Code != http.StatusNotFound {
 		t.Fatalf("expected non-get root 404, got %d", notFoundRecorder.Code)
 	}

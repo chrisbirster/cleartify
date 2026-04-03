@@ -95,11 +95,11 @@ func seedSignals(tx *sql.Tx) error {
 	}
 
 	signals := []signalSeed{
-		{"sig_mobile_feedback", "feedback", "fb-100", "Mobile performance issues reported", "Dashboard feels slow on mobile during chart rendering.", "https://example.com/feedback/100", map[string]any{"priority": "high"}, demoTimestamp},
-		{"sig_design_thread", "slack", "sl-222", "Onboarding design review highlighted setup friction", "The team agreed the current first-run flow feels dense and hides the success moment.", "https://example.com/slack/222", map[string]any{"channel": "#product"}, demoTimestamp.Add(5 * time.Minute)},
-		{"sig_pr_context", "github", "pr-234", "PR #234 needs context from original spec", "Code review is missing the original rationale for loading-state behavior.", "https://example.com/pr/234", map[string]any{"repo": "cleartify/web"}, demoTimestamp.Add(10 * time.Minute)},
+		{"sig_mobile_feedback", "feedback", "fb-100", "Mobile performance issues reported", "Dashboard feels slow on mobile during chart rendering.", "https://docs.google.com/document/d/1CleartifyMobileFeedback100/view", map[string]any{"priority": "high"}, demoTimestamp},
+		{"sig_design_thread", "slack", "sl-222", "Onboarding design review highlighted setup friction", "The team agreed the current first-run flow feels dense and hides the success moment.", "https://acmehq.slack.com/archives/C02PRODUCT/p1710000002220000", map[string]any{"channel": "#product"}, demoTimestamp.Add(5 * time.Minute)},
+		{"sig_pr_context", "github", "pr-234", "PR #234 needs context from original spec", "Code review is missing the original rationale for loading-state behavior.", "https://github.com/cleartifyhq/cleartify/pull/234", map[string]any{"repo": "cleartify/web"}, demoTimestamp.Add(10 * time.Minute)},
 		{"sig_comp_notes", "note", "nt-45", "Competitor analysis notes from team sync", "Notes highlight how competitor teams connect prototypes to shipped changes.", "", map[string]any{"author": "Demo User"}, demoTimestamp.Add(15 * time.Minute)},
-		{"sig_proto_attach", "prototype", "pt-17", "Prototype attached for guided onboarding refresh", "Five approved screens cover welcome, workspace setup, teammate invite, empty state, and confirmation.", "https://example.com/prototype/17", map[string]any{"screens": 5.0}, demoTimestamp.Add(20 * time.Minute)},
+		{"sig_proto_attach", "prototype", "pt-17", "Prototype attached for guided onboarding refresh", "Five approved screens cover welcome, workspace setup, teammate invite, empty state, and confirmation.", "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1", map[string]any{"screens": 5.0}, demoTimestamp.Add(20 * time.Minute)},
 		{"sig_release_post", "release", "rl-9", "Release retro flagged missing product memory", "Recent release notes lost the decision trail behind a copy change.", "", map[string]any{"release": "2026.03.1"}, demoTimestamp.Add(25 * time.Minute)},
 	}
 
@@ -219,7 +219,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 			Priority:      "high",
 			OwnerType:     "user",
 			OwnerID:       "usr_demo",
-			PrototypeURL:  "https://example.com/prototype/mobile-perf",
+			PrototypeURL:  "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v1",
 			PrototypeNote: "",
 		},
 		{
@@ -232,7 +232,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 			Priority:      "medium",
 			OwnerType:     "user",
 			OwnerID:       "usr_demo",
-			PrototypeURL:  "https://example.com/prototype/onboarding-refresh",
+			PrototypeURL:  "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1",
 			PrototypeNote: "The approved prototype covers five screens: welcome, workspace setup, teammate invite, empty state, and success confirmation.",
 		},
 	}

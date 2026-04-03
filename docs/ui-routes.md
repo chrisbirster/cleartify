@@ -4,18 +4,18 @@
 - / -> marketing site
 
 ## App
-- /app -> home / today
-- /app/inbox -> context inbox
-- /app/inbox/:clusterId -> cluster detail
-- /app/work -> work objects list
-- /app/work/:workObjectId -> work object detail
-- /app/prototypes -> prototype list
-- /app/prototypes/new -> prototype import / attach
-- /app/plans/:workObjectId -> generated plan view
-- /app/agents/:workObjectId -> agent workspace
-- /app/review/:workObjectId -> review / diff / approval
-- /app/releases -> release list
-- /app/releases/:releaseId -> release detail
+- / -> home / today
+- /inbox -> context inbox
+- /inbox/:clusterId -> cluster detail
+- /work -> work objects list
+- /work/:workObjectId -> work object detail
+- /prototypes -> prototype list
+- /prototypes/new -> prototype import / attach
+- /plans/:workObjectId -> generated plan view
+- /agents/:workObjectId -> agent workspace
+- /review/:workObjectId -> review / diff / approval
+- /releases -> release list
+- /releases/:releaseId -> release detail
 
 ## API
 - GET /api/signals

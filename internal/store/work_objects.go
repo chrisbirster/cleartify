@@ -29,8 +29,6 @@ var artifactIDFromWorkObject = func(workObjectID string, createdAt time.Time) st
 var listWorkObjectsStatement = sqldata.MustQuery("list_work_objects.sql")
 var lookupWorkObjectStatement = sqldata.MustQuery("lookup_work_object.sql")
 var insertWorkObjectFromClusterStatement = sqldata.MustQuery("insert_work_object_from_cluster.sql")
-var insertWorkObjectDecisionStatement = sqldata.MustQuery("insert_work_object_decision.sql")
-var insertWorkObjectArtifactStatement = sqldata.MustQuery("insert_work_object_artifact.sql")
 var updateWorkObjectCoreFieldsStatement = sqldata.MustQuery("update_work_object_core_fields.sql")
 var updateWorkObjectPrototypeFieldsStatement = sqldata.MustQuery("update_work_object_prototype_fields.sql")
 var updateWorkObjectStatusStatement = sqldata.MustQuery("update_work_object_status.sql")
@@ -251,71 +249,11 @@ func (s *Store) MarkWorkObjectReadyForRelease(ctx context.Context, workObjectID 
 }
 
 func (s *Store) CreateDecisionForWorkObject(ctx context.Context, workObjectID string, title string, summary string, rationale string) (domain.Decision, error) {
-	title = strings.TrimSpace(title)
-	summary = strings.TrimSpace(summary)
-	rationale = strings.TrimSpace(rationale)
-	if title == "" || summary == "" || rationale == "" {
-		return domain.Decision{}, ErrInvalidDecisionFields
-	}
-
-	if _, err := s.lookupWorkObject(ctx, workObjectID); err != nil {
-		return domain.Decision{}, err
-	}
-
-	createdAt := decisionNow().UTC().Truncate(time.Second)
-	decision := domain.Decision{
-		ID:           decisionIDFromWorkObject(workObjectID, createdAt),
-		WorkObjectID: workObjectID,
-		Title:        title,
-		Summary:      summary,
-		Rationale:    rationale,
-		CreatedAt:    createdAt,
-	}
-
-	if _, err := s.DB.ExecContext(
-		ctx,
-		insertWorkObjectDecisionStatement,
-		decision.ID,
-		decision.WorkObjectID,
-		decision.Title,
-		decision.Summary,
-		decision.Rationale,
-		decision.CreatedAt.Format(time.RFC3339),
-	); err != nil {
-		return domain.Decision{}, fmt.Errorf("insert decision for work object: %w", err)
-	}
-
-	return decision, nil
+	return s.createDecision(ctx, workObjectID, title, summary, rationale)
 }
 
 func (s *Store) CreateArtifactForWorkObject(ctx context.Context, workObjectID string, artifactType string, title string, body string) (domain.Artifact, error) {
-	artifactType = strings.TrimSpace(artifactType)
-	title = strings.TrimSpace(title)
-	body = strings.TrimSpace(body)
-	if artifactType == "" || title == "" || body == "" {
-		return domain.Artifact{}, ErrInvalidArtifactFields
-	}
-
-	if _, err := s.lookupWorkObject(ctx, workObjectID); err != nil {
-		return domain.Artifact{}, err
-	}
-
-	createdAt := artifactNow().UTC().Truncate(time.Second)
-	artifact := domain.Artifact{
-		ID:           artifactIDFromWorkObject(workObjectID, createdAt),
-		WorkObjectID: workObjectID,
-		ArtifactType: artifactType,
-		Title:        title,
-		Body:         body,
-		Metadata:     nil,
-		CreatedAt:    createdAt,
-	}
-
-	if err := s.persistArtifact(ctx, artifact); err != nil {
-		return domain.Artifact{}, err
-	}
-
-	return artifact, nil
+	return s.createArtifact(ctx, workObjectID, artifactType, title, body, "", "")
 }
 
 func (s *Store) GenerateImplementationArtifactForWorkObject(ctx context.Context, workObjectID string) (domain.Artifact, error) {
@@ -555,6 +493,12 @@ func (s *Store) scanWorkObject(ctx context.Context, scanner workObjectScanner) (
 	if err != nil {
 		return domain.WorkObject{}, err
 	}
+	if workObject.Decisions == nil {
+		workObject.Decisions = []domain.Decision{}
+	}
+	if workObject.Artifacts == nil {
+		workObject.Artifacts = []domain.Artifact{}
+	}
 
 	return workObject, nil
 }
@@ -566,23 +510,11 @@ func (s *Store) listDecisionsForWorkObject(ctx context.Context, workObjectID str
 	}
 	defer rows.Close()
 
-	var decisions []domain.Decision
+	decisions := make([]domain.Decision, 0)
 	for rows.Next() {
-		var decision domain.Decision
-		var createdAt string
-		if err := rows.Scan(
-			&decision.ID,
-			&decision.WorkObjectID,
-			&decision.Title,
-			&decision.Summary,
-			&decision.Rationale,
-			&createdAt,
-		); err != nil {
-			return nil, fmt.Errorf("scan decision: %w", err)
-		}
-		decision.CreatedAt, err = decodeTime(createdAt)
+		decision, err := scanDecision(rows)
 		if err != nil {
-			return nil, fmt.Errorf("decode decision time: %w", err)
+			return nil, err
 		}
 		decisions = append(decisions, decision)
 	}
@@ -597,51 +529,16 @@ func (s *Store) listArtifactsForWorkObject(ctx context.Context, workObjectID str
 	}
 	defer rows.Close()
 
-	var artifacts []domain.Artifact
+	artifacts := make([]domain.Artifact, 0)
 	for rows.Next() {
-		var artifact domain.Artifact
-		var rawMetadata sql.NullString
-		var createdAt string
-		if err := rows.Scan(
-			&artifact.ID,
-			&artifact.WorkObjectID,
-			&artifact.ArtifactType,
-			&artifact.Title,
-			&artifact.Body,
-			&rawMetadata,
-			&createdAt,
-		); err != nil {
-			return nil, fmt.Errorf("scan artifact: %w", err)
-		}
-		artifact.Metadata, err = decodeJSONMap(rawMetadata)
+		artifact, err := scanArtifact(rows)
 		if err != nil {
-			return nil, fmt.Errorf("decode artifact metadata: %w", err)
-		}
-		artifact.CreatedAt, err = decodeTime(createdAt)
-		if err != nil {
-			return nil, fmt.Errorf("decode artifact time: %w", err)
+			return nil, err
 		}
 		artifacts = append(artifacts, artifact)
 	}
 
 	return artifacts, rows.Err()
-}
-
-func (s *Store) persistArtifact(ctx context.Context, artifact domain.Artifact) error {
-	if _, err := s.DB.ExecContext(
-		ctx,
-		insertWorkObjectArtifactStatement,
-		artifact.ID,
-		artifact.WorkObjectID,
-		artifact.ArtifactType,
-		artifact.Title,
-		artifact.Body,
-		nil,
-		artifact.CreatedAt.Format(time.RFC3339),
-	); err != nil {
-		return fmt.Errorf("insert artifact for work object: %w", err)
-	}
-	return nil
 }
 
 func buildImplementationArtifactBody(workObject domain.WorkObject, linkedCluster *domain.Cluster, draftPlan domain.DraftPlan) string {

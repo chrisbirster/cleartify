@@ -10,6 +10,8 @@ type WorkObjectsPageProps = {
 
 function statusTone(status: WorkObject["status"]) {
   switch (status) {
+    case "planning":
+      return "border-zinc-400/30 bg-zinc-400/16 text-zinc-100";
     case "ready":
       return "border-sky-400/30 bg-sky-400/10 text-sky-100";
     case "in_progress":
@@ -31,8 +33,10 @@ function priorityTone(priority: WorkObject["priority"]) {
       return "border-primary/20 bg-primary/10 text-primary";
     case "medium":
       return "border-violet-400/20 bg-violet-400/10 text-violet-100";
+    case "low":
+      return "border-slate-300/35 bg-slate-300/16 text-slate-100";
     default:
-      return "border-slate-400/20 bg-slate-400/10 text-slate-200";
+      return "border-border bg-secondary/70 text-muted-foreground";
   }
 }
 

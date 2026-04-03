@@ -9,13 +9,19 @@ describe("router", () => {
     window.history.pushState({}, "", "/");
   });
 
-  it("respects the /app basename for browser routing", () => {
-    window.history.pushState({}, "", "/app/work");
+  it("renders browser routes from the app origin root", () => {
+    window.history.pushState({}, "", "/work");
 
     render(<AppRouter data={appDataFixture} />);
 
     expect(screen.getByRole("heading", { name: "Work Objects" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Context Inbox" })).toBeInTheDocument();
+  });
+
+  it("redirects legacy /app paths back to the root route shape", () => {
+    render(<AppMemoryRouter data={appDataFixture} initialEntries={["/app/work"]} />);
+
+    expect(screen.getAllByText("Speed up mobile dashboard rendering").length).toBeGreaterThan(0);
   });
 
   it("renders placeholder routes inside the shared shell", () => {

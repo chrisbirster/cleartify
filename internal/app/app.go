@@ -18,8 +18,17 @@ type Application struct {
 	Handler    http.Handler
 }
 
-var newWorkOSService = func(cfg config.Config) (auth.Service, error) {
-	return auth.NewWorkOSAuthService(cfg.WorkOSAPIKey, cfg.WorkOSClientID, cfg.WorkOSCookiePassword, nil)
+var newWorkOSService = func(cfg config.Config, sessionStore auth.SessionStore) (auth.Service, error) {
+	return auth.NewWorkOSAuthService(
+		cfg.WorkOSAPIKey,
+		cfg.WorkOSClientID,
+		cfg.WorkOSRedirectURI,
+		cfg.AppPublicURL,
+		cfg.AppMarketingURL,
+		cfg.WorkOSCookiePassword,
+		sessionStore,
+		nil,
+	)
 }
 
 var newHTTPServer = server.New
@@ -30,9 +39,11 @@ func New(cfg config.Config, frontend fs.FS) (*Application, error) {
 		return nil, err
 	}
 
-	authService := auth.Service(auth.NewDemoAuthService())
-	if cfg.WorkOSConfigured() {
-		authService, err = newWorkOSService(cfg)
+	authService := auth.Service(auth.NewUnavailableAuthService(cfg.AppPublicURL, cfg.AppMarketingURL))
+	if cfg.DemoAuthEnabled() {
+		authService = auth.NewDemoModeAuthService(cfg.AppPublicURL, cfg.AppMarketingURL, cfg.WorkOSCookiePassword, dataStore)
+	} else if cfg.WorkOSConfigured() {
+		authService, err = newWorkOSService(cfg, dataStore)
 		if err != nil {
 			_ = dataStore.Close()
 			return nil, err

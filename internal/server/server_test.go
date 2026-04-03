@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 	"testing"
@@ -17,6 +18,8 @@ type fakeStore struct {
 	signals                        []domain.Signal
 	clusters                       []domain.Cluster
 	workObjects                    []domain.WorkObject
+	decisions                      []domain.Decision
+	artifacts                      []domain.Artifact
 	lookupDraftPlan                *domain.DraftPlan
 	generatedDraftPlan             domain.DraftPlan
 	updatedDraftPlan               domain.DraftPlan
@@ -33,12 +36,138 @@ func (f *fakeStore) ListSignals(context.Context) ([]domain.Signal, error) {
 	return f.signals, f.err
 }
 
+func (f *fakeStore) LookupSignal(_ context.Context, signalID string) (domain.Signal, error) {
+	if f.err != nil {
+		return domain.Signal{}, f.err
+	}
+	for _, signal := range f.signals {
+		if signal.ID == signalID {
+			return signal, nil
+		}
+	}
+	return domain.Signal{}, sql.ErrNoRows
+}
+
+func (f *fakeStore) CreateSignal(_ context.Context, sourceType string, sourceID string, title string, body string, externalURL string) (domain.Signal, error) {
+	if f.err != nil {
+		return domain.Signal{}, f.err
+	}
+	return domain.Signal{ID: "sig_created", SourceType: sourceType, SourceID: sourceID, Title: title, Body: body, URL: externalURL}, nil
+}
+
+func (f *fakeStore) UpdateSignal(_ context.Context, signalID string, sourceType string, sourceID string, title string, body string, externalURL string) (domain.Signal, error) {
+	if f.err != nil {
+		return domain.Signal{}, f.err
+	}
+	return domain.Signal{ID: signalID, SourceType: sourceType, SourceID: sourceID, Title: title, Body: body, URL: externalURL}, nil
+}
+
+func (f *fakeStore) DeleteSignal(_ context.Context, signalID string) error {
+	if f.err != nil {
+		return f.err
+	}
+	if signalID == "" {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (f *fakeStore) ListClusters(context.Context) ([]domain.Cluster, error) {
 	return f.clusters, f.err
 }
 
+func (f *fakeStore) ResolveCluster(_ context.Context, clusterID string) (domain.Cluster, error) {
+	if f.err != nil {
+		return domain.Cluster{}, f.err
+	}
+	return domain.Cluster{ID: clusterID, Title: "Resolved Cluster", Status: "resolved"}, nil
+}
+
 func (f *fakeStore) ListWorkObjects(context.Context) ([]domain.WorkObject, error) {
 	return f.workObjects, f.err
+}
+
+func (f *fakeStore) ListDecisions(context.Context) ([]domain.Decision, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.decisions, nil
+}
+
+func (f *fakeStore) LookupDecision(_ context.Context, decisionID string) (domain.Decision, error) {
+	if f.err != nil {
+		return domain.Decision{}, f.err
+	}
+	for _, decision := range f.decisions {
+		if decision.ID == decisionID {
+			return decision, nil
+		}
+	}
+	return domain.Decision{}, sql.ErrNoRows
+}
+
+func (f *fakeStore) CreateDecision(_ context.Context, workObjectID string, title string, summary string, rationale string) (domain.Decision, error) {
+	return f.CreateDecisionForWorkObject(context.Background(), workObjectID, title, summary, rationale)
+}
+
+func (f *fakeStore) UpdateDecision(_ context.Context, decisionID string, workObjectID string, title string, summary string, rationale string) (domain.Decision, error) {
+	if f.err != nil {
+		return domain.Decision{}, f.err
+	}
+	return domain.Decision{ID: decisionID, WorkObjectID: workObjectID, Title: title, Summary: summary, Rationale: rationale}, nil
+}
+
+func (f *fakeStore) DeleteDecision(_ context.Context, decisionID string) error {
+	if f.err != nil {
+		return f.err
+	}
+	if decisionID == "" {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func (f *fakeStore) ListArtifacts(context.Context) ([]domain.Artifact, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.artifacts, nil
+}
+
+func (f *fakeStore) LookupArtifact(_ context.Context, artifactID string) (domain.Artifact, error) {
+	if f.err != nil {
+		return domain.Artifact{}, f.err
+	}
+	for _, artifact := range f.artifacts {
+		if artifact.ID == artifactID {
+			return artifact, nil
+		}
+	}
+	return domain.Artifact{}, sql.ErrNoRows
+}
+
+func (f *fakeStore) CreateArtifact(_ context.Context, workObjectID string, artifactType string, title string, body string, linkType string, externalURL string) (domain.Artifact, error) {
+	if f.err != nil {
+		return domain.Artifact{}, f.err
+	}
+	return domain.Artifact{ID: "art_created", WorkObjectID: workObjectID, ArtifactType: artifactType, Title: title, Body: body, LinkType: linkType, URL: externalURL}, nil
+}
+
+func (f *fakeStore) UpdateArtifact(_ context.Context, artifactID string, workObjectID string, artifactType string, title string, body string, linkType string, externalURL string) (domain.Artifact, error) {
+	if f.err != nil {
+		return domain.Artifact{}, f.err
+	}
+	return domain.Artifact{ID: artifactID, WorkObjectID: workObjectID, ArtifactType: artifactType, Title: title, Body: body, LinkType: linkType, URL: externalURL}, nil
+}
+
+func (f *fakeStore) DeleteArtifact(_ context.Context, artifactID string) error {
+	if f.err != nil {
+		return f.err
+	}
+	if artifactID == "" {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (f *fakeStore) LookupDraftPlanForWorkObject(_ context.Context, workObjectID string) (*domain.DraftPlan, error) {
@@ -251,11 +380,34 @@ func (f *fakeStore) MarkWorkObjectReadyForRelease(_ context.Context, workObjectI
 }
 
 type fakeAuthService struct {
-	session domain.AuthSession
-	err     error
+	session          domain.AuthSession
+	completedSession domain.AuthSession
+	loginURL         string
+	logoutURL        string
+	callbackResult   auth.CallbackResult
+	err              error
 }
 
 func (f *fakeAuthService) CurrentSession(context.Context, *http.Request) (domain.AuthSession, error) {
+	return f.session, f.err
+}
+
+func (f *fakeAuthService) LoginURL(context.Context, *http.Request) (string, error) {
+	return f.loginURL, f.err
+}
+
+func (f *fakeAuthService) Authenticate(context.Context, *http.Request) (auth.CallbackResult, error) {
+	return f.callbackResult, f.err
+}
+
+func (f *fakeAuthService) LogoutURL(context.Context, *http.Request) (string, error) {
+	return f.logoutURL, f.err
+}
+
+func (f *fakeAuthService) CompleteOnboarding(context.Context, *http.Request) (domain.AuthSession, error) {
+	if f.completedSession.Authenticated || f.completedSession.NeedsOnboarding {
+		return f.completedSession, f.err
+	}
 	return f.session, f.err
 }
 

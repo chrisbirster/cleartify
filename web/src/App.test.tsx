@@ -18,6 +18,7 @@ let loadDraftPlanForWorkObjectMock: any;
 let generateImplementationArtifactForWorkObjectMock: any;
 let generateTaskBreakdownArtifactForWorkObjectMock: any;
 let markWorkObjectReadyForReleaseMock: any;
+let completeOnboardingMock: any;
 
 const persistedDraftPlan = {
   workObjectId: "wo_onboarding_refresh",
@@ -56,6 +57,7 @@ describe("App", () => {
     generateImplementationArtifactForWorkObjectMock = vi.spyOn(api, "generateImplementationArtifactForWorkObject");
     generateTaskBreakdownArtifactForWorkObjectMock = vi.spyOn(api, "generateTaskBreakdownArtifactForWorkObject");
     markWorkObjectReadyForReleaseMock = vi.spyOn(api, "markWorkObjectReadyForRelease");
+    completeOnboardingMock = vi.spyOn(api, "completeOnboarding");
   });
 
   afterEach(() => {
@@ -81,19 +83,20 @@ describe("App", () => {
     expect(screen.getByText("Unable to load app data.")).toBeInTheDocument();
   });
 
-  it("renders an auth boundary fallback when the session is unauthenticated", async () => {
+  it("renders a hosted sign-in entry when the session is unauthenticated", async () => {
     loadAppDataMock.mockReturnValue(Effect.succeed({
       ...appDataFixture,
-      session: { authenticated: false },
+      session: { authenticated: false, needsOnboarding: false },
     }));
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "Authentication required" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Continue into Cleartify" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in with WorkOS" })).toHaveAttribute("href", expect.stringContaining("/login?"));
   });
 
   it("renders the app router after bootstrap data loads", async () => {
-    window.history.pushState({}, "", "/app");
+    window.history.pushState({}, "", "/");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
 
     render(<App />);
@@ -102,9 +105,32 @@ describe("App", () => {
     expect(screen.getByText("Demo User")).toBeInTheDocument();
   });
 
+  it("shows onboarding only when the session needs it and persists completion", async () => {
+    const user = userEvent.setup();
+    loadAppDataMock.mockReturnValue(Effect.succeed({
+      ...appDataFixture,
+      session: {
+        ...appDataFixture.session,
+        needsOnboarding: true,
+      },
+    }));
+    completeOnboardingMock.mockReturnValue(Effect.succeed({
+      ...appDataFixture.session,
+      needsOnboarding: false,
+    }));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /Cleartify keeps product context attached to execution/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Enter Cleartify" }));
+
+    expect(await screen.findByRole("heading", { name: "Today" })).toBeInTheDocument();
+    expect(completeOnboardingMock).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the Work Object list in sync after a successful status change", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/work/wo_mobile_perf");
+    window.history.pushState({}, "", "/work/wo_mobile_perf");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     updateWorkObjectStatusMock.mockReturnValue(
       Effect.succeed({
@@ -130,7 +156,7 @@ describe("App", () => {
 
   it("keeps the Work Object list in sync after a successful priority change", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/work/wo_mobile_perf");
+    window.history.pushState({}, "", "/work/wo_mobile_perf");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     updateWorkObjectPriorityMock.mockReturnValue(
       Effect.succeed({
@@ -156,7 +182,7 @@ describe("App", () => {
 
   it("keeps detail and list views in sync after a successful core field edit", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/work/wo_mobile_perf");
+    window.history.pushState({}, "", "/work/wo_mobile_perf");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     updateWorkObjectCoreFieldsMock.mockReturnValue(
       Effect.succeed({
@@ -194,7 +220,7 @@ describe("App", () => {
 
   it("keeps the Decisions panel in sync after creating a new Decision and navigating away and back", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/work/wo_mobile_perf");
+    window.history.pushState({}, "", "/work/wo_mobile_perf");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     createDecisionForWorkObjectMock.mockReturnValue(
       Effect.succeed({
@@ -228,12 +254,12 @@ describe("App", () => {
 
   it("keeps prototype context in sync after a successful prototype attach update", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/work/wo_mobile_perf");
+    window.history.pushState({}, "", "/work/wo_mobile_perf");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     updateWorkObjectPrototypeMock.mockReturnValue(
       Effect.succeed({
         ...appDataFixture.workObjects[0],
-        prototypeUrl: "https://example.com/prototype/mobile-perf-v2",
+        prototypeUrl: "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2",
         prototypeNote: "Updated prototype note for the first Prototype-to-Plan pass.",
         updatedAt: "2026-03-29T20:15:00Z",
       }),
@@ -245,7 +271,7 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Edit prototype context" }));
     await user.clear(screen.getByLabelText("Prototype link"));
-    await user.type(screen.getByLabelText("Prototype link"), "https://example.com/prototype/mobile-perf-v2");
+    await user.type(screen.getByLabelText("Prototype link"), "https://www.figma.com/proto/cleartify-mobile-dashboard-optimization-v2");
     await user.clear(screen.getByLabelText("Prototype note"));
     await user.type(screen.getByLabelText("Prototype note"), "Updated prototype note for the first Prototype-to-Plan pass.");
     await user.click(screen.getByRole("button", { name: "Save prototype context" }));
@@ -260,7 +286,7 @@ describe("App", () => {
 
   it("keeps the Artifacts panel in sync after creating a new Artifact and navigating away and back", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/work/wo_mobile_perf");
+    window.history.pushState({}, "", "/work/wo_mobile_perf");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     createArtifactForWorkObjectMock.mockReturnValue(
       Effect.succeed({
@@ -294,7 +320,7 @@ describe("App", () => {
 
   it("keeps generated implementation Artifacts in sync after running the mock agent action and opening the Work Object", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/agents/wo_onboarding_refresh");
+    window.history.pushState({}, "", "/agents/wo_onboarding_refresh");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(persistedDraftPlan));
     generateImplementationArtifactForWorkObjectMock.mockReturnValue(
@@ -323,7 +349,7 @@ describe("App", () => {
 
   it("keeps generated task-breakdown Artifacts in sync after running the mock agent action and opening the Work Object", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/agents/wo_onboarding_refresh");
+    window.history.pushState({}, "", "/agents/wo_onboarding_refresh");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(persistedDraftPlan));
     generateTaskBreakdownArtifactForWorkObjectMock.mockReturnValue(
@@ -352,7 +378,7 @@ describe("App", () => {
 
   it("keeps the Releases list in sync after marking a Work Object ready for release", async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, "", "/app/review/wo_onboarding_refresh");
+    window.history.pushState({}, "", "/review/wo_onboarding_refresh");
     loadAppDataMock.mockReturnValue(Effect.succeed(appDataFixture));
     loadDraftPlanForWorkObjectMock.mockReturnValue(Effect.succeed(persistedDraftPlan));
     markWorkObjectReadyForReleaseMock.mockReturnValue(
