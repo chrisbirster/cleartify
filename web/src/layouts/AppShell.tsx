@@ -14,7 +14,7 @@ export function AppShell({ session, navItems, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
-        <SideNav items={navItems} />
+        <SideNav items={navItems} workspaceMode={session.workspace?.mode} />
         <div className="flex min-h-screen flex-col">
           <TopBar session={session} />
           <main className="flex-1 px-6 py-8 lg:px-10">{children}</main>

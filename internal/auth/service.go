@@ -33,6 +33,8 @@ type SessionStore interface {
 	UpsertAuthSession(ctx context.Context, session SessionRecord) error
 	DeleteAuthSession(ctx context.Context, sessionID string) error
 	MarkUserOnboardingComplete(ctx context.Context, userID string, completedAt time.Time) error
+	SetWorkspaceMode(ctx context.Context, workspaceID string, mode string, selectedAt time.Time) error
+	EnsureSampleData() error
 }
 
 type Service interface {
@@ -41,4 +43,5 @@ type Service interface {
 	Authenticate(ctx context.Context, r *http.Request) (CallbackResult, error)
 	LogoutURL(ctx context.Context, r *http.Request) (string, error)
 	CompleteOnboarding(ctx context.Context, r *http.Request) (domain.AuthSession, error)
+	SelectWorkspaceMode(ctx context.Context, r *http.Request, mode string) (domain.AuthSession, error)
 }

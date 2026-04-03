@@ -1,3 +1,4 @@
+import type { WorkspaceMode } from "../lib/types";
 import { NavLink } from "react-router-dom";
 
 type NavItem = {
@@ -7,14 +8,20 @@ type NavItem = {
 
 type SideNavProps = {
   items: NavItem[];
+  workspaceMode?: WorkspaceMode;
 };
 
-export function SideNav({ items }: SideNavProps) {
+export function SideNav({ items, workspaceMode }: SideNavProps) {
+  const isSampleWorkspace = workspaceMode === "sample";
+
   return (
     <aside className="border-r border-border bg-card/80 px-4 py-6">
       <div className="mb-8 px-3">
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Workspace</p>
         <h1 className="mt-2 text-xl font-semibold text-foreground">Cleartify</h1>
+        {isSampleWorkspace ? (
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">Sample workspace</p>
+        ) : null}
       </div>
       <nav className="space-y-1">
         {items.map((item) => (

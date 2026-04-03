@@ -15,9 +15,12 @@ type Organization struct {
 }
 
 type Workspace struct {
-	ID   string `json:"id"`
-	Slug string `json:"slug"`
-	Name string `json:"name"`
+	ID                  string     `json:"id"`
+	Slug                string     `json:"slug"`
+	Name                string     `json:"name"`
+	Mode                string     `json:"mode,omitempty"`
+	SampleInitializedAt *time.Time `json:"sampleInitializedAt,omitempty"`
+	LiveInitializedAt   *time.Time `json:"liveInitializedAt,omitempty"`
 }
 
 type AuthSession struct {
@@ -36,9 +39,9 @@ type Me struct {
 }
 
 type Team struct {
-	Workspace    Workspace      `json:"workspace"`
-	Organization *Organization  `json:"organization,omitempty"`
-	CurrentUser  *User          `json:"currentUser,omitempty"`
+	Workspace    Workspace     `json:"workspace"`
+	Organization *Organization `json:"organization,omitempty"`
+	CurrentUser  *User         `json:"currentUser,omitempty"`
 }
 
 type Signal struct {

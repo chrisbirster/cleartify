@@ -20,10 +20,13 @@ func NewDemoAuthService() *DemoAuthService {
 }
 
 func (s *DemoAuthService) CurrentSession(context.Context, *http.Request) (domain.AuthSession, error) {
+	workspace := *demoWorkspace()
+	workspace.Mode = "live"
+
 	return domain.AuthSession{
 		Authenticated:   true,
 		User:            demoUser,
-		Workspace:       demoWorkspace(),
+		Workspace:       &workspace,
 		NeedsOnboarding: false,
 	}, nil
 }
@@ -44,5 +47,9 @@ func (s *DemoAuthService) LogoutURL(context.Context, *http.Request) (string, err
 }
 
 func (s *DemoAuthService) CompleteOnboarding(context.Context, *http.Request) (domain.AuthSession, error) {
+	return s.CurrentSession(context.Background(), nil)
+}
+
+func (s *DemoAuthService) SelectWorkspaceMode(context.Context, *http.Request, string) (domain.AuthSession, error) {
 	return s.CurrentSession(context.Background(), nil)
 }

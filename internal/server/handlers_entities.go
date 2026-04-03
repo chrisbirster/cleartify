@@ -36,6 +36,11 @@ type artifactRequest struct {
 }
 
 func (s *Server) handleSignals(w http.ResponseWriter, r *http.Request) {
+	session, ok := s.requireAuthenticatedSession(w, r)
+	if !ok {
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		signals, err := s.store.ListSignals(r.Context())
@@ -43,7 +48,7 @@ func (s *Server) handleSignals(w http.ResponseWriter, r *http.Request) {
 			httpx.WriteError(w, http.StatusInternalServerError, "signals_failed", "Unable to load Signals.")
 			return
 		}
-		httpx.WriteJSON(w, http.StatusOK, signals)
+		httpx.WriteJSON(w, http.StatusOK, filterSignalsForWorkspace(session, signals))
 	case http.MethodPost:
 		var request signalRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -70,6 +75,9 @@ func (s *Server) handleSignalActions(w http.ResponseWriter, r *http.Request) {
 	signalID, ok := entityPathID(r.URL.Path, "/api/signals/")
 	if !ok {
 		http.NotFound(w, r)
+		return
+	}
+	if _, ok := requireVisibleSignalSession(s, w, r, signalID); !ok {
 		return
 	}
 
@@ -122,6 +130,11 @@ func (s *Server) handleSignalActions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
+	session, ok := s.requireAuthenticatedSession(w, r)
+	if !ok {
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		decisions, err := s.store.ListDecisions(r.Context())
@@ -129,11 +142,15 @@ func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 			httpx.WriteError(w, http.StatusInternalServerError, "decisions_failed", "Unable to load Decisions.")
 			return
 		}
-		httpx.WriteJSON(w, http.StatusOK, decisions)
+		httpx.WriteJSON(w, http.StatusOK, filterDecisionsForWorkspace(session, decisions))
 	case http.MethodPost:
 		var request decisionRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			httpx.WriteError(w, http.StatusBadRequest, "invalid_decision", "Decision work object, title, summary, and rationale are required.")
+			return
+		}
+		if !workObjectIDVisibleInWorkspace(session, request.WorkObjectID) {
+			httpx.WriteError(w, http.StatusNotFound, "work_object_not_found", "Work Object not found.")
 			return
 		}
 		decision, err := s.store.CreateDecision(r.Context(), request.WorkObjectID, request.Title, request.Summary, request.Rationale)
@@ -160,6 +177,10 @@ func (s *Server) handleDecisionActions(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	session, ok := requireVisibleDecisionSession(s, w, r, decisionID)
+	if !ok {
+		return
+	}
 
 	switch r.Method {
 	case http.MethodGet:
@@ -178,6 +199,10 @@ func (s *Server) handleDecisionActions(w http.ResponseWriter, r *http.Request) {
 		var request decisionRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			httpx.WriteError(w, http.StatusBadRequest, "invalid_decision", "Decision work object, title, summary, and rationale are required.")
+			return
+		}
+		if !workObjectIDVisibleInWorkspace(session, request.WorkObjectID) {
+			httpx.WriteError(w, http.StatusNotFound, "work_object_not_found", "Work Object not found.")
 			return
 		}
 		decision, err := s.store.UpdateDecision(r.Context(), decisionID, request.WorkObjectID, request.Title, request.Summary, request.Rationale)
@@ -210,6 +235,11 @@ func (s *Server) handleDecisionActions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleArtifacts(w http.ResponseWriter, r *http.Request) {
+	session, ok := s.requireAuthenticatedSession(w, r)
+	if !ok {
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		artifacts, err := s.store.ListArtifacts(r.Context())
@@ -217,11 +247,15 @@ func (s *Server) handleArtifacts(w http.ResponseWriter, r *http.Request) {
 			httpx.WriteError(w, http.StatusInternalServerError, "artifacts_failed", "Unable to load Artifacts.")
 			return
 		}
-		httpx.WriteJSON(w, http.StatusOK, artifacts)
+		httpx.WriteJSON(w, http.StatusOK, filterArtifactsForWorkspace(session, artifacts))
 	case http.MethodPost:
 		var request artifactRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			httpx.WriteError(w, http.StatusBadRequest, "invalid_artifact", "Artifact work object, type, title, and body are required.")
+			return
+		}
+		if !workObjectIDVisibleInWorkspace(session, request.WorkObjectID) {
+			httpx.WriteError(w, http.StatusNotFound, "work_object_not_found", "Work Object not found.")
 			return
 		}
 		artifact, err := s.store.CreateArtifact(r.Context(), request.WorkObjectID, request.Type, request.Title, request.Body, request.LinkType, request.URL)
@@ -248,6 +282,10 @@ func (s *Server) handleArtifactActions(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	session, ok := requireVisibleArtifactSession(s, w, r, artifactID)
+	if !ok {
+		return
+	}
 
 	switch r.Method {
 	case http.MethodGet:
@@ -266,6 +304,10 @@ func (s *Server) handleArtifactActions(w http.ResponseWriter, r *http.Request) {
 		var request artifactRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			httpx.WriteError(w, http.StatusBadRequest, "invalid_artifact", "Artifact work object, type, title, and body are required.")
+			return
+		}
+		if !workObjectIDVisibleInWorkspace(session, request.WorkObjectID) {
+			httpx.WriteError(w, http.StatusNotFound, "work_object_not_found", "Work Object not found.")
 			return
 		}
 		artifact, err := s.store.UpdateArtifact(r.Context(), artifactID, request.WorkObjectID, request.Type, request.Title, request.Body, request.LinkType, request.URL)

@@ -39,3 +39,7 @@ func (s *UnavailableAuthService) LogoutURL(context.Context, *http.Request) (stri
 func (s *UnavailableAuthService) CompleteOnboarding(context.Context, *http.Request) (domain.AuthSession, error) {
 	return domain.AuthSession{}, ErrUnauthenticated
 }
+
+func (s *UnavailableAuthService) SelectWorkspaceMode(context.Context, *http.Request, string) (domain.AuthSession, error) {
+	return domain.AuthSession{}, ErrUnauthenticated
+}

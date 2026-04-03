@@ -53,10 +53,26 @@ export function AppRoutes({ data, onWorkObjectUpdated, onDataChanged }: AppRoute
     <Routes>
       <Route path="/app/*" element={<LegacyAppRedirect />} />
       <Route path="/" element={<ShellRoute data={data} />}>
-        <Route index element={<TodayPage signals={data.signals} clusters={data.clusters} workObjects={data.workObjects} />} />
-        <Route path="inbox" element={<InboxPage clusters={data.clusters} onDataChanged={onDataChanged} />} />
+        <Route
+          index
+          element={
+            <TodayPage
+              signals={data.signals}
+              clusters={data.clusters}
+              workObjects={data.workObjects}
+              workspaceMode={data.session.workspace?.mode}
+            />
+          }
+        />
+        <Route
+          path="inbox"
+          element={<InboxPage clusters={data.clusters} workspaceMode={data.session.workspace?.mode} onDataChanged={onDataChanged} />}
+        />
         <Route path="inbox/:clusterId" element={<ClusterDetailPage clusters={data.clusters} onDataChanged={onDataChanged} />} />
-        <Route path="work" element={<WorkObjectsPage workObjects={data.workObjects} clusters={data.clusters} />} />
+        <Route
+          path="work"
+          element={<WorkObjectsPage workObjects={data.workObjects} clusters={data.clusters} workspaceMode={data.session.workspace?.mode} />}
+        />
         <Route
           path="work/:workObjectId"
           element={<WorkObjectDetailPage workObjects={data.workObjects} clusters={data.clusters} onWorkObjectUpdated={onWorkObjectUpdated} />}

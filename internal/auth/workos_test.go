@@ -15,14 +15,18 @@ import (
 )
 
 type fakeSessionStore struct {
-	user             domain.User
-	session          SessionRecord
-	sessionErr       error
-	upsertedUser     domain.User
-	upsertedSession  SessionRecord
-	deletedSessionID string
-	completedUserID  string
-	completedAt      time.Time
+	user              domain.User
+	session           SessionRecord
+	sessionErr        error
+	upsertedUser      domain.User
+	upsertedSession   SessionRecord
+	deletedSessionID  string
+	completedUserID   string
+	completedAt       time.Time
+	workspaceModeID   string
+	workspaceMode     string
+	modeSelectedAt    time.Time
+	sampleDataEnsured bool
 }
 
 func (f *fakeSessionStore) UpsertAuthUser(_ context.Context, user domain.User) error {
@@ -55,6 +59,21 @@ func (f *fakeSessionStore) MarkUserOnboardingComplete(_ context.Context, userID 
 	if f.session.User.ID == userID {
 		f.session.NeedsOnboarding = false
 	}
+	return nil
+}
+
+func (f *fakeSessionStore) SetWorkspaceMode(_ context.Context, workspaceID string, mode string, selectedAt time.Time) error {
+	f.workspaceModeID = workspaceID
+	f.workspaceMode = mode
+	f.modeSelectedAt = selectedAt
+	if f.session.Workspace != nil && f.session.Workspace.ID == workspaceID {
+		f.session.Workspace.Mode = mode
+	}
+	return nil
+}
+
+func (f *fakeSessionStore) EnsureSampleData() error {
+	f.sampleDataEnsured = true
 	return nil
 }
 

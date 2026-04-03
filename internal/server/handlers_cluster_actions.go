@@ -22,6 +22,9 @@ func (s *Server) handleClusterActions(w http.ResponseWriter, r *http.Request) {
 			httpx.MethodNotAllowed(w)
 			return
 		}
+		if _, ok := requireVisibleClusterSession(s, w, r, clusterID); !ok {
+			return
+		}
 
 		workObject, err := s.store.CreateWorkObjectFromCluster(r.Context(), clusterID)
 		if err != nil {
@@ -37,6 +40,9 @@ func (s *Server) handleClusterActions(w http.ResponseWriter, r *http.Request) {
 	case "resolve":
 		if r.Method != http.MethodPost {
 			httpx.MethodNotAllowed(w)
+			return
+		}
+		if _, ok := requireVisibleClusterSession(s, w, r, clusterID); !ok {
 			return
 		}
 

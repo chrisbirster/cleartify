@@ -18,6 +18,7 @@
 - /releases/:releaseId -> release detail
 
 ## API
+- POST /api/workspace-mode
 - GET /api/signals
 - GET /api/clusters
 - POST /api/clusters/:id/create-work-object

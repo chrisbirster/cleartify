@@ -27,9 +27,9 @@ var seedInsertArtifactStatement = sqldata.MustQuery("seed_insert_artifact.sql")
 
 func (s *Store) SeedDemo() error {
 	ctx := context.Background()
-	count, err := countRows(ctx, s.DB, "signals")
+	count, err := countSampleSignals(ctx, s.DB)
 	if err != nil {
-		return fmt.Errorf("count signals: %w", err)
+		return fmt.Errorf("count sample signals: %w", err)
 	}
 	if count > 0 {
 		return nil
@@ -80,6 +80,14 @@ func seedUser(tx *sql.Tx) error {
 	}
 
 	return nil
+}
+
+func countSampleSignals(ctx context.Context, db *sql.DB) (int, error) {
+	var count int
+	if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM signals WHERE id = ?`, "sig_mobile_feedback").Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func seedSignals(tx *sql.Tx) error {

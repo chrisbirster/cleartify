@@ -19,6 +19,7 @@ var trancheBSessionsWorkOSSessionIDMigration = sqldata.MustMigration("006_tranch
 var trancheBSessionsOrganizationIDMigration = sqldata.MustMigration("007_tranche_b_sessions_organization_id.sql")
 var trancheBSessionsOrganizationNameMigration = sqldata.MustMigration("008_tranche_b_sessions_organization_name.sql")
 var trancheBSessionsAccessTokenExpiresAtMigration = sqldata.MustMigration("009_tranche_b_sessions_access_token_expires_at.sql")
+var liveWorkspaceWorkspaceSettingsMigration = sqldata.MustMigration("010_live_workspace_workspace_settings.sql")
 
 var recordMigration = func(db *sql.DB, name, appliedAt string) error {
 	_, err := db.Exec(insertMigrationStatement, name, appliedAt)
@@ -67,6 +68,9 @@ func (s *Store) Migrate() error {
 	if err := ensureNullableTextColumn(s.DB, "sessions", "access_token_expires_at"); err != nil {
 		return fmt.Errorf("ensure sessions.access_token_expires_at: %w", err)
 	}
+	if _, err := s.DB.Exec(liveWorkspaceWorkspaceSettingsMigration); err != nil {
+		return fmt.Errorf("ensure workspace_settings table: %w", err)
+	}
 
 	if err := recordMigration(s.DB, "phase0_init", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		return fmt.Errorf("record migration: %w", err)
@@ -97,6 +101,9 @@ func (s *Store) Migrate() error {
 	}
 	if err := recordMigration(s.DB, "tranche_b_sessions_access_token_expires_at", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
 		return fmt.Errorf("record tranche b sessions access token expiry migration: %w", err)
+	}
+	if err := recordMigration(s.DB, "live_workspace_workspace_settings", demoTimestamp.Format("2006-01-02T15:04:05Z07:00")); err != nil {
+		return fmt.Errorf("record workspace settings migration: %w", err)
 	}
 
 	return nil

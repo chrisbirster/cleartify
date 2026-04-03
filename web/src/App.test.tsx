@@ -18,7 +18,7 @@ let loadDraftPlanForWorkObjectMock: any;
 let generateImplementationArtifactForWorkObjectMock: any;
 let generateTaskBreakdownArtifactForWorkObjectMock: any;
 let markWorkObjectReadyForReleaseMock: any;
-let completeOnboardingMock: any;
+let selectWorkspaceModeMock: any;
 
 const persistedDraftPlan = {
   workObjectId: "wo_onboarding_refresh",
@@ -57,7 +57,7 @@ describe("App", () => {
     generateImplementationArtifactForWorkObjectMock = vi.spyOn(api, "generateImplementationArtifactForWorkObject");
     generateTaskBreakdownArtifactForWorkObjectMock = vi.spyOn(api, "generateTaskBreakdownArtifactForWorkObject");
     markWorkObjectReadyForReleaseMock = vi.spyOn(api, "markWorkObjectReadyForRelease");
-    completeOnboardingMock = vi.spyOn(api, "completeOnboarding");
+    selectWorkspaceModeMock = vi.spyOn(api, "selectWorkspaceMode");
   });
 
   afterEach(() => {
@@ -105,7 +105,7 @@ describe("App", () => {
     expect(screen.getByText("Demo User")).toBeInTheDocument();
   });
 
-  it("shows onboarding only when the session needs it and persists completion", async () => {
+  it("shows workspace mode selection when the session needs setup and loads the sample hero flow after choosing sample", async () => {
     const user = userEvent.setup();
     loadAppDataMock.mockReturnValue(Effect.succeed({
       ...appDataFixture,
@@ -114,18 +114,85 @@ describe("App", () => {
         needsOnboarding: true,
       },
     }));
-    completeOnboardingMock.mockReturnValue(Effect.succeed({
+    selectWorkspaceModeMock.mockReturnValue(Effect.succeed({
       ...appDataFixture.session,
       needsOnboarding: false,
     }));
+    loadAppDataMock.mockReturnValueOnce(Effect.succeed({
+      ...appDataFixture,
+      session: {
+        ...appDataFixture.session,
+        needsOnboarding: true,
+      },
+    }));
+    loadAppDataMock.mockReturnValueOnce(Effect.succeed(appDataFixture));
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: /Cleartify keeps product context attached to execution/i })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Enter Cleartify" }));
+    expect(await screen.findByRole("heading", { name: /Choose how this workspace should start/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open sample workspace" }));
 
     expect(await screen.findByRole("heading", { name: "Today" })).toBeInTheDocument();
-    expect(completeOnboardingMock).toHaveBeenCalledTimes(1);
+    expect(selectWorkspaceModeMock).toHaveBeenCalledWith("sample");
+  });
+
+  it("keeps the live workspace empty state clean after choosing live mode", async () => {
+    const user = userEvent.setup();
+    loadAppDataMock.mockReturnValueOnce(
+      Effect.succeed({
+        ...appDataFixture,
+        session: {
+          ...appDataFixture.session,
+          needsOnboarding: true,
+          workspace: {
+            ...appDataFixture.session.workspace,
+            mode: undefined,
+            sampleInitializedAt: undefined,
+          },
+        },
+        signals: [],
+        clusters: [],
+        workObjects: [],
+      }),
+    );
+    selectWorkspaceModeMock.mockReturnValue(
+      Effect.succeed({
+        ...appDataFixture.session,
+        needsOnboarding: false,
+        workspace: {
+          ...appDataFixture.session.workspace,
+          mode: "live",
+          liveInitializedAt: "2026-04-02T13:00:00Z",
+          sampleInitializedAt: undefined,
+        },
+      }),
+    );
+    loadAppDataMock.mockReturnValueOnce(
+      Effect.succeed({
+        ...appDataFixture,
+        session: {
+          ...appDataFixture.session,
+          needsOnboarding: false,
+          workspace: {
+            ...appDataFixture.session.workspace,
+            mode: "live",
+            liveInitializedAt: "2026-04-02T13:00:00Z",
+            sampleInitializedAt: undefined,
+          },
+        },
+        signals: [],
+        clusters: [],
+        workObjects: [],
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /Choose how this workspace should start/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Start live workspace" }));
+
+    expect(await screen.findByRole("heading", { name: "Live workspace ready" })).toBeInTheDocument();
+    expect(screen.queryByText("Sample workspace")).not.toBeInTheDocument();
   });
 
   it("keeps the Work Object list in sync after a successful status change", async () => {

@@ -180,6 +180,58 @@ func TestHandleCompleteOnboardingRequiresAuth(t *testing.T) {
 	}
 }
 
+func TestHandleWorkspaceMode(t *testing.T) {
+	t.Parallel()
+
+	server, err := New(
+		config.Config{AppPublicURL: "http://localhost:3000", AppMarketingURL: "http://localhost:4173"},
+		&fakeStore{},
+		&fakeAuthService{
+			selectedWorkspaceSession: domain.AuthSession{
+				Authenticated:   true,
+				NeedsOnboarding: false,
+				User:            &domain.User{ID: "usr_demo", Email: "demo@cleartify.com", DisplayName: "Demo User"},
+				Workspace:       &domain.Workspace{ID: "wrk_demo", Name: "Cleartify Demo Team", Slug: "cleartify-demo-team", Mode: "sample"},
+			},
+		},
+		newTestServer(t).frontend,
+	)
+	if err != nil {
+		t.Fatalf("expected server build: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/workspace-mode", strings.NewReader(`{"mode":"sample"}`))
+	server.handleWorkspaceMode(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", recorder.Code)
+	}
+	if !strings.Contains(recorder.Body.String(), `"mode":"sample"`) {
+		t.Fatalf("expected sample mode in response, got %q", recorder.Body.String())
+	}
+}
+
+func TestHandleWorkspaceModeRejectsInvalidMode(t *testing.T) {
+	t.Parallel()
+
+	server, err := New(
+		config.Config{AppPublicURL: "http://localhost:3000", AppMarketingURL: "http://localhost:4173"},
+		&fakeStore{},
+		&fakeAuthService{err: auth.ErrInvalidWorkspaceMode},
+		newTestServer(t).frontend,
+	)
+	if err != nil {
+		t.Fatalf("expected server build: %v", err)
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/workspace-mode", strings.NewReader(`{"mode":"invalid"}`))
+	server.handleWorkspaceMode(recorder, request)
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", recorder.Code)
+	}
+}
+
 func TestHandleSessionFailure(t *testing.T) {
 	t.Parallel()
 

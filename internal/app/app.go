@@ -34,7 +34,8 @@ var newWorkOSService = func(cfg config.Config, sessionStore auth.SessionStore) (
 var newHTTPServer = server.New
 
 func New(cfg config.Config, frontend fs.FS) (*Application, error) {
-	dataStore, err := store.Bootstrap(cfg.DatabasePath, cfg.SeedDemo)
+	seedDemoAtBootstrap := cfg.SeedDemo && cfg.DemoAuthEnabled()
+	dataStore, err := store.Bootstrap(cfg.DatabasePath, seedDemoAtBootstrap)
 	if err != nil {
 		return nil, err
 	}

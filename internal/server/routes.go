@@ -5,6 +5,7 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("/api/auth/session", s.allowMethod("GET", s.handleSession))
 	s.mux.HandleFunc("/api/me", s.allowMethod("GET", s.handleMe))
 	s.mux.HandleFunc("/api/me/onboarding/complete", s.allowMethod("POST", s.handleCompleteOnboarding))
+	s.mux.HandleFunc("/api/workspace-mode", s.allowMethod("POST", s.handleWorkspaceMode))
 	s.mux.HandleFunc("/api/team", s.allowMethod("GET", s.handleTeam))
 	s.mux.HandleFunc("/api/signals", s.handleSignals)
 	s.mux.HandleFunc("/api/signals/", s.handleSignalActions)

@@ -49,6 +49,9 @@ func TestAuthSessionPersistenceAndOnboardingCompletion(t *testing.T) {
 	if record.Workspace == nil || record.Workspace.Name != "Acme Product" {
 		t.Fatalf("expected workspace context, got %#v", record.Workspace)
 	}
+	if err := store.SetWorkspaceMode(ctx, "org_123", "live", time.Date(2026, 4, 1, 17, 30, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("expected workspace mode to persist: %v", err)
+	}
 
 	if err := store.MarkUserOnboardingComplete(ctx, "user_123", time.Date(2026, 4, 1, 18, 0, 0, 0, time.UTC)); err != nil {
 		t.Fatalf("expected onboarding completion to persist: %v", err)

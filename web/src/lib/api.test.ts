@@ -13,6 +13,7 @@ import {
   loadDraftPlanForWorkObject,
   loadAppData,
   markWorkObjectReadyForRelease,
+  selectWorkspaceMode,
   updateDraftPlanForWorkObject,
   updateWorkObjectCoreFields,
   updateWorkObjectPriority,
@@ -50,14 +51,17 @@ describe("api helpers", () => {
     vi.stubGlobal(
       "fetch",
       fetchMock
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ authenticated: true, needsOnboarding: false }) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ authenticated: true, needsOnboarding: false, workspace: { id: "wrk_1", slug: "demo", name: "Demo", mode: "sample" } }),
+        })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "sig_1" }] })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "clu_1" }] })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "wo_1" }] }),
     );
 
     await expect(Effect.runPromise(loadAppData())).resolves.toEqual({
-      session: { authenticated: true, needsOnboarding: false },
+      session: { authenticated: true, needsOnboarding: false, workspace: { id: "wrk_1", slug: "demo", name: "Demo", mode: "sample" } },
       signals: [{ id: "sig_1" }],
       clusters: [{ id: "clu_1" }],
       workObjects: [{ id: "wo_1" }],
@@ -72,6 +76,32 @@ describe("api helpers", () => {
 
     await expect(Effect.runPromise(loadAppData())).resolves.toEqual({
       session: { authenticated: false, needsOnboarding: false },
+      signals: [],
+      clusters: [],
+      workObjects: [],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("loadAppData stops after the session fetch when the workspace still needs mode selection", async () => {
+    vi.stubGlobal(
+      "fetch",
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          authenticated: true,
+          needsOnboarding: true,
+          workspace: { id: "wrk_1", slug: "demo", name: "Demo" },
+        }),
+      }),
+    );
+
+    await expect(Effect.runPromise(loadAppData())).resolves.toEqual({
+      session: {
+        authenticated: true,
+        needsOnboarding: true,
+        workspace: { id: "wrk_1", slug: "demo", name: "Demo" },
+      },
       signals: [],
       clusters: [],
       workObjects: [],
@@ -95,6 +125,26 @@ describe("api helpers", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/me/onboarding/complete", {
       method: "POST",
       headers: expect.any(Headers),
+    });
+  });
+
+  it("selectWorkspaceMode posts the selected mode to the workspace mode endpoint", async () => {
+    vi.stubGlobal(
+      "fetch",
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({ authenticated: true, needsOnboarding: false }),
+      }),
+    );
+
+    await expect(Effect.runPromise(selectWorkspaceMode("live"))).resolves.toEqual({
+      authenticated: true,
+      needsOnboarding: false,
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/workspace-mode", {
+      method: "POST",
+      headers: expect.any(Headers),
+      body: JSON.stringify({ mode: "live" }),
     });
   });
 

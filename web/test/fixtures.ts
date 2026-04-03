@@ -13,6 +13,8 @@ export const appDataFixture: AppData = {
       id: "wrk_demo",
       slug: "cleartify-demo-team",
       name: "Cleartify Demo Team",
+      mode: "sample",
+      sampleInitializedAt: "2026-03-01T09:00:00Z",
     },
   },
   signals: [

@@ -17,6 +17,7 @@ import type {
   TeamResponse,
   WorkObject,
   WorkObjectCoreFieldsInput,
+  WorkspaceMode,
   WorkObjectPriority,
   WorkObjectPrototypeInput,
   WorkObjectStatus,
@@ -59,7 +60,7 @@ export function jsonFetch<T>(path: string, init?: RequestInit): Effect.Effect<T,
 export function loadAppData(): Effect.Effect<AppData, Error> {
   return Effect.gen(function* () {
     const session = yield* jsonFetch<AuthSessionResponse>("/api/auth/session");
-    if (!session.authenticated) {
+    if (!session.authenticated || session.needsOnboarding || !session.workspace?.mode) {
       return {
         session,
         signals: [],
@@ -80,6 +81,16 @@ export function loadAppData(): Effect.Effect<AppData, Error> {
       clusters,
       workObjects,
     };
+  });
+}
+
+export function selectWorkspaceMode(mode: WorkspaceMode): Effect.Effect<AuthSessionResponse, Error> {
+  return jsonFetch<AuthSessionResponse>("/api/workspace-mode", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ mode }),
   });
 }
 

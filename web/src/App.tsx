@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Effect } from "effect";
 
-import { completeOnboarding, loadAppData } from "./lib/api";
-import type { AppData, WorkObject } from "./lib/types";
+import { loadAppData, selectWorkspaceMode } from "./lib/api";
+import type { AppData, WorkObject, WorkspaceMode } from "./lib/types";
 import { AppRouter } from "./router";
-import { OnboardingWalkthrough } from "./components/OnboardingWalkthrough";
+import { WorkspaceModeChooser } from "./components/WorkspaceModeChooser";
 
 type AppState =
   | { status: "loading" }
@@ -13,7 +13,7 @@ type AppState =
 
 export function App() {
   const [state, setState] = useState<AppState>({ status: "loading" });
-  const [onboardingState, setOnboardingState] = useState<{ pending: boolean; error?: string }>({ pending: false });
+  const [workspaceModeState, setWorkspaceModeState] = useState<{ pendingMode?: WorkspaceMode; error?: string }>({});
 
   const refreshData = () =>
     Effect.runPromise(loadAppData()).then((data) => {
@@ -60,28 +60,16 @@ export function App() {
     });
   };
 
-  const handleOnboardingCompleted = () => {
-    setOnboardingState({ pending: true });
+  const handleWorkspaceModeSelected = (mode: WorkspaceMode) => {
+    setWorkspaceModeState({ pendingMode: mode });
 
-    Effect.runPromise(completeOnboarding())
-      .then((session) => {
-        setState((currentState) => {
-          if (currentState.status !== "ready") {
-            return currentState;
-          }
-
-          return {
-            status: "ready",
-            data: {
-              ...currentState.data,
-              session,
-            },
-          };
-        });
-        setOnboardingState({ pending: false });
+    Effect.runPromise(selectWorkspaceMode(mode))
+      .then(() => refreshData())
+      .then(() => {
+        setWorkspaceModeState({});
       })
       .catch(() => {
-        setOnboardingState({ pending: false, error: "Unable to finish onboarding right now." });
+        setWorkspaceModeState({ error: "Unable to save workspace mode right now." });
       });
   };
 
@@ -142,11 +130,11 @@ export function App() {
 
   if (state.data.session.needsOnboarding) {
     return (
-      <OnboardingWalkthrough
+      <WorkspaceModeChooser
         workspaceName={state.data.session.workspace?.name ?? state.data.session.organization?.name}
-        pending={onboardingState.pending}
-        errorMessage={onboardingState.error}
-        onComplete={handleOnboardingCompleted}
+        pendingMode={workspaceModeState.pendingMode}
+        errorMessage={workspaceModeState.error}
+        onSelect={handleWorkspaceModeSelected}
       />
     );
   }

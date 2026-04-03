@@ -380,12 +380,13 @@ func (f *fakeStore) MarkWorkObjectReadyForRelease(_ context.Context, workObjectI
 }
 
 type fakeAuthService struct {
-	session          domain.AuthSession
-	completedSession domain.AuthSession
-	loginURL         string
-	logoutURL        string
-	callbackResult   auth.CallbackResult
-	err              error
+	session                  domain.AuthSession
+	completedSession         domain.AuthSession
+	selectedWorkspaceSession domain.AuthSession
+	loginURL                 string
+	logoutURL                string
+	callbackResult           auth.CallbackResult
+	err                      error
 }
 
 func (f *fakeAuthService) CurrentSession(context.Context, *http.Request) (domain.AuthSession, error) {
@@ -407,6 +408,16 @@ func (f *fakeAuthService) LogoutURL(context.Context, *http.Request) (string, err
 func (f *fakeAuthService) CompleteOnboarding(context.Context, *http.Request) (domain.AuthSession, error) {
 	if f.completedSession.Authenticated || f.completedSession.NeedsOnboarding {
 		return f.completedSession, f.err
+	}
+	return f.session, f.err
+}
+
+func (f *fakeAuthService) SelectWorkspaceMode(context.Context, *http.Request, string) (domain.AuthSession, error) {
+	if f.err != nil {
+		return domain.AuthSession{}, f.err
+	}
+	if f.selectedWorkspaceSession.Authenticated || f.selectedWorkspaceSession.Workspace != nil || f.selectedWorkspaceSession.User != nil {
+		return f.selectedWorkspaceSession, f.err
 	}
 	return f.session, f.err
 }

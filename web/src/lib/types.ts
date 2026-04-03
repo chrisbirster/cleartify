@@ -4,6 +4,8 @@ export type User = {
   displayName: string;
 };
 
+export type WorkspaceMode = "sample" | "live";
+
 export const SIGNAL_SOURCE_TYPES = [
   "feedback",
   "github",
@@ -122,6 +124,9 @@ export type Workspace = {
   id: string;
   slug: string;
   name: string;
+  mode?: WorkspaceMode;
+  sampleInitializedAt?: string;
+  liveInitializedAt?: string;
 };
 
 export type MeResponse = {

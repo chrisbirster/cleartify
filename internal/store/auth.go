@@ -18,6 +18,8 @@ var lookupAuthSessionStatement = sqldata.MustQuery("lookup_auth_session.sql")
 var upsertAuthSessionStatement = sqldata.MustQuery("upsert_auth_session.sql")
 var deleteAuthSessionStatement = sqldata.MustQuery("delete_auth_session.sql")
 var markUserOnboardingCompleteStatement = sqldata.MustQuery("mark_user_onboarding_complete.sql")
+var lookupWorkspaceSettingsStatement = sqldata.MustQuery("lookup_workspace_settings.sql")
+var upsertWorkspaceSettingsStatement = sqldata.MustQuery("upsert_workspace_settings.sql")
 var authSessionNow = time.Now
 
 func (s *Store) UpsertAuthUser(ctx context.Context, user domain.User) error {
@@ -74,7 +76,6 @@ func (s *Store) LookupAuthSession(ctx context.Context, sessionID string) (auth.S
 	record.RefreshToken = refreshToken
 	record.WorkOSSessionID = workOSSessionID
 	record.OrganizationID = organizationID
-	record.NeedsOnboarding = onboardingCompletedAt == ""
 
 	if organizationID != "" || organizationName != "" {
 		record.Organization = &domain.Organization{
@@ -94,6 +95,16 @@ func (s *Store) LookupAuthSession(ctx context.Context, sessionID string) (auth.S
 			Slug: slugify(userDisplayName + " workspace"),
 		}
 	}
+	if record.Workspace != nil {
+		workspaceMode, sampleInitializedAt, liveInitializedAt, err := s.lookupWorkspaceSettings(ctx, record.Workspace.ID)
+		if err != nil {
+			return auth.SessionRecord{}, err
+		}
+		record.Workspace.Mode = workspaceMode
+		record.Workspace.SampleInitializedAt = sampleInitializedAt
+		record.Workspace.LiveInitializedAt = liveInitializedAt
+	}
+	record.NeedsOnboarding = onboardingCompletedAt == "" || record.Workspace == nil || strings.TrimSpace(record.Workspace.Mode) == ""
 
 	if accessTokenExpiresAt != "" {
 		expiresAt, err := decodeTime(accessTokenExpiresAt)
@@ -136,6 +147,43 @@ func (s *Store) DeleteAuthSession(ctx context.Context, sessionID string) error {
 	return nil
 }
 
+func (s *Store) SetWorkspaceMode(ctx context.Context, workspaceID string, mode string, selectedAt time.Time) error {
+	workspaceID = strings.TrimSpace(workspaceID)
+	mode = strings.TrimSpace(mode)
+	if workspaceID == "" || mode == "" {
+		return fmt.Errorf("workspace settings require workspace id and mode")
+	}
+
+	timestamp := selectedAt.UTC().Truncate(time.Second).Format(time.RFC3339)
+	sampleInitializedAt := ""
+	liveInitializedAt := ""
+	switch mode {
+	case "sample":
+		sampleInitializedAt = timestamp
+	case "live":
+		liveInitializedAt = timestamp
+	}
+
+	if _, err := s.DB.ExecContext(
+		ctx,
+		upsertWorkspaceSettingsStatement,
+		workspaceID,
+		mode,
+		sampleInitializedAt,
+		liveInitializedAt,
+		timestamp,
+		timestamp,
+	); err != nil {
+		return fmt.Errorf("set workspace mode: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Store) EnsureSampleData() error {
+	return s.SeedDemo()
+}
+
 func (s *Store) MarkUserOnboardingComplete(ctx context.Context, userID string, completedAt time.Time) error {
 	result, err := s.DB.ExecContext(
 		ctx,
@@ -156,6 +204,33 @@ func (s *Store) MarkUserOnboardingComplete(ctx context.Context, userID string, c
 	}
 
 	return nil
+}
+
+func (s *Store) lookupWorkspaceSettings(ctx context.Context, workspaceID string) (string, *time.Time, *time.Time, error) {
+	row := s.DB.QueryRowContext(ctx, lookupWorkspaceSettingsStatement, strings.TrimSpace(workspaceID))
+
+	var (
+		mode                string
+		sampleInitializedAt string
+		liveInitializedAt   string
+	)
+	if err := row.Scan(&mode, &sampleInitializedAt, &liveInitializedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil, nil, nil
+		}
+		return "", nil, nil, fmt.Errorf("lookup workspace settings: %w", err)
+	}
+
+	decodedSampleInitializedAt, err := decodeNullableTime(sampleInitializedAt)
+	if err != nil {
+		return "", nil, nil, fmt.Errorf("decode sample initialized at: %w", err)
+	}
+	decodedLiveInitializedAt, err := decodeNullableTime(liveInitializedAt)
+	if err != nil {
+		return "", nil, nil, fmt.Errorf("decode live initialized at: %w", err)
+	}
+
+	return strings.TrimSpace(mode), decodedSampleInitializedAt, decodedLiveInitializedAt, nil
 }
 
 func workspaceName(session auth.SessionRecord) string {

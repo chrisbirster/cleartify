@@ -252,6 +252,48 @@ func (s *WorkOSAuthService) CompleteOnboarding(ctx context.Context, r *http.Requ
 	return authSessionFromRecord(record), nil
 }
 
+func (s *WorkOSAuthService) SelectWorkspaceMode(ctx context.Context, r *http.Request, mode string) (domain.AuthSession, error) {
+	normalizedMode, err := normalizeWorkspaceMode(mode)
+	if err != nil {
+		return domain.AuthSession{}, err
+	}
+
+	sessionID := sessionIDFromRequest(r)
+	if sessionID == "" {
+		return domain.AuthSession{}, ErrUnauthenticated
+	}
+
+	record, err := s.sessionStore.LookupAuthSession(ctx, sessionID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return domain.AuthSession{}, ErrUnauthenticated
+		}
+		return domain.AuthSession{}, err
+	}
+	if record.Workspace == nil {
+		return domain.AuthSession{}, ErrUnauthenticated
+	}
+
+	selectedAt := authNow().UTC().Truncate(time.Second)
+	if normalizedMode == "sample" {
+		if err := s.sessionStore.EnsureSampleData(); err != nil {
+			return domain.AuthSession{}, err
+		}
+	}
+	if err := s.sessionStore.SetWorkspaceMode(ctx, record.Workspace.ID, normalizedMode, selectedAt); err != nil {
+		return domain.AuthSession{}, err
+	}
+	if err := s.sessionStore.MarkUserOnboardingComplete(ctx, record.User.ID, selectedAt); err != nil && err != sql.ErrNoRows {
+		return domain.AuthSession{}, err
+	}
+
+	updatedRecord, err := s.sessionStore.LookupAuthSession(ctx, sessionID)
+	if err != nil {
+		return domain.AuthSession{}, err
+	}
+	return authSessionFromRecord(updatedRecord), nil
+}
+
 func normalizeScreenHint(raw string) string {
 	switch strings.TrimSpace(raw) {
 	case "sign-up":

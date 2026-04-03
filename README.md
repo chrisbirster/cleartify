@@ -32,6 +32,15 @@ The MVP should let a user:
 6. generate execution artifacts through stubbed agent actions
 7. review and move toward release
 
+## Workspace modes
+
+Live Workspace V1 starts with an explicit workspace mode choice for authenticated users:
+
+- `sample` workspace mode keeps the hero demo flow available for evaluation and review
+- `live` workspace mode starts clean so real users do not land inside seeded demo data by default
+
+The app shell clearly labels sample workspace mode, and the first-run chooser persists the selection before the main product shell opens.
+
 ## Core domain language
 
 Use these exact terms throughout the app and docs:
@@ -120,6 +129,7 @@ Product app (app origin)
 Planned API routes
 GET /api/signals
 GET /api/clusters
+POST /api/workspace-mode
 POST /api/clusters/:id/create-work-object
 GET /api/work-objects
 POST /api/work-objects

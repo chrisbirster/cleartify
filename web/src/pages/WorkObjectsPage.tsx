@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 
+import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
-import { formatWorkObjectPriority, formatWorkObjectStatus, type Cluster, type WorkObject } from "../lib/types";
+import { formatWorkObjectPriority, formatWorkObjectStatus, type Cluster, type WorkObject, type WorkspaceMode } from "../lib/types";
 
 type WorkObjectsPageProps = {
   workObjects: WorkObject[];
   clusters: Cluster[];
+  workspaceMode?: WorkspaceMode;
 };
 
 function statusTone(status: WorkObject["status"]) {
@@ -40,12 +42,38 @@ function priorityTone(priority: WorkObject["priority"]) {
   }
 }
 
-export function WorkObjectsPage({ workObjects, clusters }: WorkObjectsPageProps) {
+export function WorkObjectsPage({ workObjects, clusters, workspaceMode }: WorkObjectsPageProps) {
   const clusterByID = new Map(clusters.map((cluster) => [cluster.id, cluster]));
+
+  if (workObjects.length === 0) {
+    return (
+      <EmptyState
+        eyebrow="Work Objects"
+        title="No Work Objects yet"
+        description={
+          workspaceMode === "sample"
+            ? "The sample Work Object hero path has not been initialized yet."
+            : "Live workspaces start clean. A Work Object appears here after product context is triaged from the Context Inbox."
+        }
+        action={
+          <Link className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground" to="/inbox">
+            Open Context Inbox
+          </Link>
+        }
+      />
+    );
+  }
 
   return (
     <div>
-      <PageHeader title="Work Objects" description="Review seeded execution objects created from clustered context." />
+      <PageHeader
+        title="Work Objects"
+        description={
+          workspaceMode === "sample"
+            ? "Review the sample execution objects created from the Cleartify hero context."
+            : "Review the execution objects created from current clustered product context."
+        }
+      />
       <div className="space-y-4">
         {workObjects.map((workObject) => {
           const linkedCluster = workObject.clusterId ? clusterByID.get(workObject.clusterId) : undefined;

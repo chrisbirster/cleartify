@@ -19,6 +19,7 @@ var authNow = time.Now
 var ErrUnauthenticated = errors.New("unauthenticated")
 var ErrInvalidCallback = errors.New("invalid auth callback")
 var ErrAuthUnavailable = errors.New("auth unavailable")
+var ErrInvalidWorkspaceMode = errors.New("invalid workspace mode")
 
 type accessTokenClaims struct {
 	SessionID string `json:"sid"`
@@ -106,10 +107,22 @@ func parseAccessTokenClaims(token string) (string, *time.Time, error) {
 	return strings.TrimSpace(claims.SessionID), expiresAt, nil
 }
 
+func normalizeWorkspaceMode(raw string) (string, error) {
+	switch strings.TrimSpace(raw) {
+	case "sample":
+		return "sample", nil
+	case "live":
+		return "live", nil
+	default:
+		return "", ErrInvalidWorkspaceMode
+	}
+}
+
 func demoWorkspace() *domain.Workspace {
 	return &domain.Workspace{
 		ID:   "wrk_demo",
 		Name: "Cleartify Demo Team",
 		Slug: "cleartify-demo-team",
+		Mode: "sample",
 	}
 }

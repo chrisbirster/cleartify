@@ -5,14 +5,15 @@ import { Effect } from "effect";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { resolveCluster } from "../lib/api";
-import type { Cluster } from "../lib/types";
+import type { Cluster, WorkspaceMode } from "../lib/types";
 
 type InboxPageProps = {
   clusters: Cluster[];
+  workspaceMode?: WorkspaceMode;
   onDataChanged?: () => Promise<unknown>;
 };
 
-export function InboxPage({ clusters, onDataChanged }: InboxPageProps) {
+export function InboxPage({ clusters, workspaceMode, onDataChanged }: InboxPageProps) {
   const [resolving, setResolving] = useState<Record<string, boolean>>({});
 
   async function handleResolve(clusterId: string) {
@@ -26,12 +27,29 @@ export function InboxPage({ clusters, onDataChanged }: InboxPageProps) {
   }
 
   if (clusters.length === 0) {
-    return <EmptyState title="No Clusters yet" description="Seeded Signals will appear here as soon as they are grouped into a Context Inbox." />;
+    return (
+      <EmptyState
+        eyebrow="Context Inbox"
+        title="No Clusters yet"
+        description={
+          workspaceMode === "sample"
+            ? "The sample Context Inbox has not been initialized yet."
+            : "This live workspace stays clean until product context is grouped into a Context Inbox."
+        }
+      />
+    );
   }
 
   return (
     <div>
-      <PageHeader title="Context Inbox" description="Review seeded clusters built from Signals and product context." />
+      <PageHeader
+        title="Context Inbox"
+        description={
+          workspaceMode === "sample"
+            ? "Review the sample Clusters built from the Cleartify hero flow."
+            : "Review grouped product context as it becomes ready for triage and execution."
+        }
+      />
       <div className="space-y-4">
         {clusters.map((cluster) => (
           <Link
