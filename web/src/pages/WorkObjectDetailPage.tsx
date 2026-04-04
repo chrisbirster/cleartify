@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { StatePanel } from "../components/StatePanel";
+import { useProjectScope } from "../lib/projectScope";
 import {
   createArtifactForWorkObject,
   createDecisionForWorkObject,
@@ -25,6 +26,7 @@ import {
   type Cluster,
   type Decision,
   type DecisionInput,
+  type Project,
   type WorkObject,
   type WorkObjectCoreFieldsInput,
   type WorkObjectPriority,
@@ -33,6 +35,7 @@ import {
 } from "../lib/types";
 
 type WorkObjectDetailPageProps = {
+  projects?: Project[];
   workObjects: WorkObject[];
   clusters: Cluster[];
   onWorkObjectUpdated?: (workObject: WorkObject) => void;
@@ -138,8 +141,9 @@ function mergeArtifacts(artifacts: Artifact[] | null | undefined, createdArtifac
   return merged;
 }
 
-export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdated }: WorkObjectDetailPageProps) {
+export function WorkObjectDetailPage({ projects = [], workObjects, clusters, onWorkObjectUpdated }: WorkObjectDetailPageProps) {
   const { workObjectId } = useParams();
+  const { linkTo } = useProjectScope(projects);
   const workObject = workObjects.find((entry) => entry.id === workObjectId);
   const [isEditingCore, setIsEditingCore] = useState(false);
   const [isSavingCore, setIsSavingCore] = useState(false);
@@ -192,6 +196,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
   }
 
   const linkedCluster = workObject.clusterId ? clusters.find((entry) => entry.id === workObject.clusterId) : undefined;
+  const linkedProject = workObject.projectId ? projects.find((entry) => entry.id === workObject.projectId) : undefined;
   const persistedDecisions = normalizeCollection(workObject.decisions);
   const persistedArtifacts = normalizeCollection(workObject.artifacts);
   const evidenceSignals = linkedCluster?.signals ?? [];
@@ -410,11 +415,20 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
 
   return (
     <div>
-      <PageHeader eyebrow="Work Object" title={workObject.title} description={workObject.summary} />
+      <PageHeader
+        eyebrow={linkedProject ? `Work Object • ${linkedProject.name}` : "Work Object"}
+        title={workObject.title}
+        description={workObject.summary}
+      />
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.8fr)]">
         <div className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl">
           <div className="flex flex-wrap gap-2 text-xs font-medium">
+            {linkedProject ? (
+              <span className="rounded-full border border-border bg-background/70 px-3 py-1 text-muted-foreground">
+                {linkedProject.name}
+              </span>
+            ) : null}
             <span className={`rounded-full border px-3 py-1 capitalize ${panelTone(visibleStatus)}`}>{formatWorkObjectStatus(visibleStatus)}</span>
             <span className={`rounded-full border px-3 py-1 capitalize ${panelTone(visiblePriority)}`}>{formatWorkObjectPriority(visiblePriority)} priority</span>
             <span className="rounded-full border border-border bg-secondary/70 px-3 py-1 text-muted-foreground">
@@ -721,7 +735,7 @@ export function WorkObjectDetailPage({ workObjects, clusters, onWorkObjectUpdate
               </div>
               <Link
                 className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15"
-                to={`/inbox/${linkedCluster.id}`}
+                to={linkTo(`/inbox/${linkedCluster.id}`)}
               >
                 Open Context Inbox
               </Link>

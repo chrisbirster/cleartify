@@ -18,5 +18,7 @@ func (s *Server) handleWorkObjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, filterWorkObjectsForWorkspace(session, workObjects))
+	projectID := r.URL.Query().Get("projectId")
+	visibleWorkObjects := filterWorkObjectsForWorkspace(session, workObjects)
+	httpx.WriteJSON(w, http.StatusOK, filterWorkObjectsForProject(projectID, visibleWorkObjects))
 }

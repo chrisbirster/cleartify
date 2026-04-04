@@ -25,12 +25,13 @@ Cleartify is built for fast product teams that want to move from messy product s
 The MVP should let a user:
 
 1. connect or ingest product signals
-2. review clustered context in a Context Inbox
-3. convert a cluster into a Work Object
-4. attach a prototype or rough notes
-5. generate an implementation plan
-6. generate execution artifacts through stubbed agent actions
-7. review and move toward release
+2. create a Project and scope work around it
+3. review clustered context in a Context Inbox
+4. convert a cluster into a Work Object
+5. attach a prototype or rough notes
+6. generate an implementation plan
+7. generate execution artifacts through stubbed agent actions
+8. review and move toward release
 
 ## Workspace modes
 
@@ -39,7 +40,7 @@ Live Workspace V1 starts with an explicit workspace mode choice for authenticate
 - `sample` workspace mode keeps the hero demo flow available for evaluation and review
 - `live` workspace mode starts clean so real users do not land inside seeded demo data by default
 
-The app shell clearly labels sample workspace mode, and the first-run chooser persists the selection before the main product shell opens.
+The app shell clearly labels sample workspace mode, the first-run chooser persists the selection before the main product shell opens, and Projects now provide the main execution boundary inside each workspace.
 
 ## Core domain language
 
@@ -115,6 +116,9 @@ Marketing
 / -> marketing site
 Product app (app origin)
 / -> Today / overview
+/projects -> Project list
+/projects/new -> Create project
+/projects/:projectId -> Project dashboard
 /inbox -> Context Inbox
 /inbox/:clusterId -> Cluster detail
 /work -> Work Objects list
@@ -127,6 +131,8 @@ Product app (app origin)
 /releases -> Release list
 /releases/:releaseId -> Release detail
 Planned API routes
+GET /api/projects
+POST /api/projects
 GET /api/signals
 GET /api/clusters
 POST /api/workspace-mode
@@ -169,6 +175,7 @@ embedded frontend serving
 SQLite bootstrap
 seeded demo data
 shared app shell
+workspace mode split
 Phase 1 - Context Inbox
 Signals and Clusters
 seeded signal ingestion examples
@@ -176,6 +183,8 @@ inbox page
 cluster detail
 create Work Object flow
 Phase 2 - Work Objects
+Projects as a first-class entity
+project dashboards and scoped navigation
 Work Object schema
 work object detail page
 evidence, decisions, and artifacts panels

@@ -43,12 +43,14 @@ func (s *Server) handleSignals(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		projectID := strings.TrimSpace(r.URL.Query().Get("projectId"))
 		signals, err := s.store.ListSignals(r.Context())
 		if err != nil {
 			httpx.WriteError(w, http.StatusInternalServerError, "signals_failed", "Unable to load Signals.")
 			return
 		}
-		httpx.WriteJSON(w, http.StatusOK, filterSignalsForWorkspace(session, signals))
+		visibleSignals := filterSignalsForWorkspace(session, signals)
+		httpx.WriteJSON(w, http.StatusOK, filterSignalsForProject(projectID, visibleSignals))
 	case http.MethodPost:
 		var request signalRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -137,12 +139,24 @@ func (s *Server) handleDecisions(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		projectID := strings.TrimSpace(r.URL.Query().Get("projectId"))
 		decisions, err := s.store.ListDecisions(r.Context())
 		if err != nil {
 			httpx.WriteError(w, http.StatusInternalServerError, "decisions_failed", "Unable to load Decisions.")
 			return
 		}
-		httpx.WriteJSON(w, http.StatusOK, filterDecisionsForWorkspace(session, decisions))
+		visibleDecisions := filterDecisionsForWorkspace(session, decisions)
+		if projectID == "" {
+			httpx.WriteJSON(w, http.StatusOK, visibleDecisions)
+			return
+		}
+		workObjects, err := s.store.ListWorkObjects(r.Context())
+		if err != nil {
+			httpx.WriteError(w, http.StatusInternalServerError, "decisions_failed", "Unable to load Decisions.")
+			return
+		}
+		visibleWorkObjects := filterWorkObjectsForWorkspace(session, workObjects)
+		httpx.WriteJSON(w, http.StatusOK, filterDecisionsForProject(projectID, visibleDecisions, visibleWorkObjects))
 	case http.MethodPost:
 		var request decisionRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -242,12 +256,24 @@ func (s *Server) handleArtifacts(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		projectID := strings.TrimSpace(r.URL.Query().Get("projectId"))
 		artifacts, err := s.store.ListArtifacts(r.Context())
 		if err != nil {
 			httpx.WriteError(w, http.StatusInternalServerError, "artifacts_failed", "Unable to load Artifacts.")
 			return
 		}
-		httpx.WriteJSON(w, http.StatusOK, filterArtifactsForWorkspace(session, artifacts))
+		visibleArtifacts := filterArtifactsForWorkspace(session, artifacts)
+		if projectID == "" {
+			httpx.WriteJSON(w, http.StatusOK, visibleArtifacts)
+			return
+		}
+		workObjects, err := s.store.ListWorkObjects(r.Context())
+		if err != nil {
+			httpx.WriteError(w, http.StatusInternalServerError, "artifacts_failed", "Unable to load Artifacts.")
+			return
+		}
+		visibleWorkObjects := filterWorkObjectsForWorkspace(session, workObjects)
+		httpx.WriteJSON(w, http.StatusOK, filterArtifactsForProject(projectID, visibleArtifacts, visibleWorkObjects))
 	case http.MethodPost:
 		var request artifactRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {

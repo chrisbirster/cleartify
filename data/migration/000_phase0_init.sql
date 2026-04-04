@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE TABLE IF NOT EXISTS signals (
 	id TEXT PRIMARY KEY,
+	project_id TEXT,
 	source_type TEXT NOT NULL,
 	source_id TEXT NOT NULL,
 	title TEXT NOT NULL,
@@ -30,9 +31,21 @@ CREATE TABLE IF NOT EXISTS signals (
 
 CREATE TABLE IF NOT EXISTS clusters (
 	id TEXT PRIMARY KEY,
+	project_id TEXT,
 	title TEXT NOT NULL,
 	summary TEXT NOT NULL,
 	severity TEXT NOT NULL,
+	status TEXT NOT NULL,
+	created_at TEXT NOT NULL,
+	updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS projects (
+	id TEXT PRIMARY KEY,
+	workspace_id TEXT NOT NULL,
+	name TEXT NOT NULL,
+	slug TEXT NOT NULL,
+	summary TEXT NOT NULL,
 	status TEXT NOT NULL,
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL
@@ -48,6 +61,7 @@ CREATE TABLE IF NOT EXISTS cluster_signals (
 
 CREATE TABLE IF NOT EXISTS work_objects (
 	id TEXT PRIMARY KEY,
+	project_id TEXT,
 	cluster_id TEXT,
 	title TEXT NOT NULL,
 	summary TEXT NOT NULL,

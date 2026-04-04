@@ -2,9 +2,12 @@ import { Link } from "react-router-dom";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { filterWorkObjectsByProject, useProjectScope } from "../lib/projectScope";
 import { formatWorkObjectPriority, formatWorkObjectStatus, type Cluster, type WorkObject } from "../lib/types";
+import type { Project } from "../lib/types";
 
 type ReleasesPageProps = {
+  projects?: Project[];
   workObjects: WorkObject[];
   clusters: Cluster[];
 };
@@ -41,8 +44,9 @@ function formatTimestamp(value: string) {
   });
 }
 
-export function ReleasesPage({ workObjects, clusters }: ReleasesPageProps) {
-  const releaseReadyWorkObjects = [...workObjects]
+export function ReleasesPage({ projects = [], workObjects, clusters }: ReleasesPageProps) {
+  const { selectedProject, selectedProjectId, linkTo } = useProjectScope(projects);
+  const releaseReadyWorkObjects = [...filterWorkObjectsByProject(workObjects, selectedProjectId)]
     .filter((workObject) => Boolean(workObject.releaseReadyAt))
     .sort((left, right) => (right.releaseReadyAt ?? "").localeCompare(left.releaseReadyAt ?? ""));
 
@@ -51,14 +55,22 @@ export function ReleasesPage({ workObjects, clusters }: ReleasesPageProps) {
       <PageHeader
         eyebrow="Review and release"
         title="Release queue"
-        description="Track the Work Objects that appear here after Review marks them release-ready."
+        description={
+          selectedProject
+            ? `Track the release-ready Work Objects for ${selectedProject.name}.`
+            : "Track the Work Objects that appear here after Review marks them release-ready."
+        }
       />
 
       {releaseReadyWorkObjects.length === 0 ? (
         <EmptyState
           eyebrow="Release queue"
-          title="No release-ready Work Objects yet"
-          description="A Work Object appears here after the Review checkpoint marks it release-ready."
+          title={selectedProject ? "No release-ready Work Objects in this Project" : "No release-ready Work Objects yet"}
+          description={
+            selectedProject
+              ? `${selectedProject.name} will appear here after Review marks one of its Work Objects release-ready.`
+              : "A Work Object appears here after the Review checkpoint marks it release-ready."
+          }
         />
       ) : (
         <div className="grid gap-4">
@@ -107,13 +119,13 @@ export function ReleasesPage({ workObjects, clusters }: ReleasesPageProps) {
                 <div className="mt-5 flex flex-wrap gap-3">
                   <Link
                     className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                    to={`/review/${workObject.id}`}
+                    to={linkTo(`/review/${workObject.id}`)}
                   >
                     Open review
                   </Link>
                   <Link
                     className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                    to={`/work/${workObject.id}`}
+                    to={linkTo(`/work/${workObject.id}`)}
                   >
                     Open Work Object
                   </Link>

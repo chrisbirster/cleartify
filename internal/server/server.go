@@ -11,6 +11,10 @@ import (
 )
 
 type DataStore interface {
+	ListProjects(ctx context.Context) ([]domain.Project, error)
+	LookupProject(ctx context.Context, projectID string) (domain.Project, error)
+	CreateProject(ctx context.Context, workspaceID string, name string, summary string, status string) (domain.Project, error)
+	UpdateProject(ctx context.Context, projectID string, name string, summary string, status string) (domain.Project, error)
 	ListSignals(ctx context.Context) ([]domain.Signal, error)
 	LookupSignal(ctx context.Context, signalID string) (domain.Signal, error)
 	CreateSignal(ctx context.Context, sourceType string, sourceID string, title string, body string, externalURL string) (domain.Signal, error)

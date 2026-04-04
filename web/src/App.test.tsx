@@ -150,6 +150,7 @@ describe("App", () => {
             sampleInitializedAt: undefined,
           },
         },
+        projects: [],
         signals: [],
         clusters: [],
         workObjects: [],
@@ -180,6 +181,7 @@ describe("App", () => {
             sampleInitializedAt: undefined,
           },
         },
+        projects: [],
         signals: [],
         clusters: [],
         workObjects: [],
@@ -191,7 +193,7 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: /Choose how this workspace should start/i })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Start live workspace" }));
 
-    expect(await screen.findByRole("heading", { name: "Live workspace ready" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Create your first project" })).toBeInTheDocument();
     expect(screen.queryByText("Sample workspace")).not.toBeInTheDocument();
   });
 

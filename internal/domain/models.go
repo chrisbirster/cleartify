@@ -44,8 +44,20 @@ type Team struct {
 	CurrentUser  *User         `json:"currentUser,omitempty"`
 }
 
+type Project struct {
+	ID          string    `json:"id"`
+	WorkspaceID string    `json:"workspaceId"`
+	Name        string    `json:"name"`
+	Slug        string    `json:"slug"`
+	Summary     string    `json:"summary"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
 type Signal struct {
 	ID         string         `json:"id"`
+	ProjectID  string         `json:"projectId,omitempty"`
 	SourceType string         `json:"sourceType"`
 	SourceID   string         `json:"sourceId"`
 	Title      string         `json:"title"`
@@ -57,6 +69,7 @@ type Signal struct {
 
 type Cluster struct {
 	ID        string    `json:"id"`
+	ProjectID string    `json:"projectId,omitempty"`
 	Title     string    `json:"title"`
 	Summary   string    `json:"summary"`
 	Severity  string    `json:"severity"`
@@ -99,6 +112,7 @@ type DraftPlan struct {
 
 type WorkObject struct {
 	ID             string     `json:"id"`
+	ProjectID      string     `json:"projectId,omitempty"`
 	ClusterID      string     `json:"clusterId,omitempty"`
 	Title          string     `json:"title"`
 	Summary        string     `json:"summary"`

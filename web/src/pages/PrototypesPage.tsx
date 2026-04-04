@@ -1,22 +1,38 @@
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
-import type { WorkObject } from "../lib/types";
+import { filterWorkObjectsByProject, useProjectScope } from "../lib/projectScope";
+import type { Project, WorkObject } from "../lib/types";
 import { Link } from "react-router-dom";
 
 type PrototypesPageProps = {
+  projects?: Project[];
   workObjects: WorkObject[];
 };
 
-export function PrototypesPage({ workObjects }: PrototypesPageProps) {
-  const attachedWorkObjects = workObjects.filter((workObject) => workObject.prototypeUrl || workObject.prototypeNote);
+export function PrototypesPage({ projects = [], workObjects }: PrototypesPageProps) {
+  const { selectedProject, selectedProjectId, linkTo } = useProjectScope(projects);
+  const attachedWorkObjects = filterWorkObjectsByProject(workObjects, selectedProjectId).filter(
+    (workObject) => workObject.prototypeUrl || workObject.prototypeNote,
+  );
 
   return (
     <div>
-      <PageHeader title="Prototypes" description="Review the prototype links and notes attached to current Work Objects." />
+      <PageHeader
+        title="Prototypes"
+        description={
+          selectedProject
+            ? `Review prototype links and notes attached to ${selectedProject.name}.`
+            : "Review the prototype links and notes attached to current Work Objects."
+        }
+      />
       {attachedWorkObjects.length === 0 ? (
         <EmptyState
           title="No prototypes attached"
-          description="Attach a prototype link or note from a Work Object to start the Prototype-to-Plan loop."
+          description={
+            selectedProject
+              ? `Attach a prototype link or note to a Work Object in ${selectedProject.name} to start the Prototype-to-Plan loop.`
+              : "Attach a prototype link or note from a Work Object to start the Prototype-to-Plan loop."
+          }
         />
       ) : (
         <div className="space-y-4">
@@ -30,7 +46,7 @@ export function PrototypesPage({ workObjects }: PrototypesPageProps) {
                 </div>
                 <Link
                   className="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15"
-                  to={`/work/${workObject.id}`}
+                  to={linkTo(`/work/${workObject.id}`)}
                 >
                   Open Work Object
                 </Link>

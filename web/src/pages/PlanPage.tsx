@@ -5,10 +5,12 @@ import { Link, useParams } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { StatePanel } from "../components/StatePanel";
+import { useProjectScope } from "../lib/projectScope";
 import { generateDraftPlanForWorkObject, loadDraftPlanForWorkObject, updateDraftPlanForWorkObject } from "../lib/api";
-import type { Cluster, DraftPlan, DraftPlanInput, WorkObject } from "../lib/types";
+import type { Cluster, DraftPlan, DraftPlanInput, Project, WorkObject } from "../lib/types";
 
 type PlanPageProps = {
+  projects?: Project[];
   workObjects: WorkObject[];
   clusters: Cluster[];
 };
@@ -74,10 +76,12 @@ function buildDraftPlanInput(editor: DraftPlanEditor): DraftPlanInput {
   };
 }
 
-export function PlanPage({ workObjects, clusters }: PlanPageProps) {
+export function PlanPage({ projects = [], workObjects, clusters }: PlanPageProps) {
   const { workObjectId } = useParams();
+  const { linkTo } = useProjectScope(projects);
   const workObject = workObjects.find((entry) => entry.id === workObjectId);
   const linkedCluster = workObject?.clusterId ? clusters.find((entry) => entry.id === workObject.clusterId) : undefined;
+  const linkedProject = workObject?.projectId ? projects.find((entry) => entry.id === workObject.projectId) : undefined;
   const [draftPlan, setDraftPlan] = useState<DraftPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -214,7 +218,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
     <div>
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <PageHeader
-          eyebrow="Prototype-to-Plan"
+          eyebrow={linkedProject ? `Prototype-to-Plan • ${linkedProject.name}` : "Prototype-to-Plan"}
           title="Draft plan"
           description="Generate or refine the persisted draft that turns this Work Object and prototype context into the next execution pass."
         />
@@ -374,7 +378,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
             <div className="mt-4">
               <Link
                 className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                to={`/work/${workObject.id}`}
+                to={linkTo(`/work/${workObject.id}`)}
               >
                 Open Work Object
               </Link>
@@ -431,7 +435,7 @@ export function PlanPage({ workObjects, clusters }: PlanPageProps) {
                 <p className="text-sm leading-6 text-muted-foreground">{linkedCluster.summary}</p>
                 <Link
                   className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                  to={`/inbox/${linkedCluster.id}`}
+                  to={linkTo(`/inbox/${linkedCluster.id}`)}
                 >
                   Open Context Inbox
                 </Link>

@@ -79,6 +79,7 @@ func (s *Store) CreateSignal(ctx context.Context, sourceType string, sourceID st
 		ctx,
 		insertSignalStatement,
 		signal.ID,
+		nil,
 		signal.SourceType,
 		signal.SourceID,
 		signal.Title,
@@ -144,6 +145,7 @@ func scanSignal(scanner signalScanner) (domain.Signal, error) {
 	var createdAt string
 	if err := scanner.Scan(
 		&signal.ID,
+		&signal.ProjectID,
 		&signal.SourceType,
 		&signal.SourceID,
 		&signal.Title,

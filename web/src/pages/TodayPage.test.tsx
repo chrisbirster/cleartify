@@ -10,6 +10,7 @@ describe("TodayPage", () => {
     render(
       <MemoryRouter>
         <TodayPage
+          projects={appDataFixture.projects}
           signals={appDataFixture.signals}
           clusters={appDataFixture.clusters}
           workObjects={appDataFixture.workObjects}
@@ -18,11 +19,10 @@ describe("TodayPage", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Today" })).toBeInTheDocument();
-    expect(screen.getByText("Signals")).toBeInTheDocument();
-    expect(screen.getByText("Clusters")).toBeInTheDocument();
-    expect(screen.getByText("Work Objects")).toBeInTheDocument();
-    expect(screen.getByText(String(appDataFixture.signals.length))).toBeInTheDocument();
-    expect(screen.getAllByText(String(appDataFixture.clusters.length))).toHaveLength(2);
-    expect(screen.getByRole("link", { name: /Open Mobile performance improvements/i })).toBeInTheDocument();
+    expect(screen.getByText("Projects")).toBeInTheDocument();
+    expect(screen.getByText("Open Clusters")).toBeInTheDocument();
+    expect(screen.getByText("Active Work")).toBeInTheDocument();
+    expect(screen.getByText(String(appDataFixture.projects.length))).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open Projects" })).toBeInTheDocument();
   });
 });

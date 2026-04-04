@@ -18,5 +18,7 @@ func (s *Server) handleClusters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, filterClustersForWorkspace(session, clusters))
+	projectID := r.URL.Query().Get("projectId")
+	visibleClusters := filterClustersForWorkspace(session, clusters)
+	httpx.WriteJSON(w, http.StatusOK, filterClustersForProject(projectID, visibleClusters))
 }

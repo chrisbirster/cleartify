@@ -1,5 +1,6 @@
 INSERT INTO signals (
   id,
+  project_id,
   source_type,
   source_id,
   title,
@@ -7,4 +8,4 @@ INSERT INTO signals (
   url,
   metadata_json,
   created_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);

@@ -313,6 +313,7 @@ func (s *Store) CreateWorkObjectFromCluster(ctx context.Context, clusterID strin
 	createdAt := workObjectNow().UTC().Truncate(time.Second)
 	workObject := domain.WorkObject{
 		ID:        workObjectIDFromCluster(clusterID, createdAt),
+		ProjectID: cluster.ProjectID,
 		ClusterID: clusterID,
 		Title:     cluster.Title,
 		Summary:   cluster.Summary,
@@ -329,6 +330,7 @@ func (s *Store) CreateWorkObjectFromCluster(ctx context.Context, clusterID strin
 
 	if _, err := s.DB.ExecContext(ctx, insertWorkObjectFromClusterStatement,
 		workObject.ID,
+		workObject.ProjectID,
 		workObject.ClusterID,
 		workObject.Title,
 		workObject.Summary,
@@ -358,6 +360,7 @@ func (s *Store) lookupClusterForWorkObject(ctx context.Context, clusterID string
 	var err error
 	if err := row.Scan(
 		&cluster.ID,
+		&cluster.ProjectID,
 		&cluster.Title,
 		&cluster.Summary,
 		&cluster.Severity,
@@ -455,6 +458,7 @@ func (s *Store) scanWorkObject(ctx context.Context, scanner workObjectScanner) (
 	var updatedAt string
 	if err := scanner.Scan(
 		&workObject.ID,
+		&workObject.ProjectID,
 		&workObject.ClusterID,
 		&workObject.Title,
 		&workObject.Summary,

@@ -55,6 +55,7 @@ describe("api helpers", () => {
           ok: true,
           json: async () => ({ authenticated: true, needsOnboarding: false, workspace: { id: "wrk_1", slug: "demo", name: "Demo", mode: "sample" } }),
         })
+        .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "prj_1" }] })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "sig_1" }] })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "clu_1" }] })
         .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "wo_1" }] }),
@@ -62,6 +63,7 @@ describe("api helpers", () => {
 
     await expect(Effect.runPromise(loadAppData())).resolves.toEqual({
       session: { authenticated: true, needsOnboarding: false, workspace: { id: "wrk_1", slug: "demo", name: "Demo", mode: "sample" } },
+      projects: [{ id: "prj_1" }],
       signals: [{ id: "sig_1" }],
       clusters: [{ id: "clu_1" }],
       workObjects: [{ id: "wo_1" }],
@@ -76,6 +78,7 @@ describe("api helpers", () => {
 
     await expect(Effect.runPromise(loadAppData())).resolves.toEqual({
       session: { authenticated: false, needsOnboarding: false },
+      projects: [],
       signals: [],
       clusters: [],
       workObjects: [],
@@ -102,6 +105,7 @@ describe("api helpers", () => {
         needsOnboarding: true,
         workspace: { id: "wrk_1", slug: "demo", name: "Demo" },
       },
+      projects: [],
       signals: [],
       clusters: [],
       workObjects: [],

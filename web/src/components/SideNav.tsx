@@ -1,5 +1,8 @@
 import type { WorkspaceMode } from "../lib/types";
+import type { Project } from "../lib/types";
 import { NavLink } from "react-router-dom";
+
+import { useProjectScope } from "../lib/projectScope";
 
 type NavItem = {
   label: string;
@@ -8,11 +11,13 @@ type NavItem = {
 
 type SideNavProps = {
   items: NavItem[];
+  projects?: Project[];
   workspaceMode?: WorkspaceMode;
 };
 
-export function SideNav({ items, workspaceMode }: SideNavProps) {
+export function SideNav({ items, projects = [], workspaceMode }: SideNavProps) {
   const isSampleWorkspace = workspaceMode === "sample";
+  const { linkTo } = useProjectScope(projects);
 
   return (
     <aside className="border-r border-border bg-card/80 px-4 py-6">
@@ -22,12 +27,15 @@ export function SideNav({ items, workspaceMode }: SideNavProps) {
         {isSampleWorkspace ? (
           <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">Sample workspace</p>
         ) : null}
+        <p className="mt-2 text-xs text-muted-foreground">
+          {projects.length} {projects.length === 1 ? "Project" : "Projects"}
+        </p>
       </div>
       <nav className="space-y-1">
         {items.map((item) => (
           <NavLink
             key={item.to}
-            to={item.to}
+            to={linkTo(item.to)}
             className={({ isActive }) =>
               [
                 "block rounded-2xl px-3 py-2 text-sm transition-colors",

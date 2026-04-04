@@ -4,17 +4,21 @@ import { Effect } from "effect";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { filterClustersByProject, useProjectScope } from "../lib/projectScope";
 import { resolveCluster } from "../lib/api";
-import type { Cluster, WorkspaceMode } from "../lib/types";
+import type { Cluster, Project, WorkspaceMode } from "../lib/types";
 
 type InboxPageProps = {
+  projects?: Project[];
   clusters: Cluster[];
   workspaceMode?: WorkspaceMode;
   onDataChanged?: () => Promise<unknown>;
 };
 
-export function InboxPage({ clusters, workspaceMode, onDataChanged }: InboxPageProps) {
+export function InboxPage({ projects = [], clusters, workspaceMode, onDataChanged }: InboxPageProps) {
   const [resolving, setResolving] = useState<Record<string, boolean>>({});
+  const { selectedProject, selectedProjectId, linkTo } = useProjectScope(projects);
+  const visibleClusters = filterClustersByProject(clusters, selectedProjectId);
 
   async function handleResolve(clusterId: string) {
     setResolving((current) => ({ ...current, [clusterId]: true }));
@@ -26,15 +30,17 @@ export function InboxPage({ clusters, workspaceMode, onDataChanged }: InboxPageP
     }
   }
 
-  if (clusters.length === 0) {
+  if (visibleClusters.length === 0) {
     return (
       <EmptyState
         eyebrow="Context Inbox"
-        title="No Clusters yet"
+        title={selectedProject ? "No Clusters in this Project" : "No Clusters yet"}
         description={
-          workspaceMode === "sample"
-            ? "The sample Context Inbox has not been initialized yet."
-            : "This live workspace stays clean until product context is grouped into a Context Inbox."
+          selectedProject
+            ? `${selectedProject.name} does not have any grouped context in the Context Inbox yet.`
+            : workspaceMode === "sample"
+              ? "The sample Context Inbox has not been initialized yet."
+              : "This live workspace stays clean until product context is grouped into a Context Inbox."
         }
       />
     );
@@ -45,16 +51,18 @@ export function InboxPage({ clusters, workspaceMode, onDataChanged }: InboxPageP
       <PageHeader
         title="Context Inbox"
         description={
-          workspaceMode === "sample"
-            ? "Review the sample Clusters built from the Cleartify hero flow."
-            : "Review grouped product context as it becomes ready for triage and execution."
+          selectedProject
+            ? `Review grouped product context for ${selectedProject.name}.`
+            : workspaceMode === "sample"
+              ? "Review the sample Clusters built from the Cleartify hero flow."
+              : "Review grouped product context as it becomes ready for triage and execution."
         }
       />
       <div className="space-y-4">
-        {clusters.map((cluster) => (
+        {visibleClusters.map((cluster) => (
           <Link
             key={cluster.id}
-            to={`/inbox/${cluster.id}`}
+            to={linkTo(`/inbox/${cluster.id}`)}
             className="group block rounded-3xl border border-border bg-card/90 p-5 shadow-xl transition-all hover:border-primary/30 hover:bg-card"
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

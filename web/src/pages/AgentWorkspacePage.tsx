@@ -5,14 +5,16 @@ import { Link, useParams } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { StatePanel } from "../components/StatePanel";
+import { useProjectScope } from "../lib/projectScope";
 import {
   generateImplementationArtifactForWorkObject,
   generateTaskBreakdownArtifactForWorkObject,
   loadDraftPlanForWorkObject,
 } from "../lib/api";
-import { formatArtifactType, type Artifact, type Cluster, type DraftPlan, type WorkObject } from "../lib/types";
+import { formatArtifactType, type Artifact, type Cluster, type DraftPlan, type Project, type WorkObject } from "../lib/types";
 
 type AgentWorkspacePageProps = {
+  projects?: Project[];
   workObjects: WorkObject[];
   clusters: Cluster[];
   onWorkObjectUpdated?: (workObject: WorkObject) => void;
@@ -45,10 +47,12 @@ function mergeArtifacts(artifacts: Artifact[], createdArtifacts: Artifact[]) {
 
 const agentArtifactTypes = new Set(["implementation_brief", "task_breakdown"]);
 
-export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated }: AgentWorkspacePageProps) {
+export function AgentWorkspacePage({ projects = [], workObjects, clusters, onWorkObjectUpdated }: AgentWorkspacePageProps) {
   const { workObjectId } = useParams();
+  const { linkTo } = useProjectScope(projects);
   const workObject = workObjects.find((entry) => entry.id === workObjectId);
   const linkedCluster = workObject?.clusterId ? clusters.find((entry) => entry.id === workObject.clusterId) : undefined;
+  const linkedProject = workObject?.projectId ? projects.find((entry) => entry.id === workObject.projectId) : undefined;
   const [draftPlan, setDraftPlan] = useState<DraftPlan | null>(null);
   const [createdArtifacts, setCreatedArtifacts] = useState<Artifact[]>([]);
   const [isLoadingDraftPlan, setIsLoadingDraftPlan] = useState(true);
@@ -151,7 +155,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
   return (
     <div>
       <PageHeader
-        eyebrow="Agent Workspace"
+        eyebrow={linkedProject ? `Agent Workspace • ${linkedProject.name}` : "Agent Workspace"}
         title="Agent Workspace"
         description="Create deterministic execution artifacts from the current Work Object and persisted draft plan."
       />
@@ -215,7 +219,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
                   action={
                     <Link
                       className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                      to={`/plans/${workObject.id}`}
+                      to={linkTo(`/plans/${workObject.id}`)}
                     >
                       Open draft plan
                     </Link>
@@ -236,7 +240,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
               </div>
               <Link
                 className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                to={`/work/${workObject.id}`}
+                to={linkTo(`/work/${workObject.id}`)}
               >
                 Open Work Object
               </Link>
@@ -297,7 +301,7 @@ export function AgentWorkspacePage({ workObjects, clusters, onWorkObjectUpdated 
               </div>
               <Link
                 className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                to={`/plans/${workObject.id}`}
+                to={linkTo(`/plans/${workObject.id}`)}
               >
                 Open draft plan
               </Link>

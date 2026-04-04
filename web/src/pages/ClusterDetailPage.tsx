@@ -4,10 +4,12 @@ import { Effect } from "effect";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { useProjectScope } from "../lib/projectScope";
 import { createWorkObjectFromCluster, resolveCluster } from "../lib/api";
-import type { Cluster, WorkObject } from "../lib/types";
+import type { Cluster, Project, WorkObject } from "../lib/types";
 
 type ClusterDetailPageProps = {
+  projects?: Project[];
   clusters: Cluster[];
   createWorkObject?: (clusterId: string) => Effect.Effect<WorkObject, Error>;
   onCreateSuccess?: (workObject: WorkObject) => void;
@@ -25,12 +27,14 @@ export const browserRedirect = {
 };
 
 export function ClusterDetailPage({
+  projects = [],
   clusters,
   createWorkObject = createWorkObjectFromCluster,
-  onCreateSuccess = redirectToWorkObject,
+  onCreateSuccess,
   onDataChanged,
 }: ClusterDetailPageProps) {
   const navigate = useNavigate();
+  const { linkTo } = useProjectScope(projects);
   const { clusterId } = useParams();
   const cluster = clusters.find((entry) => entry.id === clusterId);
   const [isCreating, setIsCreating] = useState(false);
@@ -42,6 +46,7 @@ export function ClusterDetailPage({
     return <EmptyState title="Cluster not found" description="Select a Cluster from the Context Inbox to inspect it." />;
   }
   const currentCluster = cluster;
+  const linkedProject = currentCluster.projectId ? projects.find((entry) => entry.id === currentCluster.projectId) : undefined;
 
   async function handleCreateWorkObject() {
     setIsCreating(true);
@@ -49,7 +54,11 @@ export function ClusterDetailPage({
 
     try {
       const workObject = await Effect.runPromise(createWorkObject(currentCluster.id));
-      onCreateSuccess(workObject);
+      if (onCreateSuccess) {
+        onCreateSuccess(workObject);
+        return;
+      }
+      navigate(linkTo(`/work/${workObject.id}`));
     } catch {
       setCreateError("Unable to create Work Object.");
       setIsCreating(false);
@@ -63,7 +72,7 @@ export function ClusterDetailPage({
     try {
       await Effect.runPromise(resolveCluster(currentCluster.id));
       await onDataChanged?.();
-      navigate("/inbox");
+      navigate(linkTo("/inbox"));
     } catch {
       setResolveError("Unable to resolve Cluster.");
       setIsResolving(false);
@@ -72,13 +81,22 @@ export function ClusterDetailPage({
 
   return (
     <div>
-      <PageHeader title={cluster.title} description={cluster.summary} />
+      <PageHeader
+        eyebrow={linkedProject ? `Context Inbox • ${linkedProject.name}` : "Context Inbox"}
+        title={cluster.title}
+        description={cluster.summary}
+      />
       <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-border bg-card/90 p-5 shadow-xl lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <Link className="text-sm font-medium text-primary" to="/inbox">
+          <Link className="text-sm font-medium text-primary" to={linkTo("/inbox")}>
             Back to Context Inbox
           </Link>
           <div className="mt-4 flex flex-wrap gap-2 text-xs">
+            {linkedProject ? (
+              <span className="rounded-full border border-border bg-background/70 px-3 py-1 text-muted-foreground">
+                {linkedProject.name}
+              </span>
+            ) : null}
             <span className="rounded-full border border-border bg-secondary/70 px-3 py-1 capitalize text-muted-foreground">
               {cluster.severity}
             </span>

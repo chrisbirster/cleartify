@@ -23,6 +23,10 @@ var sampleClusterIDs = map[string]struct{}{
 	"clu_product_memory":     {},
 }
 
+var sampleProjectIDs = map[string]struct{}{
+	"prj_sample_cleartify": {},
+}
+
 var sampleDecisionIDs = map[string]struct{}{
 	"dec_mobile_virtualize": {},
 	"dec_onboarding_scope":  {},
@@ -72,6 +76,16 @@ func filterSignalsForWorkspace(session domain.AuthSession, signals []domain.Sign
 	return filtered
 }
 
+func filterProjectsForWorkspace(session domain.AuthSession, projects []domain.Project) []domain.Project {
+	filtered := make([]domain.Project, 0, len(projects))
+	for _, project := range projects {
+		if projectVisibleInWorkspace(session, project) {
+			filtered = append(filtered, project)
+		}
+	}
+	return filtered
+}
+
 func filterClustersForWorkspace(session domain.AuthSession, clusters []domain.Cluster) []domain.Cluster {
 	filtered := make([]domain.Cluster, 0, len(clusters))
 	for _, cluster := range clusters {
@@ -112,8 +126,98 @@ func filterArtifactsForWorkspace(session domain.AuthSession, artifacts []domain.
 	return filtered
 }
 
+func filterSignalsForProject(projectID string, signals []domain.Signal) []domain.Signal {
+	if strings.TrimSpace(projectID) == "" {
+		return signals
+	}
+
+	filtered := make([]domain.Signal, 0, len(signals))
+	for _, signal := range signals {
+		if strings.TrimSpace(signal.ProjectID) == strings.TrimSpace(projectID) {
+			filtered = append(filtered, signal)
+		}
+	}
+	return filtered
+}
+
+func filterClustersForProject(projectID string, clusters []domain.Cluster) []domain.Cluster {
+	if strings.TrimSpace(projectID) == "" {
+		return clusters
+	}
+
+	filtered := make([]domain.Cluster, 0, len(clusters))
+	for _, cluster := range clusters {
+		if strings.TrimSpace(cluster.ProjectID) == strings.TrimSpace(projectID) {
+			filtered = append(filtered, cluster)
+		}
+	}
+	return filtered
+}
+
+func filterWorkObjectsForProject(projectID string, workObjects []domain.WorkObject) []domain.WorkObject {
+	if strings.TrimSpace(projectID) == "" {
+		return workObjects
+	}
+
+	filtered := make([]domain.WorkObject, 0, len(workObjects))
+	for _, workObject := range workObjects {
+		if strings.TrimSpace(workObject.ProjectID) == strings.TrimSpace(projectID) {
+			filtered = append(filtered, workObject)
+		}
+	}
+	return filtered
+}
+
+func filterDecisionsForProject(projectID string, decisions []domain.Decision, workObjects []domain.WorkObject) []domain.Decision {
+	if strings.TrimSpace(projectID) == "" {
+		return decisions
+	}
+
+	workObjectProjectIDs := make(map[string]string, len(workObjects))
+	for _, workObject := range workObjects {
+		workObjectProjectIDs[workObject.ID] = workObject.ProjectID
+	}
+
+	filtered := make([]domain.Decision, 0, len(decisions))
+	for _, decision := range decisions {
+		if strings.TrimSpace(workObjectProjectIDs[decision.WorkObjectID]) == strings.TrimSpace(projectID) {
+			filtered = append(filtered, decision)
+		}
+	}
+	return filtered
+}
+
+func filterArtifactsForProject(projectID string, artifacts []domain.Artifact, workObjects []domain.WorkObject) []domain.Artifact {
+	if strings.TrimSpace(projectID) == "" {
+		return artifacts
+	}
+
+	workObjectProjectIDs := make(map[string]string, len(workObjects))
+	for _, workObject := range workObjects {
+		workObjectProjectIDs[workObject.ID] = workObject.ProjectID
+	}
+
+	filtered := make([]domain.Artifact, 0, len(artifacts))
+	for _, artifact := range artifacts {
+		if strings.TrimSpace(workObjectProjectIDs[artifact.WorkObjectID]) == strings.TrimSpace(projectID) {
+			filtered = append(filtered, artifact)
+		}
+	}
+	return filtered
+}
+
 func signalVisibleInWorkspace(session domain.AuthSession, signalID string) bool {
 	return entityVisibleForWorkspace(session, isSampleSignalID(signalID))
+}
+
+func projectVisibleInWorkspace(session domain.AuthSession, project domain.Project) bool {
+	if isSampleProjectID(project.ID) {
+		return sessionShowsSampleData(session)
+	}
+	if session.Workspace == nil {
+		return false
+	}
+	return strings.TrimSpace(project.WorkspaceID) == strings.TrimSpace(session.Workspace.ID)
 }
 
 func clusterVisibleInWorkspace(session domain.AuthSession, clusterID string) bool {
@@ -206,7 +310,7 @@ func requireVisibleArtifactSession(s *Server, w http.ResponseWriter, r *http.Req
 
 func entityVisibleForWorkspace(session domain.AuthSession, isSample bool) bool {
 	if sessionShowsSampleData(session) {
-		return isSample
+		return true
 	}
 	return !isSample
 }
@@ -218,6 +322,11 @@ func isSampleSignalID(signalID string) bool {
 
 func isSampleClusterID(clusterID string) bool {
 	_, ok := sampleClusterIDs[strings.TrimSpace(clusterID)]
+	return ok
+}
+
+func isSampleProjectID(projectID string) bool {
+	_, ok := sampleProjectIDs[strings.TrimSpace(projectID)]
 	return ok
 }
 

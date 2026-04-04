@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 import { StatePanel } from "../components/StatePanel";
+import { useProjectScope } from "../lib/projectScope";
 import { loadDraftPlanForWorkObject, markWorkObjectReadyForRelease } from "../lib/api";
 import {
   formatArtifactType,
@@ -13,10 +14,12 @@ import {
   formatWorkObjectStatus,
   type Cluster,
   type DraftPlan,
+  type Project,
   type WorkObject,
 } from "../lib/types";
 
 type ReviewPageProps = {
+  projects?: Project[];
   workObjects: WorkObject[];
   clusters: Cluster[];
   onWorkObjectUpdated?: (workObject: WorkObject) => void;
@@ -58,8 +61,9 @@ function countLabel(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: ReviewPageProps) {
+export function ReviewPage({ projects = [], workObjects, clusters, onWorkObjectUpdated }: ReviewPageProps) {
   const { workObjectId } = useParams();
+  const { linkTo } = useProjectScope(projects);
   const workObject = workObjects.find((entry) => entry.id === workObjectId);
   const [draftPlan, setDraftPlan] = useState<DraftPlan | null>(null);
   const [draftPlanError, setDraftPlanError] = useState<string | null>(null);
@@ -75,6 +79,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
 
   const visibleWorkObject = localWorkObject ?? workObject;
   const linkedCluster = visibleWorkObject?.clusterId ? clusters.find((entry) => entry.id === visibleWorkObject.clusterId) : undefined;
+  const linkedProject = visibleWorkObject?.projectId ? projects.find((entry) => entry.id === visibleWorkObject.projectId) : undefined;
 
   useEffect(() => {
     if (!visibleWorkObject) {
@@ -140,7 +145,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
   return (
     <div>
       <PageHeader
-        eyebrow="Review and release"
+        eyebrow={linkedProject ? `Review and release • ${linkedProject.name}` : "Review and release"}
         title="Review"
         description="Inspect the final execution context before this Work Object is marked release-ready and sent into the release queue."
       />
@@ -209,7 +214,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
               </div>
               <Link
                 className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                to={`/plans/${visibleWorkObject.id}`}
+                to={linkTo(`/plans/${visibleWorkObject.id}`)}
               >
                 Open draft plan
               </Link>
@@ -259,7 +264,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
                   action={
                     <Link
                       className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                      to={`/plans/${visibleWorkObject.id}`}
+                      to={linkTo(`/plans/${visibleWorkObject.id}`)}
                     >
                       Open draft plan
                     </Link>
@@ -280,7 +285,7 @@ export function ReviewPage({ workObjects, clusters, onWorkObjectUpdated }: Revie
               </div>
               <Link
                 className="inline-flex items-center rounded-full border border-border bg-background/70 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background"
-                to={`/work/${visibleWorkObject.id}`}
+                to={linkTo(`/work/${visibleWorkObject.id}`)}
               >
                 Open Work Object
               </Link>

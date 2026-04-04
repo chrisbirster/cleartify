@@ -18,12 +18,16 @@ var beginTx = func(db *sql.DB, ctx context.Context) (*sql.Tx, error) {
 
 var seedInsertUserStatement = sqldata.MustQuery("seed_insert_user.sql")
 var seedInsertSessionStatement = sqldata.MustQuery("seed_insert_session.sql")
+var seedInsertProjectStatement = sqldata.MustQuery("seed_insert_project.sql")
 var seedInsertSignalStatement = sqldata.MustQuery("seed_insert_signal.sql")
 var seedInsertClusterStatement = sqldata.MustQuery("seed_insert_cluster.sql")
 var seedInsertClusterSignalStatement = sqldata.MustQuery("seed_insert_cluster_signal.sql")
 var seedInsertWorkObjectStatement = sqldata.MustQuery("seed_insert_work_object.sql")
 var seedInsertDecisionStatement = sqldata.MustQuery("seed_insert_decision.sql")
 var seedInsertArtifactStatement = sqldata.MustQuery("seed_insert_artifact.sql")
+
+const sampleProjectID = "prj_sample_cleartify"
+const sampleWorkspaceID = "workspace_sample"
 
 func (s *Store) SeedDemo() error {
 	ctx := context.Background()
@@ -42,6 +46,9 @@ func (s *Store) SeedDemo() error {
 	defer tx.Rollback()
 
 	if err := seedUser(tx); err != nil {
+		return err
+	}
+	if err := seedProjects(tx); err != nil {
 		return err
 	}
 	if err := seedSignals(tx); err != nil {
@@ -90,9 +97,28 @@ func countSampleSignals(ctx context.Context, db *sql.DB) (int, error) {
 	return count, nil
 }
 
+func seedProjects(tx *sql.Tx) error {
+	_, err := tx.Exec(
+		seedInsertProjectStatement,
+		sampleProjectID,
+		sampleWorkspaceID,
+		"Cleartify sample workspace",
+		"cleartify-sample-workspace",
+		"Sample hero flow for reviewing how Context Inbox items become project-scoped Work Objects and release-ready outputs.",
+		"active",
+		demoTimestamp.Format(time.RFC3339),
+		demoTimestamp.Add(10*time.Minute).Format(time.RFC3339),
+	)
+	if err != nil {
+		return fmt.Errorf("seed sample project: %w", err)
+	}
+	return nil
+}
+
 func seedSignals(tx *sql.Tx) error {
 	type signalSeed struct {
 		ID         string
+		ProjectID  string
 		SourceType string
 		SourceID   string
 		Title      string
@@ -103,12 +129,12 @@ func seedSignals(tx *sql.Tx) error {
 	}
 
 	signals := []signalSeed{
-		{"sig_mobile_feedback", "feedback", "fb-100", "Mobile performance issues reported", "Dashboard feels slow on mobile during chart rendering.", "https://docs.google.com/document/d/1CleartifyMobileFeedback100/view", map[string]any{"priority": "high"}, demoTimestamp},
-		{"sig_design_thread", "slack", "sl-222", "Onboarding design review highlighted setup friction", "The team agreed the current first-run flow feels dense and hides the success moment.", "https://acmehq.slack.com/archives/C02PRODUCT/p1710000002220000", map[string]any{"channel": "#product"}, demoTimestamp.Add(5 * time.Minute)},
-		{"sig_pr_context", "github", "pr-234", "PR #234 needs context from original spec", "Code review is missing the original rationale for loading-state behavior.", "https://github.com/cleartifyhq/cleartify/pull/234", map[string]any{"repo": "cleartify/web"}, demoTimestamp.Add(10 * time.Minute)},
-		{"sig_comp_notes", "note", "nt-45", "Competitor analysis notes from team sync", "Notes highlight how competitor teams connect prototypes to shipped changes.", "", map[string]any{"author": "Demo User"}, demoTimestamp.Add(15 * time.Minute)},
-		{"sig_proto_attach", "prototype", "pt-17", "Prototype attached for guided onboarding refresh", "Five approved screens cover welcome, workspace setup, teammate invite, empty state, and confirmation.", "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1", map[string]any{"screens": 5.0}, demoTimestamp.Add(20 * time.Minute)},
-		{"sig_release_post", "release", "rl-9", "Release retro flagged missing product memory", "Recent release notes lost the decision trail behind a copy change.", "", map[string]any{"release": "2026.03.1"}, demoTimestamp.Add(25 * time.Minute)},
+		{"sig_mobile_feedback", sampleProjectID, "feedback", "fb-100", "Mobile performance issues reported", "Dashboard feels slow on mobile during chart rendering.", "https://docs.google.com/document/d/1CleartifyMobileFeedback100/view", map[string]any{"priority": "high"}, demoTimestamp},
+		{"sig_design_thread", sampleProjectID, "slack", "sl-222", "Onboarding design review highlighted setup friction", "The team agreed the current first-run flow feels dense and hides the success moment.", "https://acmehq.slack.com/archives/C02PRODUCT/p1710000002220000", map[string]any{"channel": "#product"}, demoTimestamp.Add(5 * time.Minute)},
+		{"sig_pr_context", sampleProjectID, "github", "pr-234", "PR #234 needs context from original spec", "Code review is missing the original rationale for loading-state behavior.", "https://github.com/cleartifyhq/cleartify/pull/234", map[string]any{"repo": "cleartify/web"}, demoTimestamp.Add(10 * time.Minute)},
+		{"sig_comp_notes", sampleProjectID, "note", "nt-45", "Competitor analysis notes from team sync", "Notes highlight how competitor teams connect prototypes to shipped changes.", "", map[string]any{"author": "Demo User"}, demoTimestamp.Add(15 * time.Minute)},
+		{"sig_proto_attach", sampleProjectID, "prototype", "pt-17", "Prototype attached for guided onboarding refresh", "Five approved screens cover welcome, workspace setup, teammate invite, empty state, and confirmation.", "https://www.figma.com/proto/cleartify-guided-onboarding-refresh-v1", map[string]any{"screens": 5.0}, demoTimestamp.Add(20 * time.Minute)},
+		{"sig_release_post", sampleProjectID, "release", "rl-9", "Release retro flagged missing product memory", "Recent release notes lost the decision trail behind a copy change.", "", map[string]any{"release": "2026.03.1"}, demoTimestamp.Add(25 * time.Minute)},
 	}
 
 	for _, signal := range signals {
@@ -120,6 +146,7 @@ func seedSignals(tx *sql.Tx) error {
 		if _, err := tx.Exec(
 			seedInsertSignalStatement,
 			signal.ID,
+			signal.ProjectID,
 			signal.SourceType,
 			signal.SourceID,
 			signal.Title,
@@ -138,6 +165,7 @@ func seedSignals(tx *sql.Tx) error {
 func seedClusters(tx *sql.Tx) error {
 	type clusterSeed struct {
 		ID        string
+		ProjectID string
 		Title     string
 		Summary   string
 		Severity  string
@@ -148,6 +176,7 @@ func seedClusters(tx *sql.Tx) error {
 	clusters := []clusterSeed{
 		{
 			ID:        "clu_mobile_perf",
+			ProjectID: sampleProjectID,
 			Title:     "Mobile performance improvements",
 			Summary:   "Signals point to chart-heavy flows feeling slow on mobile devices.",
 			Severity:  "high",
@@ -156,6 +185,7 @@ func seedClusters(tx *sql.Tx) error {
 		},
 		{
 			ID:        "clu_onboarding_refresh",
+			ProjectID: sampleProjectID,
 			Title:     "Onboarding activation clarity",
 			Summary:   "Design review and prototype feedback point to first-run users losing momentum before they reach the success state.",
 			Severity:  "medium",
@@ -164,6 +194,7 @@ func seedClusters(tx *sql.Tx) error {
 		},
 		{
 			ID:        "clu_product_memory",
+			ProjectID: sampleProjectID,
 			Title:     "Product memory and release traceability",
 			Summary:   "Retros and notes highlight missing rationale in review and release flows.",
 			Severity:  "medium",
@@ -176,6 +207,7 @@ func seedClusters(tx *sql.Tx) error {
 		if _, err := tx.Exec(
 			seedInsertClusterStatement,
 			cluster.ID,
+			cluster.ProjectID,
 			cluster.Title,
 			cluster.Summary,
 			cluster.Severity,
@@ -202,6 +234,7 @@ func seedClusters(tx *sql.Tx) error {
 
 func seedWorkObjects(tx *sql.Tx) error {
 	type workObjectSeed struct {
+		ProjectID      string
 		ClusterID      string
 		ID             string
 		Title          string
@@ -218,6 +251,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 
 	workObjects := []workObjectSeed{
 		{
+			ProjectID:     sampleProjectID,
 			ClusterID:     "clu_mobile_perf",
 			ID:            "wo_mobile_perf",
 			Title:         "Speed up mobile dashboard rendering",
@@ -231,6 +265,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 			PrototypeNote: "",
 		},
 		{
+			ProjectID:     sampleProjectID,
 			ClusterID:     "clu_onboarding_refresh",
 			ID:            "wo_onboarding_refresh",
 			Title:         "Guided onboarding refresh",
@@ -249,6 +284,7 @@ func seedWorkObjects(tx *sql.Tx) error {
 		if _, err := tx.Exec(
 			seedInsertWorkObjectStatement,
 			workObject.ID,
+			workObject.ProjectID,
 			workObject.ClusterID,
 			workObject.Title,
 			workObject.Summary,

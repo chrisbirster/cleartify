@@ -5,6 +5,9 @@
 
 ## App
 - / -> home / today
+- /projects -> projects list
+- /projects/new -> create project
+- /projects/:projectId -> project dashboard
 - /inbox -> context inbox
 - /inbox/:clusterId -> cluster detail
 - /work -> work objects list
@@ -19,6 +22,9 @@
 
 ## API
 - POST /api/workspace-mode
+- GET /api/projects
+- POST /api/projects
+- GET /api/projects/:id
 - GET /api/signals
 - GET /api/clusters
 - POST /api/clusters/:id/create-work-object

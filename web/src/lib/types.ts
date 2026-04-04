@@ -46,6 +46,11 @@ export type WorkObjectPrototypeInput = {
   prototypeUrl: string;
   prototypeNote: string;
 };
+export type ProjectInput = {
+  name: string;
+  summary: string;
+  status?: string;
+};
 export type DecisionInput = {
   title: string;
   summary: string;
@@ -150,8 +155,20 @@ export type AuthSessionResponse = {
   needsOnboarding: boolean;
 };
 
+export type Project = {
+  id: string;
+  workspaceId: string;
+  name: string;
+  slug: string;
+  summary: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Signal = {
   id: string;
+  projectId?: string;
   sourceType: string;
   sourceId: string;
   title: string;
@@ -163,6 +180,7 @@ export type Signal = {
 
 export type Cluster = {
   id: string;
+  projectId?: string;
   title: string;
   summary: string;
   severity: string;
@@ -195,6 +213,7 @@ export type Artifact = {
 
 export type WorkObject = {
   id: string;
+  projectId?: string;
   clusterId?: string;
   title: string;
   summary: string;
@@ -214,6 +233,7 @@ export type WorkObject = {
 
 export type AppData = {
   session: AuthSessionResponse;
+  projects: Project[];
   signals: Signal[];
   clusters: Cluster[];
   workObjects: WorkObject[];

@@ -6,6 +6,8 @@ import type {
   AppData,
   AuthSessionResponse,
   Cluster,
+  Project,
+  ProjectInput,
   DecisionRecordInput,
   DraftPlan,
   DraftPlanInput,
@@ -25,6 +27,15 @@ import type {
 
 function toError(cause: unknown, fallback: string) {
   return cause instanceof Error ? cause : new Error(fallback);
+}
+
+function scopedPath(path: string, projectId?: string) {
+  if (!projectId) {
+    return path;
+  }
+
+  const params = new URLSearchParams({ projectId });
+  return `${path}?${params.toString()}`;
 }
 
 export function jsonFetch<T>(path: string, init?: RequestInit): Effect.Effect<T, Error> {
@@ -63,13 +74,15 @@ export function loadAppData(): Effect.Effect<AppData, Error> {
     if (!session.authenticated || session.needsOnboarding || !session.workspace?.mode) {
       return {
         session,
+        projects: [],
         signals: [],
         clusters: [],
         workObjects: [],
       };
     }
 
-    const { signals, clusters, workObjects } = yield* Effect.all({
+    const { projects, signals, clusters, workObjects } = yield* Effect.all({
+      projects: jsonFetch<Project[]>("/api/projects"),
       signals: jsonFetch<Signal[]>("/api/signals"),
       clusters: jsonFetch<Cluster[]>("/api/clusters"),
       workObjects: jsonFetch<WorkObject[]>("/api/work-objects"),
@@ -77,6 +90,7 @@ export function loadAppData(): Effect.Effect<AppData, Error> {
 
     return {
       session,
+      projects,
       signals,
       clusters,
       workObjects,
@@ -106,6 +120,24 @@ export function loadMe(): Effect.Effect<MeResponse, Error> {
 
 export function loadTeam(): Effect.Effect<TeamResponse, Error> {
   return jsonFetch<TeamResponse>("/api/team");
+}
+
+export function loadProjects(): Effect.Effect<Project[], Error> {
+  return jsonFetch<Project[]>("/api/projects");
+}
+
+export function loadProject(projectId: string): Effect.Effect<Project, Error> {
+  return jsonFetch<Project>(`/api/projects/${encodeURIComponent(projectId)}`);
+}
+
+export function createProject(fields: ProjectInput): Effect.Effect<Project, Error> {
+  return jsonFetch<Project>("/api/projects", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(fields),
+  });
 }
 
 export function loadDraftPlanForWorkObject(workObjectId: string): Effect.Effect<DraftPlan | null, Error> {
@@ -246,8 +278,8 @@ export function generateTaskBreakdownArtifactForWorkObject(workObjectId: string)
   });
 }
 
-export function loadSignals(): Effect.Effect<Signal[], Error> {
-  return jsonFetch<Signal[]>("/api/signals");
+export function loadSignals(projectId?: string): Effect.Effect<Signal[], Error> {
+  return jsonFetch<Signal[]>(scopedPath("/api/signals", projectId));
 }
 
 export function loadSignal(signalId: string): Effect.Effect<Signal, Error> {
@@ -293,8 +325,8 @@ export function deleteSignal(signalId: string): Effect.Effect<void, Error> {
   });
 }
 
-export function loadDecisions(): Effect.Effect<Decision[], Error> {
-  return jsonFetch<Decision[]>("/api/decisions");
+export function loadDecisions(projectId?: string): Effect.Effect<Decision[], Error> {
+  return jsonFetch<Decision[]>(scopedPath("/api/decisions", projectId));
 }
 
 export function loadDecision(decisionId: string): Effect.Effect<Decision, Error> {
@@ -336,8 +368,8 @@ export function deleteDecision(decisionId: string): Effect.Effect<void, Error> {
   });
 }
 
-export function loadArtifacts(): Effect.Effect<Artifact[], Error> {
-  return jsonFetch<Artifact[]>("/api/artifacts");
+export function loadArtifacts(projectId?: string): Effect.Effect<Artifact[], Error> {
+  return jsonFetch<Artifact[]>(scopedPath("/api/artifacts", projectId));
 }
 
 export function loadArtifact(artifactId: string): Effect.Effect<Artifact, Error> {

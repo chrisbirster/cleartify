@@ -15,6 +15,7 @@ import (
 )
 
 type fakeStore struct {
+	projects                       []domain.Project
 	signals                        []domain.Signal
 	clusters                       []domain.Cluster
 	workObjects                    []domain.WorkObject
@@ -30,6 +31,59 @@ type fakeStore struct {
 	createdArtifact                domain.Artifact
 	updatedWorkObject              domain.WorkObject
 	err                            error
+}
+
+func (f *fakeStore) ListProjects(context.Context) ([]domain.Project, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.projects, nil
+}
+
+func (f *fakeStore) LookupProject(_ context.Context, projectID string) (domain.Project, error) {
+	if f.err != nil {
+		return domain.Project{}, f.err
+	}
+	for _, project := range f.projects {
+		if project.ID == projectID {
+			return project, nil
+		}
+	}
+	return domain.Project{}, sql.ErrNoRows
+}
+
+func (f *fakeStore) CreateProject(_ context.Context, workspaceID string, name string, summary string, status string) (domain.Project, error) {
+	if f.err != nil {
+		return domain.Project{}, f.err
+	}
+	if status == "" {
+		status = "active"
+	}
+	return domain.Project{
+		ID:          "prj_created",
+		WorkspaceID: workspaceID,
+		Name:        name,
+		Slug:        "created-project",
+		Summary:     summary,
+		Status:      status,
+	}, nil
+}
+
+func (f *fakeStore) UpdateProject(_ context.Context, projectID string, name string, summary string, status string) (domain.Project, error) {
+	if f.err != nil {
+		return domain.Project{}, f.err
+	}
+	if status == "" {
+		status = "active"
+	}
+	return domain.Project{
+		ID:          projectID,
+		WorkspaceID: "workspace_123",
+		Name:        name,
+		Slug:        "updated-project",
+		Summary:     summary,
+		Status:      status,
+	}, nil
 }
 
 func (f *fakeStore) ListSignals(context.Context) ([]domain.Signal, error) {

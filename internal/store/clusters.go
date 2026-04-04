@@ -75,6 +75,7 @@ func (s *Store) scanCluster(ctx context.Context, scanner clusterScanner) (domain
 	var updatedAt string
 	if err := scanner.Scan(
 		&cluster.ID,
+		&cluster.ProjectID,
 		&cluster.Title,
 		&cluster.Summary,
 		&cluster.Severity,
@@ -116,6 +117,7 @@ func (s *Store) listSignalsForCluster(ctx context.Context, clusterID string) ([]
 		var createdAt string
 		if err := rows.Scan(
 			&signal.ID,
+			&signal.ProjectID,
 			&signal.SourceType,
 			&signal.SourceID,
 			&signal.Title,

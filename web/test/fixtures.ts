@@ -17,9 +17,22 @@ export const appDataFixture: AppData = {
       sampleInitializedAt: "2026-03-01T09:00:00Z",
     },
   },
+  projects: [
+    {
+      id: "prj_sample_cleartify",
+      workspaceId: "workspace_sample",
+      name: "Cleartify sample workspace",
+      slug: "cleartify-sample-workspace",
+      summary: "Sample hero flow for reviewing how Context Inbox items become project-scoped Work Objects and release-ready outputs.",
+      status: "active",
+      createdAt: "2026-03-01T09:00:00Z",
+      updatedAt: "2026-03-01T09:10:00Z",
+    },
+  ],
   signals: [
     {
       id: "sig_pr_context",
+      projectId: "prj_sample_cleartify",
       sourceType: "github",
       sourceId: "pr-234",
       title: "PR #234 needs context from original spec",
@@ -29,6 +42,7 @@ export const appDataFixture: AppData = {
     },
     {
       id: "sig_mobile_feedback",
+      projectId: "prj_sample_cleartify",
       sourceType: "feedback",
       sourceId: "fb-100",
       title: "Mobile performance issues reported",
@@ -37,6 +51,7 @@ export const appDataFixture: AppData = {
     },
     {
       id: "sig_design_thread",
+      projectId: "prj_sample_cleartify",
       sourceType: "slack",
       sourceId: "sl-222",
       title: "Onboarding design review highlighted setup friction",
@@ -46,6 +61,7 @@ export const appDataFixture: AppData = {
     },
     {
       id: "sig_proto_attach",
+      projectId: "prj_sample_cleartify",
       sourceType: "prototype",
       sourceId: "pt-17",
       title: "Prototype attached for guided onboarding refresh",
@@ -57,6 +73,7 @@ export const appDataFixture: AppData = {
   clusters: [
     {
       id: "clu_mobile_perf",
+      projectId: "prj_sample_cleartify",
       title: "Mobile performance improvements",
       summary: "Signals point to chart-heavy flows feeling slow on mobile devices.",
       severity: "high",
@@ -66,6 +83,7 @@ export const appDataFixture: AppData = {
       signals: [
         {
           id: "sig_pr_context",
+          projectId: "prj_sample_cleartify",
           sourceType: "github",
           sourceId: "pr-234",
           title: "PR #234 needs context from original spec",
@@ -77,6 +95,7 @@ export const appDataFixture: AppData = {
     },
     {
       id: "clu_onboarding_refresh",
+      projectId: "prj_sample_cleartify",
       title: "Onboarding activation clarity",
       summary: "Design review and prototype feedback point to first-run users losing momentum before they reach the success state.",
       severity: "medium",
@@ -86,6 +105,7 @@ export const appDataFixture: AppData = {
       signals: [
         {
           id: "sig_design_thread",
+          projectId: "prj_sample_cleartify",
           sourceType: "slack",
           sourceId: "sl-222",
           title: "Onboarding design review highlighted setup friction",
@@ -95,6 +115,7 @@ export const appDataFixture: AppData = {
         },
         {
           id: "sig_proto_attach",
+          projectId: "prj_sample_cleartify",
           sourceType: "prototype",
           sourceId: "pt-17",
           title: "Prototype attached for guided onboarding refresh",
@@ -108,6 +129,7 @@ export const appDataFixture: AppData = {
   workObjects: [
     {
       id: "wo_mobile_perf",
+      projectId: "prj_sample_cleartify",
       clusterId: "clu_mobile_perf",
       title: "Speed up mobile dashboard rendering",
       summary: "Improve dashboard responsiveness on small screens without losing analytical depth.",
@@ -143,6 +165,7 @@ export const appDataFixture: AppData = {
     },
     {
       id: "wo_onboarding_refresh",
+      projectId: "prj_sample_cleartify",
       clusterId: "clu_onboarding_refresh",
       title: "Guided onboarding refresh",
       summary: "Turn the approved five-screen onboarding prototype into a small, reviewable implementation slice for first-run users.",

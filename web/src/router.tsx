@@ -11,6 +11,9 @@ import { DecisionsPage } from "./pages/DecisionsPage";
 import { InboxPage } from "./pages/InboxPage";
 import { MePage } from "./pages/MePage";
 import { PlanPage } from "./pages/PlanPage";
+import { ProjectDashboardPage } from "./pages/ProjectDashboardPage";
+import { ProjectNewPage } from "./pages/ProjectNewPage";
+import { ProjectsPage } from "./pages/ProjectsPage";
 import { PrototypeNewPage } from "./pages/PrototypeNewPage";
 import { PrototypesPage } from "./pages/PrototypesPage";
 import { ReleaseDetailPage } from "./pages/ReleaseDetailPage";
@@ -25,6 +28,7 @@ import { WorkObjectsPage } from "./pages/WorkObjectsPage";
 
 export const NAV_ITEMS = [
   { label: "Today", to: "/" },
+  { label: "Projects", to: "/projects" },
   { label: "Context Inbox", to: "/inbox" },
   { label: "Work Objects", to: "/work" },
   { label: "Signals", to: "/signals" },
@@ -42,7 +46,7 @@ type AppRoutesProps = {
 
 function ShellRoute({ data }: AppRoutesProps) {
   return (
-    <AppShell session={data.session} navItems={NAV_ITEMS}>
+    <AppShell projects={data.projects} session={data.session} navItems={NAV_ITEMS}>
       <Outlet />
     </AppShell>
   );
@@ -57,6 +61,7 @@ export function AppRoutes({ data, onWorkObjectUpdated, onDataChanged }: AppRoute
           index
           element={
             <TodayPage
+              projects={data.projects}
               signals={data.signals}
               clusters={data.clusters}
               workObjects={data.workObjects}
@@ -65,24 +70,71 @@ export function AppRoutes({ data, onWorkObjectUpdated, onDataChanged }: AppRoute
           }
         />
         <Route
-          path="inbox"
-          element={<InboxPage clusters={data.clusters} workspaceMode={data.session.workspace?.mode} onDataChanged={onDataChanged} />}
+          path="projects"
+          element={
+            <ProjectsPage
+              projects={data.projects}
+              clusters={data.clusters}
+              workObjects={data.workObjects}
+              workspaceMode={data.session.workspace?.mode}
+            />
+          }
         />
-        <Route path="inbox/:clusterId" element={<ClusterDetailPage clusters={data.clusters} onDataChanged={onDataChanged} />} />
+        <Route path="projects/new" element={<ProjectNewPage onDataChanged={onDataChanged} />} />
+        <Route
+          path="projects/:projectId"
+          element={
+            <ProjectDashboardPage
+              projects={data.projects}
+              signals={data.signals}
+              clusters={data.clusters}
+              workObjects={data.workObjects}
+            />
+          }
+        />
+        <Route
+          path="inbox"
+          element={
+            <InboxPage
+              projects={data.projects}
+              clusters={data.clusters}
+              workspaceMode={data.session.workspace?.mode}
+              onDataChanged={onDataChanged}
+            />
+          }
+        />
+        <Route
+          path="inbox/:clusterId"
+          element={<ClusterDetailPage projects={data.projects} clusters={data.clusters} onDataChanged={onDataChanged} />}
+        />
         <Route
           path="work"
-          element={<WorkObjectsPage workObjects={data.workObjects} clusters={data.clusters} workspaceMode={data.session.workspace?.mode} />}
+          element={
+            <WorkObjectsPage
+              projects={data.projects}
+              workObjects={data.workObjects}
+              clusters={data.clusters}
+              workspaceMode={data.session.workspace?.mode}
+            />
+          }
         />
         <Route
           path="work/:workObjectId"
-          element={<WorkObjectDetailPage workObjects={data.workObjects} clusters={data.clusters} onWorkObjectUpdated={onWorkObjectUpdated} />}
+          element={
+            <WorkObjectDetailPage
+              projects={data.projects}
+              workObjects={data.workObjects}
+              clusters={data.clusters}
+              onWorkObjectUpdated={onWorkObjectUpdated}
+            />
+          }
         />
         <Route path="me" element={<MePage />} />
         <Route path="team" element={<TeamPage />} />
-        <Route path="signals" element={<SignalsPage />} />
+        <Route path="signals" element={<SignalsPage projects={data.projects} />} />
         <Route path="signals/new" element={<SignalEditorPage mode="create" onDataChanged={onDataChanged} />} />
         <Route path="signals/:signalId" element={<SignalEditorPage mode="edit" onDataChanged={onDataChanged} />} />
-        <Route path="decisions" element={<DecisionsPage workObjects={data.workObjects} />} />
+        <Route path="decisions" element={<DecisionsPage projects={data.projects} workObjects={data.workObjects} />} />
         <Route
           path="decisions/new"
           element={<DecisionEditorPage mode="create" workObjects={data.workObjects} onDataChanged={onDataChanged} />}
@@ -91,7 +143,7 @@ export function AppRoutes({ data, onWorkObjectUpdated, onDataChanged }: AppRoute
           path="decisions/:decisionId"
           element={<DecisionEditorPage mode="edit" workObjects={data.workObjects} onDataChanged={onDataChanged} />}
         />
-        <Route path="artifacts" element={<ArtifactsPage workObjects={data.workObjects} />} />
+        <Route path="artifacts" element={<ArtifactsPage projects={data.projects} workObjects={data.workObjects} />} />
         <Route
           path="artifacts/new"
           element={<ArtifactEditorPage mode="create" workObjects={data.workObjects} onDataChanged={onDataChanged} />}
@@ -100,18 +152,38 @@ export function AppRoutes({ data, onWorkObjectUpdated, onDataChanged }: AppRoute
           path="artifacts/:artifactId"
           element={<ArtifactEditorPage mode="edit" workObjects={data.workObjects} onDataChanged={onDataChanged} />}
         />
-        <Route path="prototypes" element={<PrototypesPage workObjects={data.workObjects} />} />
+        <Route path="prototypes" element={<PrototypesPage projects={data.projects} workObjects={data.workObjects} />} />
         <Route path="prototypes/new" element={<PrototypeNewPage />} />
-        <Route path="plans/:workObjectId" element={<PlanPage workObjects={data.workObjects} clusters={data.clusters} />} />
+        <Route
+          path="plans/:workObjectId"
+          element={<PlanPage projects={data.projects} workObjects={data.workObjects} clusters={data.clusters} />}
+        />
         <Route
           path="agents/:workObjectId"
-          element={<AgentWorkspacePage workObjects={data.workObjects} clusters={data.clusters} onWorkObjectUpdated={onWorkObjectUpdated} />}
+          element={
+            <AgentWorkspacePage
+              projects={data.projects}
+              workObjects={data.workObjects}
+              clusters={data.clusters}
+              onWorkObjectUpdated={onWorkObjectUpdated}
+            />
+          }
         />
         <Route
           path="review/:workObjectId"
-          element={<ReviewPage workObjects={data.workObjects} clusters={data.clusters} onWorkObjectUpdated={onWorkObjectUpdated} />}
+          element={
+            <ReviewPage
+              projects={data.projects}
+              workObjects={data.workObjects}
+              clusters={data.clusters}
+              onWorkObjectUpdated={onWorkObjectUpdated}
+            />
+          }
         />
-        <Route path="releases" element={<ReleasesPage workObjects={data.workObjects} clusters={data.clusters} />} />
+        <Route
+          path="releases"
+          element={<ReleasesPage projects={data.projects} workObjects={data.workObjects} clusters={data.clusters} />}
+        />
         <Route path="releases/:releaseId" element={<ReleaseDetailPage />} />
       </Route>
     </Routes>

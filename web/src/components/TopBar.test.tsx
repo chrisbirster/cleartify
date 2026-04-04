@@ -25,7 +25,11 @@ describe("TopBar", () => {
   });
 
   it("renders a signed out fallback", () => {
-    render(<TopBar session={{ authenticated: false, needsOnboarding: false }} />);
+    render(
+      <MemoryRouter>
+        <TopBar session={{ authenticated: false, needsOnboarding: false }} />
+      </MemoryRouter>,
+    );
 
     expect(screen.getByText("Signed out")).toBeInTheDocument();
   });

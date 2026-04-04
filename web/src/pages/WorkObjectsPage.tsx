@@ -2,9 +2,12 @@ import { Link } from "react-router-dom";
 
 import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
+import { filterWorkObjectsByProject, useProjectScope } from "../lib/projectScope";
 import { formatWorkObjectPriority, formatWorkObjectStatus, type Cluster, type WorkObject, type WorkspaceMode } from "../lib/types";
+import type { Project } from "../lib/types";
 
 type WorkObjectsPageProps = {
+  projects?: Project[];
   workObjects: WorkObject[];
   clusters: Cluster[];
   workspaceMode?: WorkspaceMode;
@@ -42,21 +45,25 @@ function priorityTone(priority: WorkObject["priority"]) {
   }
 }
 
-export function WorkObjectsPage({ workObjects, clusters, workspaceMode }: WorkObjectsPageProps) {
+export function WorkObjectsPage({ projects = [], workObjects, clusters, workspaceMode }: WorkObjectsPageProps) {
   const clusterByID = new Map(clusters.map((cluster) => [cluster.id, cluster]));
+  const { selectedProject, selectedProjectId, linkTo } = useProjectScope(projects);
+  const visibleWorkObjects = filterWorkObjectsByProject(workObjects, selectedProjectId);
 
-  if (workObjects.length === 0) {
+  if (visibleWorkObjects.length === 0) {
     return (
       <EmptyState
         eyebrow="Work Objects"
-        title="No Work Objects yet"
+        title={selectedProject ? "No Work Objects in this Project" : "No Work Objects yet"}
         description={
-          workspaceMode === "sample"
-            ? "The sample Work Object hero path has not been initialized yet."
-            : "Live workspaces start clean. A Work Object appears here after product context is triaged from the Context Inbox."
+          selectedProject
+            ? `${selectedProject.name} does not have any Work Objects yet.`
+            : workspaceMode === "sample"
+              ? "The sample Work Object hero path has not been initialized yet."
+              : "Live workspaces start clean. A Work Object appears here after product context is triaged from the Context Inbox."
         }
         action={
-          <Link className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground" to="/inbox">
+          <Link className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground" to={linkTo("/inbox")}>
             Open Context Inbox
           </Link>
         }
@@ -69,19 +76,21 @@ export function WorkObjectsPage({ workObjects, clusters, workspaceMode }: WorkOb
       <PageHeader
         title="Work Objects"
         description={
-          workspaceMode === "sample"
-            ? "Review the sample execution objects created from the Cleartify hero context."
-            : "Review the execution objects created from current clustered product context."
+          selectedProject
+            ? `Review the execution objects scoped to ${selectedProject.name}.`
+            : workspaceMode === "sample"
+              ? "Review the sample execution objects created from the Cleartify hero context."
+              : "Review the execution objects created from current clustered product context."
         }
       />
       <div className="space-y-4">
-        {workObjects.map((workObject) => {
+        {visibleWorkObjects.map((workObject) => {
           const linkedCluster = workObject.clusterId ? clusterByID.get(workObject.clusterId) : undefined;
 
           return (
             <Link
               key={workObject.id}
-              to={`/work/${workObject.id}`}
+              to={linkTo(`/work/${workObject.id}`)}
               className="block rounded-3xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
             >
               <div className="flex items-start justify-between gap-4">
