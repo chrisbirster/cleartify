@@ -1,0 +1,30 @@
+@layer reset, defaults, stylex;
+
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; }
+  button, input { font: inherit; }
+  a { color: inherit; text-decoration: none; }
+}
+
+@layer defaults {
+  :root {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #0d1733;
+    background: #fffdfa;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(198, 238, 255, .52), transparent 23rem),
+      radial-gradient(circle at 84% 12%, rgba(255, 219, 233, .45), transparent 24rem),
+      #fffdfa;
+  }
+
+  ::selection { background: #ffe671; color: #0d1733; }
+}
