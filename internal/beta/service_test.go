@@ -93,7 +93,7 @@ func TestInviteStartVerifyCreatesPhoneFirstAccount(t *testing.T) {
 		t.Fatal("raw challenge code must not be stored")
 	}
 
-	if _, err := service.Verify(ctx, started.ActivationToken, "99999"); err != ErrInvalidCode && code != "99999" {
+	if _, err := service.Verify(ctx, started.ActivationToken, "00000"); err != ErrInvalidCode {
 		t.Fatalf("wrong code error = %v, want ErrInvalidCode", err)
 	}
 
