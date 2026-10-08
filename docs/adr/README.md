@@ -8,5 +8,6 @@ Accepted decisions:
 4. [ADR-0004 — People-first profiles, seeded profiles and claims](./0004-profiles-and-claims.md)
 5. [ADR-0005 — Waitlist and two-channel beta activation](./0005-beta-access.md)
 6. [ADR-0006 — DEEZ delegation protocol and NUTS task envelopes](./0006-deez-delegation-protocol.md)
+7. [ADR-0007 — Phone-first Clear, Turso private state, optional ATProto social identity](./0007-phone-turso-atproto.md)
 
 ADRs describe decisions that should remain stable until explicitly superseded by another ADR.
