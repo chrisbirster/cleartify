@@ -11,8 +11,11 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/api"
+	"github.com/chrisbirster/cleartify/internal/beta"
 	"github.com/chrisbirster/cleartify/internal/config"
 	"github.com/chrisbirster/cleartify/internal/database"
+	"github.com/chrisbirster/cleartify/internal/notifications"
+	"github.com/chrisbirster/cleartify/internal/security"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
 
@@ -39,8 +42,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	tokens, err := security.NewTokens(cfg.AppSecret)
+	if err != nil {
+		slog.Error("configure app security", "error", err)
+		os.Exit(1)
+	}
+
+	var sender notifications.Sender = notifications.DisabledSender{}
+	if cfg.NotificationMode == "debug" {
+		slog.Warn("notification debug mode enabled; beta secrets will be printed to logs")
+		sender = notifications.DebugSender{}
+	}
+
 	waitlistService := waitlist.NewService(db)
-	handler := api.New(waitlistService, cfg.AppOrigin)
+	betaService := beta.NewService(db, tokens, sender, cfg.AppURL)
+	handler := api.New(api.Options{
+		Waitlist:   waitlistService,
+		Beta:       betaService,
+		AppOrigin:  cfg.AppOrigin,
+		AdminToken: cfg.AdminToken,
+	})
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
