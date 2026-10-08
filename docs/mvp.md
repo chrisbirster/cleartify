@@ -52,22 +52,34 @@ Success check:
 
 ## M1 — Waitlist + invitation funnel
 
-Build:
+M1 uses the Go backend and private SQLite/Turso state. ATProto is not part of regular-user activation.
 
-- `POST /api/waitlist`
+### Slice 1 — waitlist foundation
+
+- real `POST /api/waitlist`;
 - collect name, email, E.164 mobile number;
-- explicit newsletter consent;
-- dedupe / abuse controls;
+- append marketing-consent evidence;
+- email/phone dedupe;
+- local SQLite-compatible development database;
+- optional Turso Cloud sync;
+- Docker build;
+- health endpoint;
+- CI for both web and Go.
+
+### Slice 2 — invitation + activation
+
 - admin invite action;
 - transactional invite email;
-- one-time signed invite URL;
-- 5-digit code sent to the stored phone at invite-link activation;
-- code attempt limits + expiry;
-- create account after verification.
+- one-time high-entropy invite URL;
+- 5-digit code sent to the stored phone after link validation;
+- attempt limits, expiry, resend cooldown;
+- internal Cleartify user ID + verified phone identity;
+- starter protocols installed;
+- first welcome text from Clear.
 
 Success check:
 
-> A new visitor joins → receives updates → receives beta invite → clicks it → receives a 5-digit SMS code → activates successfully.
+> A new visitor joins → receives a beta invite → verifies the phone number → activates without creating an ATProto/social account.
 
 ## M2 — Text Clear loop
 
@@ -126,17 +138,21 @@ Success check:
 
 ## M4 — Profiles + social discovery
 
+This is the point where optional ATProto identity enters the product. Regular Clear users can browse and install public protocols without needing a DID/PDS.
+
 Build:
 
 - `/@handle` public profile routes;
-- private profiles by default for ordinary users;
 - creator/public profile opt-in;
-- Chris as the default first follow/friend;
+- connect an existing ATProto identity or create one through hosted infrastructure;
+- public Cleartify records in the user's PDS;
+- Chris as the default first friend/follow for users who enter the social experience;
 - public list of protocols a creator chooses to share;
 - “running now” count only when explicitly public;
 - follow/unfollow;
-- protocol install from profile;
-- shareable protocol/profile links.
+- protocol install from profile for both social and non-social users;
+- shareable protocol/profile links;
+- disposable AppView/search index in Turso.
 
 Seed a small set of **unclaimed** public-interest profiles only when supported by sourced public information. They must be visibly labeled unclaimed and must not imply endorsement.
 
