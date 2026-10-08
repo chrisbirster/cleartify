@@ -9,7 +9,7 @@ Cleartify is a text-first personal assistant. The normal user talks to one conta
 - **Catchphrase:** **Clearly.**
 - **Core behavior:** ask Clear normally; Clear figures out the machinery.
 - **Social idea:** people have profiles that show the protocols they choose to share.
-- **First-friend mechanic:** new users start by following Chris, an intentional wink at early social networks.
+- **First-friend mechanic:** users who opt into Cleartify Social start with Chris as the intentional first friend/follow — an early-social-web wink without forcing social onboarding on everyone.
 
 Examples of the voice:
 
@@ -27,6 +27,7 @@ Examples of the voice:
 - [Protocols](./protocols.md)
 - [Profiles and protocol marketplace](./profiles-and-marketplace.md)
 - [Brand and voice](./brand.md)
+- [Deployment](./deployment.md)
 - [ADRs](./adr/README.md)
 
 ## Product principles
