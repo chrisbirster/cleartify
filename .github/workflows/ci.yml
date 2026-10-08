@@ -23,7 +23,7 @@ jobs:
   go:
     runs-on: ubuntu-latest
     env:
-      TURSO_GO_CACHE_DIR: ${{ runner.temp }}/turso-go-cache
+      TURSO_GO_CACHE_DIR: /tmp/turso-go-cache
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
