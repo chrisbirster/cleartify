@@ -17,7 +17,7 @@ Cleartify is a text-first personal assistant. The product should feel less like 
 - **Hidden agents:** models, tools and specialist agents stay behind the scenes; the user talks to one assistant.
 - **Trust:** private by default, scoped permissions, explicit approval before consequential actions.
 
-## M0 frontend
+## Web
 
 The new SPA uses:
 
@@ -32,12 +32,29 @@ npm install
 npm run dev
 ```
 
+## Go API
+
+The M1 backend is a Go modular monolith using SQLite-compatible Turso storage.
+
+```bash
+cp .env.example .env
+# export variables from .env in your shell, then:
+go run ./cmd/cleartify
+```
+
+Endpoints:
+
+- `GET /healthz`
+- `POST /api/waitlist`
+
+Local development uses `DATABASE_PATH`. Set `TURSO_REMOTE_URL` and `TURSO_AUTH_TOKEN` to sync the database to Turso Cloud. M1 intentionally runs one backend writer while using sync mode.
+
 Current routes:
 
 - `/` — meme-friendly consumer landing page + waitlist UI
 - `/@chris` — first-friend / creator protocol profile preview
 
-The waitlist form currently targets `POST /api/waitlist`; the backend endpoint lands in M1.
+The landing waitlist now calls the real `POST /api/waitlist` endpoint. Set `VITE_API_BASE_URL` when the API is on a different origin.
 
 ## Docs
 
@@ -51,6 +68,7 @@ Key documents:
 - [`docs/profiles-and-marketplace.md`](./docs/profiles-and-marketplace.md) — social profiles, claims and premium protocol marketplace
 - [`docs/waitlist-and-beta.md`](./docs/waitlist-and-beta.md) — signup/newsletter/invite/5-digit activation flow
 - [`docs/brand.md`](./docs/brand.md) — Clear voice and the **Clearly.** device
+- [`docs/deployment.md`](./docs/deployment.md) — Cloudflare + Docker/Fly deployment shape
 - [`docs/adr/`](./docs/adr/) — accepted architecture/product decisions
 
 ## Branching
