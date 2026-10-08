@@ -1,12 +1,5 @@
-import { Route } from '@solidjs/router';
-import { Home } from './routes/Home';
-import { ProfilePreview } from './routes/ProfilePreview';
+import type { ParentProps } from 'solid-js';
 
-export function App() {
-  return (
-    <>
-      <Route path="/" component={Home} />
-      <Route path="/@:handle" component={ProfilePreview} />
-    </>
-  );
+export function App(props: ParentProps) {
+  return <>{props.children}</>;
 }
