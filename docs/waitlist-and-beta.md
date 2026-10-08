@@ -5,8 +5,8 @@
 The launch funnel has three distinct jobs:
 
 1. collect an interested person's contact details;
-2. obtain clear marketing consent for newsletters/product updates;
-3. later convert selected people into verified beta users.
+2. obtain explicit marketing consent for newsletters/product updates;
+3. later convert selected people into verified phone-first beta users.
 
 Do not conflate marketing consent with permission for operational/assistant messages.
 
@@ -23,38 +23,37 @@ Optional/explicit fields:
 - `email_marketing_opt_in`
 - referral/source metadata
 
-### Suggested records
+M1 persists this data in private SQLite/Turso storage.
+
+### Current M1 records
 
 ```text
 waitlist_entries
   id
   name
+  email
   email_normalized
   phone_e164
+  email_updates
   status                # waiting | invited | activated | declined
   source
-  referrer_profile_id
   created_at
   updated_at
 
 consents
   id
-  subject_type
-  subject_id
-  channel               # email_marketing | sms_marketing | transactional
-  granted_at
-  revoked_at
-  policy_version
-  evidence_json
+  waitlist_entry_id
+  kind                  # currently email_marketing
+  granted
+  source
+  recorded_at
 ```
 
-Newsletter unsubscribes update consent; they do not delete the beta application or operational account identity.
+Consent is append-only evidence. A future unsubscribe changes current delivery eligibility while preserving the audit history.
 
 ## Beta invitation flow
 
-A five-digit code alone is too small to function as the primary bearer secret. The invitation therefore combines a high-entropy one-time email link with the requested five-digit code.
-
-The cleanest flow uses both contact channels collected at waitlist time:
+A five-digit code alone is too small to function as the primary bearer secret. The invitation therefore combines a high-entropy one-time email link with a five-digit phone challenge.
 
 ```mermaid
 sequenceDiagram
@@ -70,14 +69,22 @@ sequenceDiagram
     E-->>U: "You're in — activate beta"
     U->>C: Open signed one-time link
     C->>C: Validate link, create 5-digit challenge
-    C->>S: Send 5-digit code to stored mobile
+    C->>S: Send code to stored mobile
     S-->>U: "Your Cleartify code is 48217"
     U->>C: Enter 48217
-    C->>C: Rate-limit + verify + consume invite
-    C-->>U: Account activated; save Clear contact
+    C->>C: verify + rate-limit + consume invite
+    C-->>U: activate phone-first Clear account
 ```
 
-This gives the 5-digit code a real job: it confirms possession of the phone number that will later identify the user when they text Clear.
+The code confirms possession of the phone number that will later identify the user when they text Clear.
+
+## Account identity
+
+Activation creates an internal Cleartify user ID and a verified phone identity.
+
+**ATProto is not required.**
+
+A user can later connect/create an ATProto identity if they want a public Cleartify Social profile, want to publish protocols, or become a creator.
 
 ## Invite record
 
@@ -101,7 +108,7 @@ Rules:
 
 - never store raw invitation tokens or raw codes;
 - invitation link is single-use or bound to an activation session;
-- 5-digit challenge expires quickly (e.g. ~10 minutes);
+- 5-digit challenge expires quickly;
 - strict attempt limit and resend cooldown;
 - log security events without logging secrets;
 - successful activation consumes both challenge and invite;
@@ -115,29 +122,29 @@ Separate delivery categories:
 - **transactional:** waitlist confirmation, security messages, beta invitation;
 - **assistant/service:** messages created by the user's use of Clear.
 
-A user who unsubscribes from marketing should still receive transactional security messages required to use the beta.
+Marketing opt-out must not disable transactional/security messages required to use the beta.
 
 ## Activation UX
 
-The activation web page should be intentionally tiny:
+Keep activation tiny:
 
 1. “You're invited.”
 2. confirm partially masked email/phone;
 3. “We texted your 5-digit beta code.”
 4. enter code;
 5. accept current terms/privacy;
-6. choose display name/handle if desired;
-7. “Add Clear to your contacts” / send the first text.
+6. “Add Clear to your contacts” / send the first text.
 
-The user should reach their messaging app as quickly as possible.
+Do not ask a normal user to create a profile, handle, DID, PDS, or public social identity.
 
 ## After activation
 
 Default setup:
 
 - starter protocols installed;
-- personal profile private;
-- Chris followed as the first friend;
-- no public running-protocol activity enabled;
-- initial conversation contains a short welcome from Clear;
-- Clear explains permissions only when relevant rather than forcing a giant setup wizard.
+- no public profile created;
+- no public activity enabled;
+- Clear sends a short welcome;
+- permissions are explained only when relevant.
+
+If the user later opens Cleartify Social or publishes a protocol, offer ATProto connection/onboarding. At that point Chris can become the intentional first friend/follow in the social experience.
