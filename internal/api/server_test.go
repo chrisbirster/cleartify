@@ -23,7 +23,7 @@ func TestWaitlistEndpointPersistsSignupAndConsent(t *testing.T) {
 		t.Fatalf("migrate database: %v", err)
 	}
 
-	handler := New(waitlist.NewService(store), "http://localhost:3000")
+	handler := New(Options{Waitlist: waitlist.NewService(store), AppOrigin: "http://localhost:3000"})
 	body := []byte(`{"name":"Chris","email":"Chris@example.com","phone":"(717) 555-1212","emailUpdates":true}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/waitlist", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -79,7 +79,7 @@ func TestWaitlistEndpointRejectsInvalidPhone(t *testing.T) {
 		t.Fatalf("migrate database: %v", err)
 	}
 
-	handler := New(waitlist.NewService(store), "")
+	handler := New(Options{Waitlist: waitlist.NewService(store)})
 	body := []byte(`{"name":"Chris","email":"chris@example.com","phone":"call-me-maybe","emailUpdates":false}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/waitlist", bytes.NewReader(body))
 	res := httptest.NewRecorder()
