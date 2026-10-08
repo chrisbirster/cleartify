@@ -17,6 +17,8 @@ const starterProtocols = [
 export function Home() {
   const [joined, setJoined] = createSignal(false);
   const [submitting, setSubmitting] = createSignal(false);
+  const [submitError, setSubmitError] = createSignal('');
+  const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
   async function submitWaitlist(event: SubmitEvent) {
     event.preventDefault();
@@ -24,8 +26,9 @@ export function Home() {
     const data = new FormData(form);
 
     setSubmitting(true);
+    setSubmitError('');
     try {
-      const response = await fetch('/api/waitlist', {
+      const response = await fetch(`${apiBase}/api/waitlist`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -36,12 +39,14 @@ export function Home() {
         }),
       });
 
-      if (!response.ok) throw new Error('waitlist request failed');
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({})) as { message?: string };
+        throw new Error(payload.message ?? 'Could not join the waitlist. Please try again.');
+      }
       setJoined(true);
       form.reset();
-    } catch {
-      // M0 has no API yet. Keep the visual flow usable while the backend lands.
-      setJoined(true);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Could not join the waitlist. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -189,6 +194,7 @@ export function Home() {
             <input name="email" required type="email" placeholder="you@email.com" />
             <input name="phone" required type="tel" placeholder="Mobile number" />
             <label {...stylex.props(styles.checkbox)}><input name="emailUpdates" type="checkbox" checked /> Send me product/newsletter updates.</label>
+            {submitError() && <div role="alert" {...stylex.props(styles.formError)}>{submitError()}</div>}
             <button disabled={submitting()} {...stylex.props(styles.primaryButton)}>{submitting() ? 'Joining…' : 'Join the waitlist →'}</button>
           </form>
         )}
@@ -260,6 +266,7 @@ const styles = stylex.create({
   waitlistTitle: { fontSize: { default: 44, '@media (max-width: 560px)': 34 }, lineHeight: 1.05, margin: '0 0 14px', letterSpacing: '-.04em' },
   form: { display: 'grid', gap: 12, ':is(input:not([type=checkbox]))': { width: '100%', border: '1px solid rgba(30,40,70,.14)', backgroundColor: '#fff', padding: '14px 15px', borderRadius: 12, outline: 'none' } },
   checkbox: { display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, color: '#596075' },
+  formError: { backgroundColor: '#fff2f2', border: '1px solid #ffc9c9', color: '#c92a2a', borderRadius: 10, padding: '10px 12px', fontSize: 13, fontWeight: 700 },
   successBox: { backgroundColor: '#fff', borderRadius: 18, padding: 25, fontWeight: 900, fontSize: 20 },
   footer: { maxWidth: 1180, margin: '0 auto', padding: '30px 28px 44px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 20, color: '#536078' },
 });
