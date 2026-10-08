@@ -22,6 +22,8 @@ jobs:
 
   go:
     runs-on: ubuntu-latest
+    env:
+      TURSO_GO_CACHE_DIR: ${{ runner.temp }}/turso-go-cache
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -29,6 +31,8 @@ jobs:
           go-version: '1.24.x'
           cache: false
       - run: go mod download
-      - run: go test ./...
+      # Turso's embedded native library is extracted into one cache path.
+      # Serialize package tests so separate test processes cannot race the first extraction.
+      - run: go test -p 1 ./...
       - run: go build ./cmd/cleartify
       - run: docker build -t cleartify-ci .
