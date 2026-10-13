@@ -6,6 +6,10 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS creator_takedown_requests (id TEXT PRIMARY KEY, protocol_id TEXT NOT NULL REFERENCES published_protocols(id), requester_did TEXT NOT NULL, reason_key TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('pending','hidden','rejected','restored')), created_at TEXT NOT NULL, decided_at TEXT)`,
+ `CREATE UNIQUE INDEX IF NOT EXISTS idx_creator_takedown_open ON creator_takedown_requests(protocol_id) WHERE status IN ('pending','hidden')`,
+ `CREATE TABLE IF NOT EXISTS creator_takedown_audit (id TEXT PRIMARY KEY, request_id TEXT NOT NULL REFERENCES creator_takedown_requests(id), action TEXT NOT NULL, actor_did TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
+ `CREATE TABLE IF NOT EXISTS creator_remix_lineage (protocol_id TEXT PRIMARY KEY REFERENCES published_protocols(id), parent_protocol_id TEXT NOT NULL REFERENCES published_protocols(id), attribution TEXT NOT NULL, recorded_at TEXT NOT NULL, CHECK(protocol_id<>parent_protocol_id))`,
  `CREATE TABLE IF NOT EXISTS signup_abuse_windows (identity_hash TEXT NOT NULL, bucket INTEGER NOT NULL, attempts INTEGER NOT NULL CHECK(attempts>=0), PRIMARY KEY(identity_hash,bucket))`,
  `CREATE TABLE IF NOT EXISTS signup_consent_keys (waitlist_entry_id TEXT NOT NULL REFERENCES waitlist_entries(id), consent_key TEXT NOT NULL, consent_version_key TEXT NOT NULL, accepted INTEGER NOT NULL CHECK(accepted IN (0,1)), recorded_at TEXT NOT NULL, PRIMARY KEY(waitlist_entry_id,consent_key,recorded_at))`,
  `CREATE TABLE IF NOT EXISTS agent_owner_challenges (nonce_hash TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, public_key BLOB NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)`,
