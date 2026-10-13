@@ -33,6 +33,8 @@ type Options struct {
 	OAuth *atproto.OAuthHandler
 	Protocols *protocols.Reader
 	Profiles *social.Reader
+	ProtocolInstallFlowEnabled bool
+	InstallFlow *protocols.InstallService
 	SocialAccountRegistrationEnabled bool
 	SocialAccounts *social.Accounts
 	DefaultFollowEnabled bool
@@ -48,6 +50,7 @@ type Server struct {
 	clear *clear.Service
 	protocols *protocols.Reader
 	profiles *social.Reader
+	installFlow *protocols.InstallService
 	socialAccounts *social.Accounts
 	socialAuth *atproto.OAuthHandler
 	defaultFollow *social.DefaultFollow
@@ -65,6 +68,7 @@ func New(options Options) http.Handler {
 		clear: options.Clear,
 		protocols: options.Protocols,
 		profiles: options.Profiles,
+		installFlow: options.InstallFlow,
 		socialAccounts: options.SocialAccounts,
 		socialAuth: options.OAuth,
 		defaultFollow: options.DefaultFollow,
@@ -74,6 +78,11 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
+		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
+		mux.HandleFunc("POST /api/me/protocol-install-requests",s.requestProtocolInstall)
+		mux.HandleFunc("POST /api/admin/protocol-install-requests/{id}/decision",s.decideProtocolInstall)
+	}
 	if options.SocialAccountRegistrationEnabled && options.OAuth!=nil && options.SocialAccounts!=nil {mux.HandleFunc("POST /api/social/accounts",s.registerSocialAccount)}
 	if options.DefaultFollowEnabled && options.OAuth!=nil && options.DefaultFollow!=nil {mux.HandleFunc("DELETE /api/me/following/chris",s.removeDefaultFollow)}
 	mux.HandleFunc("POST /api/admin/clear/run-requests",s.createRunRequest)
