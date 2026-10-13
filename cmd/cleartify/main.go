@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/api"
+ "github.com/chrisbirster/cleartify/internal/alpha"
 	"github.com/chrisbirster/cleartify/internal/agents"
 	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
@@ -78,6 +79,8 @@ func main() {
  handler := api.New(api.Options{
   CreatorDraftsEnabled:cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
   CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens},
+  PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
+  AlphaEligibility:alpha.Gate{DB:db.DB},
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
   ClearSessions:clearSessions,
 		Waitlist:   waitlistService,
