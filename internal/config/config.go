@@ -8,6 +8,7 @@ import (
 type Config struct {
  DBAbuseEnabled bool
  ConsentKeysEnabled bool
+ IdentityRecoveryEnabled bool
  IdentityLinkingEnabled bool
  ModerationBroaderEnabled bool
  ModerationEnforcementEnabled bool
@@ -50,6 +51,7 @@ func Load() Config {
 	return Config{
  DBAbuseEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("DB_SIGNUP_ABUSE_ENABLED")),"true"),
  ConsentKeysEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CONSENT_KEYS_ENABLED")),"true"),
+ IdentityRecoveryEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("IDENTITY_RECOVERY_ENABLED")),"true"),
  IdentityLinkingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("IDENTITY_LINKING_ENABLED")),"true"),
  ModerationBroaderEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("MODERATION_BROADER_ENABLED")),"true"),
  ModerationEnforcementEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("MODERATION_ENFORCEMENT_ENABLED")),"true"),
