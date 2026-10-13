@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/beta"
+	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
@@ -22,6 +23,7 @@ type Options struct {
 	Beta       *beta.Service
 	AppOrigin  string
 	AdminToken string
+	OAuth *atproto.OAuthHandler
 }
 
 type Server struct {
@@ -49,6 +51,7 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("POST /api/beta/resend", s.resendBetaCode)
 	mux.HandleFunc("POST /api/beta/verify", s.verifyBetaCode)
 
+	if options.OAuth!=nil {options.OAuth.Register(mux)}
 	return s.middleware(mux)
 }
 
