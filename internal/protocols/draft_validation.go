@@ -9,7 +9,7 @@ import (
 )
 
 var ErrDraftSpec=errors.New("invalid draft spec or attribution")
-var attributionID=regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$`)
+var attributionID=regexp.MustCompile(`^[a-zA-Z0-9_-][a-zA-Z0-9._:-]{0,127}$`)
 // ValidateDraftSpec is local draft validation, NOT permission to publish or
 // execute arbitrary steps. Unknown executable fields are rejected.
 func ValidateDraftSpec(raw []byte, license string) error {
