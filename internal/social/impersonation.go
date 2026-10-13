@@ -21,7 +21,7 @@ func handleSkeleton(handle string)string{
  h:=strings.ToLower(strings.TrimSpace(handle))
  var b strings.Builder
  for _,c:=range h{
-  switch c {case '0':c='o';case '1':c='l';case '3':c='e';case '5':c='s';case '-','_','.':continue}
+  switch c {case '0':c='o';case '1':c='i';case '3':c='e';case '5':c='s';case '-','_','.':continue}
   b.WriteRune(c)
  }
  return b.String()
