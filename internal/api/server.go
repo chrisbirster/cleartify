@@ -88,6 +88,8 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  identityLinks: options.IdentityLinks,
+  linkSocial: options.LinkSocial,
 		clearSessions: options.ClearSessions,
   clearPrincipalResolver: options.ClearPrincipalResolver,
   alphaEligibility:options.AlphaEligibility,
