@@ -6,6 +6,24 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS social_blocks (
+  actor_did TEXT NOT NULL,
+  subject_did TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY(actor_did,subject_did),
+  CHECK(actor_did<>subject_did)
+ )`,
+ `CREATE INDEX IF NOT EXISTS idx_social_blocks_subject ON social_blocks(subject_did)`,
+ `CREATE TABLE IF NOT EXISTS social_reports (
+  id TEXT PRIMARY KEY,
+  reporter_did TEXT NOT NULL,
+  subject_did TEXT NOT NULL,
+  reason TEXT NOT NULL CHECK(reason IN ('spam','harassment','impersonation','other')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','reviewed','dismissed')),
+  created_at TEXT NOT NULL,
+  CHECK(reporter_did<>subject_did)
+ )`,
+ `CREATE INDEX IF NOT EXISTS idx_social_reports_subject ON social_reports(subject_did,status)`,
  `CREATE TABLE IF NOT EXISTS clear_user_sessions (
    token_digest TEXT PRIMARY KEY,
    user_id TEXT NOT NULL REFERENCES users(id),
