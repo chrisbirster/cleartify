@@ -3,8 +3,8 @@ package agents
 import(
  "context"
  "crypto/rand"
+ "crypto/ed25519"
  "crypto/sha256"
- "crypto/subtle"
  "database/sql"
  "encoding/hex"
  "errors"
@@ -12,13 +12,18 @@ import(
 )
 var ErrOwnershipCeremony=errors.New("agent ownership verification denied")
 type OwnershipVerifier interface{Verify(context.Context,[]byte,string,string)bool}
-// LocalFakeVerifier is deterministic test-only proof, NOT a signature verifier.
-// There is no network access or self-hosted process execution.
-type LocalFakeVerifier struct{}
-func(LocalFakeVerifier)Verify(_ context.Context,key []byte,challenge,proof string)bool{
- digest:=sha256.Sum256(append(append([]byte(nil),key...),[]byte(challenge)...))
- expected:=hex.EncodeToString(digest[:])
- return len(expected)==len(proof)&&subtle.ConstantTimeCompare([]byte(expected),[]byte(proof))==1
+// OwnershipProofMessage binds a domain, agent, authenticated owner, candidate
+// Ed25519 public key and single-use nonce. The private key never reaches server.
+func OwnershipProofMessage(agent,owner,nonce string,key []byte)[]byte{
+ return []byte("cleartify-agent-ownership-v2\\n"+agent+"\\n"+owner+"\\n"+hex.EncodeToString(key)+"\\n"+nonce)
+}
+type Ed25519OwnershipVerifier struct{}
+func(Ed25519OwnershipVerifier)Verify(_ context.Context,key []byte,challenge,proof string)bool{
+ // challenge stores the complete contextual signing message as hex.
+ message,err:=hex.DecodeString(challenge)
+ if err!=nil||len(key)!=ed25519.PublicKeySize{return false}
+ sig,err:=hex.DecodeString(proof)
+ return err==nil&&len(sig)==ed25519.SignatureSize&&ed25519.Verify(ed25519.PublicKey(key),message,sig)
 }
 type HostAdapter interface {
  Challenge(context.Context,string,string)(string,error)
@@ -40,7 +45,7 @@ func(o Ownership)Start(ctx context.Context,actor,agentID string,key []byte)(stri
  return raw,nil
 }
 func(o Ownership)Confirm(ctx context.Context,actor,agentID,nonce,proof string)error{
- if o.DB==nil||o.Push==nil||o.Verifier==nil||len(nonce)!=64||len(proof)>256{return ErrOwnershipCeremony}
+ if o.DB==nil||o.Push==nil||o.Verifier==nil||len(nonce)!=64||len(proof)!=128{return ErrOwnershipCeremony}
  digest:=sha256.Sum256([]byte(nonce));hash:=hex.EncodeToString(digest[:])
  tx,err:=o.DB.BeginTx(ctx,nil);if err!=nil{return err};defer tx.Rollback()
  var owner,expires string;var key []byte;var consumed sql.NullString
@@ -49,14 +54,14 @@ func(o Ownership)Confirm(ctx context.Context,actor,agentID,nonce,proof string)er
  deadline,err:=time.Parse(time.RFC3339Nano,expires);if err!=nil||!time.Now().UTC().Before(deadline){return ErrOwnershipCeremony}
  var liveOwner,status string
  if err=tx.QueryRowContext(ctx,"SELECT owner_did,status FROM agent_registrations WHERE id=?",agentID).Scan(&liveOwner,&status);err!=nil||liveOwner!=actor||status=="disabled"{return ErrOwnershipCeremony}
- if !o.Verifier.Verify(ctx,key,nonce,proof){return ErrOwnershipCeremony}
+ if !o.Verifier.Verify(ctx,key,hex.EncodeToString(OwnershipProofMessage(agentID,actor,nonce,key)),proof){return ErrOwnershipCeremony}
  now:=time.Now().UTC().Format(time.RFC3339Nano)
  result,err:=tx.ExecContext(ctx,`UPDATE agent_owner_challenges SET consumed_at=? WHERE nonce_hash=? AND consumed_at IS NULL`,now,hash);if err!=nil{return err}
  n,err:=result.RowsAffected();if err!=nil||n!=1{return ErrOwnershipCeremony}
  _,err=tx.ExecContext(ctx,`INSERT INTO agent_owner_bindings(agent_id,owner_did,agent_public_key,proof_signature,verified_at,revoked_at) VALUES(?,?,?,?,?,NULL) ON CONFLICT(agent_id) DO UPDATE SET owner_did=excluded.owner_did,agent_public_key=excluded.agent_public_key,proof_signature=excluded.proof_signature,verified_at=excluded.verified_at,revoked_at=NULL`,agentID,actor,key,[]byte(proof),now)
  if err!=nil{return err}
  id,err:=randomHex();if err!=nil{return err}
- _,err=tx.ExecContext(ctx,`INSERT INTO agent_owner_audit(id,agent_id,owner_did,action,recorded_at) VALUES(?,?,?,'fake_verified',?)`,id,agentID,actor,now)
+ _,err=tx.ExecContext(ctx,`INSERT INTO agent_owner_audit(id,agent_id,owner_did,action,recorded_at) VALUES(?,?,?,'ed25519_verified',?)`,id,agentID,actor,now)
  if err!=nil{return err}
  if err=tx.Commit();err!=nil{return err}
  return o.Push(ctx)
