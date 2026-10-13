@@ -14,8 +14,7 @@ export function ProfilePreview() {
  const [message,setMessage]=createSignal('');
  const apiBase=(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/,'');
 
- createEffect(() => {
-  const handle=params.handle;
+ createEffect(() => params.handle, (handle) => {
   const controller=new AbortController();
   setLoading(true);setProfile(null);setMessage('');
   void (async ()=>{
@@ -32,7 +31,7 @@ export function ProfilePreview() {
    }
   })();
   onCleanup(()=>controller.abort());
- }, undefined);
+ });
 
  return <main {...stylex.props(styles.page)}>
   <nav {...stylex.props(styles.nav)}>
