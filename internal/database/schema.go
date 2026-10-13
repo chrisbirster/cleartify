@@ -6,6 +6,9 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS fake_seller_ledger (entitlement_id TEXT NOT NULL REFERENCES marketplace_entitlements(id), entry_kind TEXT NOT NULL CHECK(entry_kind IN ('sale','reversal')), seller_did TEXT NOT NULL, gross_minor INTEGER NOT NULL, fee_minor INTEGER NOT NULL, net_minor INTEGER NOT NULL, currency TEXT NOT NULL CHECK(currency='USD'), recorded_at TEXT NOT NULL, PRIMARY KEY(entitlement_id,entry_kind))`,
+ `CREATE TABLE IF NOT EXISTS fake_payment_disputes (entitlement_id TEXT PRIMARY KEY REFERENCES marketplace_entitlements(id), requester_did TEXT NOT NULL, reason_key TEXT NOT NULL CHECK(reason_key IN ('not_received','not_as_described','other')), status TEXT NOT NULL CHECK(status IN ('open','resolved_refund','resolved_no_refund')), opened_at TEXT NOT NULL, decided_at TEXT)`,
+ `CREATE TABLE IF NOT EXISTS fake_payment_dispute_audit (entitlement_id TEXT NOT NULL REFERENCES fake_payment_disputes(entitlement_id), event TEXT NOT NULL CHECK(event IN ('opened','resolved_refund','resolved_no_refund')), actor_did TEXT NOT NULL, recorded_at TEXT NOT NULL, PRIMARY KEY(entitlement_id,event))`,
  `CREATE TABLE IF NOT EXISTS creator_takedown_requests (id TEXT PRIMARY KEY, protocol_id TEXT NOT NULL REFERENCES published_protocols(id), requester_did TEXT NOT NULL, reason_key TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('pending','hidden','rejected','restored')), created_at TEXT NOT NULL, decided_at TEXT)`,
  `CREATE UNIQUE INDEX IF NOT EXISTS idx_creator_takedown_open ON creator_takedown_requests(protocol_id) WHERE status IN ('pending','hidden')`,
  `CREATE TABLE IF NOT EXISTS creator_takedown_audit (id TEXT PRIMARY KEY, request_id TEXT NOT NULL REFERENCES creator_takedown_requests(id), action TEXT NOT NULL, actor_did TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
