@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/api"
+ "github.com/chrisbirster/cleartify/internal/alpha"
 	"github.com/chrisbirster/cleartify/internal/agents"
 	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
@@ -73,6 +74,8 @@ func main() {
   oauthHandler.SetOnVerifiedLogin(defaultFollow.OnVerifiedLogin)
  }
  handler := api.New(api.Options{
+  PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
+  AlphaEligibility:alpha.Gate{DB:db.DB},
 		Waitlist:   waitlistService,
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
