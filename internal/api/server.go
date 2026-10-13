@@ -13,6 +13,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/beta"
 	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/protocols"
+	"github.com/chrisbirster/cleartify/internal/social"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
 
@@ -23,7 +24,7 @@ type Options struct {
 	Beta       *beta.Service
 	AppOrigin  string
 	AdminToken string
-	Protocols *protocols.Reader
+	Profiles *social.Reader
 }
 
 type Server struct {
@@ -32,6 +33,7 @@ type Server struct {
 	appOrigin  string
 	adminToken string
 	protocols *protocols.Reader
+	profiles *social.Reader
 	signupLimiter *signupLimiter
 }
 
@@ -42,12 +44,14 @@ func New(options Options) http.Handler {
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
 		adminToken: options.AdminToken,
 		protocols: options.Protocols,
+		profiles: options.Profiles,
 		signupLimiter: newSignupLimiter(),
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("GET /api/protocols",s.discoverProtocols)
+	mux.HandleFunc("GET /api/profiles/{handle}",s.getPublicProfile)
 	mux.HandleFunc("POST /api/waitlist", s.joinWaitlist)
 	mux.HandleFunc("POST /api/admin/invites", s.createBetaInvite)
 	mux.HandleFunc("POST /api/beta/start", s.startBetaActivation)
@@ -329,6 +333,18 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		slog.Error("write response", "error", err)
 	}
+}
+
+func (s *Server) getPublicProfile(w http.ResponseWriter,r *http.Request){
+ if s.profiles==nil {writeJSON(w,http.StatusServiceUnavailable,map[string]string{"error":"not_configured"});return}
+ p,err:=s.profiles.PublicByHandle(r.Context(),r.PathValue("handle"))
+ if err!=nil {
+  if errors.Is(err,social.ErrInvalidHandle){writeJSON(w,http.StatusBadRequest,map[string]string{"error":"invalid_handle"});return}
+  if errors.Is(err,social.ErrNotFound){writeJSON(w,http.StatusNotFound,map[string]string{"error":"profile_not_found"});return}
+  slog.Error("public profile lookup", "error", err)
+  writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return
+ }
+ writeJSON(w,http.StatusOK,p)
 }
 
 func (s *Server) discoverProtocols(w http.ResponseWriter,r *http.Request){
