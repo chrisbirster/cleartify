@@ -30,6 +30,7 @@ type OAuthHandler struct {
  publicOrigin string
  appOrigin string
  secure bool
+ onVerifiedLogin func(context.Context,string)error
 }
 
 func NewOAuthHandler(db *database.Store, publicOrigin, appOrigin, secretKey string) (*OAuthHandler,error){
@@ -41,6 +42,24 @@ func NewOAuthHandler(db *database.Store, publicOrigin, appOrigin, secretKey stri
  store:=&OAuthStore{DB:db,Box:box}
  return &OAuthHandler{client:oauth.NewClientApp(&config,store),store:store,publicOrigin:strings.TrimSuffix(publicOrigin,"/"),appOrigin:appOrigin,secure:strings.HasPrefix(publicOrigin,"https://")},nil
 }
+// SetOnVerifiedLogin registers a local, post-OAuth hook. It does not call a PDS.
+func(h *OAuthHandler) SetOnVerifiedLogin(fn func(context.Context,string)error){h.onVerifiedLogin=fn}
+
+// LocalAuthenticatedDID checks only locally stored OAuth browser and encrypted
+// OAuth session rows; it never accepts a DID from request parameters.
+func(h *OAuthHandler) LocalAuthenticatedDID(r *http.Request)(string,bool){
+ c,err:=r.Cookie(sessionCookieName)
+ if err!=nil||len(c.Value)<32{return "",false}
+ var did,expires string
+ err=h.store.DB.DB.QueryRowContext(r.Context(),`SELECT b.account_did,b.expires_at FROM atproto_browser_sessions b
+ INNER JOIN atproto_oauth_sessions s ON s.account_did=b.account_did AND s.session_id=b.oauth_session_id
+ WHERE b.token_digest=? LIMIT 1`,digest(c.Value)).Scan(&did,&expires)
+ if err!=nil{return "",false}
+ expiry,err:=time.Parse(time.RFC3339Nano,expires)
+ if err!=nil||!time.Now().UTC().Before(expiry)||!strings.HasPrefix(did,"did:"){return "",false}
+ return did,true
+}
+
 func (h *OAuthHandler) Register(mux *http.ServeMux){
  mux.HandleFunc("GET /oauth/client-metadata.json",h.Metadata)
  mux.HandleFunc("GET /oauth/login",h.Login)
@@ -101,6 +120,11 @@ func (h *OAuthHandler) Callback(w http.ResponseWriter,r *http.Request){
   digest(token),session.AccountDID.String(),session.SessionID,now.Add(sessionTTL).Format(time.RFC3339Nano),now.Format(time.RFC3339Nano))
  if err!=nil{http.Error(w,"unable to create session",500);return}
  if err:=h.store.DB.Push(r.Context());err!=nil{http.Error(w,"unable to persist session",500);return}
+ if h.onVerifiedLogin!=nil{
+  if err:=h.onVerifiedLogin(r.Context(),session.AccountDID.String());err!=nil{
+   http.Error(w,"social onboarding unavailable",http.StatusServiceUnavailable);return
+  }
+ }
  h.cookie(w,sessionCookieName,token,int(sessionTTL.Seconds()))
  w.Header().Set("Cache-Control","no-store")
  http.Redirect(w,r,h.appOrigin+"/?atproto=connected",http.StatusSeeOther)
