@@ -2,6 +2,7 @@ package agents
 
 import(
  "context"
+ "github.com/chrisbirster/cleartify/internal/policy"
  "crypto/rand"
  "crypto/ed25519"
  "crypto/sha256"
@@ -39,7 +40,7 @@ func(o Ownership)Start(ctx context.Context,actor,agentID string,key []byte)(stri
  var owner,status string
  if err:=o.DB.QueryRowContext(ctx,"SELECT owner_did,status FROM agent_registrations WHERE id=?",agentID).Scan(&owner,&status);err!=nil||owner!=actor||status=="disabled"{return "",ErrOwnershipCeremony}
  raw,err:=randomHex();if err!=nil{return "",err}
- digest:=sha256.Sum256([]byte(raw));expiry:=time.Now().UTC().Add(5*time.Minute).Format(time.RFC3339Nano)
+ digest:=sha256.Sum256([]byte(raw));expiry:=time.Now().UTC().Add(policy.AgentOwnershipChallengeTTL).Format(time.RFC3339Nano)
  _,err=o.DB.ExecContext(ctx,`INSERT INTO agent_owner_challenges(nonce_hash,agent_id,owner_did,public_key,expires_at) VALUES(?,?,?,?,?)`,hex.EncodeToString(digest[:]),agentID,actor,key,expiry)
  if err!=nil{return "",err};if err=o.Push(ctx);err!=nil{return "",err}
  return raw,nil
