@@ -1,6 +1,6 @@
 # Cleartify milestone roadmap — 88-task evidence tracker
 
-Updated: 2026-10-13. **Source:** repository `dev` and verified PR states #5–#25 (merged #18, #20, #21, #22, #24; open #6, #12, #23, #25). The original 88-item checklist was not available as a canonical tracked file, so these are **88 normalized task descriptions derived from the agreed M0–M10 milestones**, not a claim of verbatim recovery. Statuses refer to evidence, **not deployment**.
+Updated: 2026-10-13. **Source:** actual GitHub PR states and current `dev` (merged PRs #7–#24, including #12 and #23; M0 #6 still open; this audit #25 still open; social implementation PRs #26/#27 open and unmerged). The original 88-item checklist was not available as a canonical tracked file, so these are **88 normalized task descriptions derived from the agreed M0–M10 milestones**, not a claim of verbatim recovery. Statuses refer to evidence, **not deployment**.
 
 **Legend:** `done` = code or documentation confirmed merged into dev; `in progress` = unmerged PR or pending implementation (explicit PR evidence noted); `blocked-on-owner` = product, legal, identity or launch approval required. An engineering task marked `in progress` without a PR is **not implemented**. CI success of a PR is not a merge. No task is marked done only because of a green PR.
 
@@ -13,9 +13,9 @@ Updated: 2026-10-13. **Source:** repository `dev` and verified PR states #5–#2
 | 3 | Define three-sided product model | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
 | 4 | Define first-user journey | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
 | 5 | Define public/private data split | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
-| 6 | Agree social identity onboarding | **blocked-on-owner** — owner decision pending |
-| 7 | Resolve default-follow consent | **blocked-on-owner** — owner decision pending |
-| 8 | Approve pivot and M0 product contract | **blocked-on-owner** — owner decision pending |
+| 6 | Agree social identity onboarding | **in progress** — owner said "at protocol login required" Oct 13; PR #6 documentation and social-registration PR #27 remain open |
+| 7 | Resolve default-follow consent | **in progress** — owner said "Following is automatic but removable"; implementation PR #26 open and flag off |
+| 8 | Approve pivot and M0 product contract | **in progress** — owner said "Social-first"; PR #6 document still open, so contract not yet merged |
 
 ## M1
 
@@ -28,7 +28,7 @@ Updated: 2026-10-13. **Source:** repository `dev` and verified PR states #5–#2
 | 5 | Introduce rate limits | **done** — merged into `dev` |
 | 6 | Add referral attribution | **done** — merged into `dev` |
 | 7 | Commit lockfile and npm ci | **done** — merged into `dev` |
-| 8 | Finalize terms/privacy and consent | **blocked-on-owner** — owner decision pending |
+| 8 | Finalize terms/privacy and consent | **blocked-on-owner** — PR #12 merged **draft** policy acceptance/version and placeholder pages for `dev` only; legal wording, retention and public-launch approval still pending |
 
 ## M2
 
@@ -125,9 +125,9 @@ Updated: 2026-10-13. **Source:** repository `dev` and verified PR states #5–#2
 
 | # | Task | Status / evidence |
 |---:|---|---|
-| 1 | Define listing and price-in-cents schema | **in progress** — PR #23 open; not merged |
-| 2 | Test pricing constraints | **in progress** — PR #23 open; not merged |
-| 3 | Document seller/payment/legal decisions | **in progress** — PR #23 open; not merged |
+| 1 | Define listing and price-in-cents schema | **done** — PR #23 verified merged into `dev` (schema/tests/docs only; no payment processing) |
+| 2 | Test pricing constraints | **done** — PR #23 verified merged into `dev` (schema/tests/docs only; no payment processing) |
+| 3 | Document seller/payment/legal decisions | **done** — PR #23 verified merged into `dev` (schema/tests/docs only; no payment processing) |
 | 4 | Implement creator seller authentication | **in progress** — pending implementation |
 | 5 | Implement entitlements and access control | **in progress** — pending implementation |
 | 6 | Integrate processor with refunds and audits | **in progress** — pending implementation |
@@ -149,8 +149,8 @@ Updated: 2026-10-13. **Source:** repository `dev` and verified PR states #5–#2
 
 ## Reconciliation notes
 
-- M1 privacy/terms remains owner-blocked in draft PR #12; approval must precede public signup policy claims.
+- PR #12 has **merged into dev** with explicitly draft `/privacy` and `/terms` content and `CurrentPolicyVersion` draft marker. Owner approved this development-only foundation, **not** finalized legal wording or public launch. Final privacy/terms and retention/deletion sign-off remain blocked on owner/legal review.
 - M2 OAuth PR #18 is verified merged; the login flag remains off until real-PDS validation.
-- M7 PR #21, M8 PR #22, and M10 checklist PR #24 are verified merged; only their documented slices are done. M9 PR #23 is open and **not done** until merged. M0 PR #6 and policy PR #12 remain open.
-- M5 approval records do not execute Clear workflows; M6 membership predicate is not authenticated route-wide enforcement.
+- PRs #7–#24 (including #12 and #23) are verified merged to `dev` except #6, which remains open. M9 PR #23 is now done **only for listing/pricing schema, tests and decision documentation**, not payments or entitlements. M0 PR #6 contains the October 13 owner statements plus an explicitly unapproved proposed retention policy; it is not merged.
+- M5 approval records do not execute Clear workflows; M6 membership predicate is not authenticated route-wide enforcement. Social owner decisions (required AT login; automatic but removable Chris follow; social-first; protocol authorship rule) are documented in open PR #6, not proof that OAuth real-PDS login or public claims are verified. Separate flag-off PRs #26 (default-follow/unfollow) and #27 (ATProto-required social account creation) remain open; neither is marked done here.
 - Recheck this ledger after **each merge**; statuses cannot predict future merges or infrastructure smoke test results.
