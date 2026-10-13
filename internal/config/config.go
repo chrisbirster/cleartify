@@ -16,6 +16,7 @@ type Config struct {
 	TursoRemoteURL   string
 	TursoAuthToken   string
 	SocialDefaultFollowEnabled bool
+	SocialAccountRegistrationEnabled bool
 	AgentRegistrationEnabled bool
 	AtprotoOAuthEnabled bool
 	AtprotoPublicOrigin string
@@ -35,6 +36,7 @@ func Load() Config {
 		TursoRemoteURL:   strings.TrimSpace(os.Getenv("TURSO_REMOTE_URL")),
 		TursoAuthToken:   strings.TrimSpace(os.Getenv("TURSO_AUTH_TOKEN")),
 		SocialDefaultFollowEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_DEFAULT_FOLLOW_ENABLED")),"true"),
+		SocialAccountRegistrationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_ACCOUNT_REGISTRATION_ENABLED")),"true"),
 		AgentRegistrationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_REGISTRATION_ENABLED")),"true"),
 		AtprotoOAuthEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("ATPROTO_OAUTH_ENABLED")),"true"),
 		AtprotoPublicOrigin: strings.TrimSpace(os.Getenv("ATPROTO_PUBLIC_ORIGIN")),
