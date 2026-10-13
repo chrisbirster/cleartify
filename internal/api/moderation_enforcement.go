@@ -1,6 +1,5 @@
 package api
 import(
- "errors"
  "net/http"
  "sync"
 )
@@ -18,4 +17,3 @@ func(s *Server)enforceSubjectHold(w http.ResponseWriter,r *http.Request,did stri
  if held{writeJSON(w,403,map[string]string{"error":"subject_on_hold"});s.moderationMetrics.inc("hold_denied");return false}
  s.moderationMetrics.inc("hold_allowed");return true
 }
-var _ = errors.New
