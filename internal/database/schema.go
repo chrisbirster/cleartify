@@ -144,6 +144,16 @@ var schemaStatements = []string{
        revoked_at TEXT
     )`,
     `CREATE INDEX IF NOT EXISTS idx_alpha_memberships_revoked ON alpha_memberships(revoked_at)`,
+	`CREATE TABLE IF NOT EXISTS agent_registrations (
+        id TEXT PRIMARY KEY,
+        owner_did TEXT NOT NULL REFERENCES social_profiles(did),
+        display_name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'unverified' CHECK(status IN ('unverified','verified','disabled')),
+        created_at TEXT NOT NULL,
+        UNIQUE(owner_did,display_name)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_agent_registrations_owner ON agent_registrations(owner_did,status)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
