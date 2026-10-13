@@ -39,6 +39,7 @@ type Signup struct {
 }
 
 type Service struct {
+ ConsentKeysEnabled bool
 	db *database.Store
 }
 
@@ -143,7 +144,16 @@ func (s *Service) Join(ctx context.Context, input Signup) (string, error) {
 	acceptanceID,err := randomID()
 	if err != nil {return "",err}
 	if _,err := tx.ExecContext(ctx, `INSERT INTO policy_acceptances (id,waitlist_entry_id,policy_version,accepted_at) VALUES(?,?,?,?)`, acceptanceID,id,CurrentPolicyVersion,now);err != nil {return "",fmt.Errorf("record policy acceptance: %w",err)}
-	if err := tx.Commit(); err != nil {
+	if s.ConsentKeysEnabled {
+  for _,record:=range []struct{key,version string;accepted int}{
+   {"policy_acceptance","policy_version_pending",1},
+   {"email_marketing","marketing_consent_version_pending",emailUpdates},
+  }{
+   _,e:=tx.ExecContext(ctx,`INSERT INTO signup_consent_keys(waitlist_entry_id,consent_key,consent_version_key,accepted,recorded_at) VALUES(?,?,?,?,?)`,id,record.key,record.version,record.accepted,now)
+   if e!=nil{return "",fmt.Errorf("record consent key: %w",e)}
+  }
+ }
+ if err := tx.Commit(); err != nil {
 		return "", fmt.Errorf("commit waitlist transaction: %w", err)
 	}
 	if err := s.db.Push(ctx); err != nil {

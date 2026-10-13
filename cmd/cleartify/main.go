@@ -64,6 +64,7 @@ func main() {
 	}
 
 	waitlistService := waitlist.NewService(db)
+ waitlistService.ConsentKeysEnabled=cfg.ConsentKeysEnabled
 	betaService := beta.NewService(db, tokens, sender, cfg.AppURL)
 	var oauthHandler *atproto.OAuthHandler
 	if cfg.AtprotoOAuthEnabled {
@@ -81,6 +82,9 @@ func main() {
  // Local transport has no HTTP listener, outbound network, or production delivery.
  _ = interop.NewLocalTransport(cfg.AgentTransportEnabled, db.DB, db.Push)
  handler := api.New(api.Options{
+  DBAbuseEnabled:cfg.DBAbuseEnabled,
+  DBAbuseDB:db.DB,
+  DBAbuseSecret:cfg.AppSecret,
   IdentityLinkingEnabled:cfg.IdentityLinkingEnabled && cfg.AtprotoOAuthEnabled && cfg.ClearSessionsEnabled,
   IdentityLinks:&api.LinkPersistence{DB:db.DB,Push:db.Push},
   LinkSocial:oauthHandler,
