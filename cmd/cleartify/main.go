@@ -13,6 +13,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/api"
  "github.com/chrisbirster/cleartify/internal/alpha"
 	"github.com/chrisbirster/cleartify/internal/agents"
+ "github.com/chrisbirster/cleartify/internal/interop"
 	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/beta"
@@ -76,6 +77,8 @@ func main() {
  }
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
+ // Local transport has no HTTP listener, outbound network, or production delivery.
+ _ = interop.NewLocalTransport(cfg.AgentTransportEnabled, db.DB, db.Push)
  handler := api.New(api.Options{
   IdentityLinkingEnabled:cfg.IdentityLinkingEnabled && cfg.AtprotoOAuthEnabled && cfg.ClearSessionsEnabled,
   IdentityLinks:&api.LinkPersistence{DB:db.DB,Push:db.Push},
