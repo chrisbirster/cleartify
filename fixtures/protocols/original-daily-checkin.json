@@ -1,0 +1,8 @@
+{
+  "steps": [
+    {"operation":"local.set","key":"checkin_complete","value":"yes"},
+    {"operation":"local.assert","key":"checkin_complete","value":"yes"}
+  ],
+  "permissions": ["local.write.preview"],
+  "attribution": ""
+}

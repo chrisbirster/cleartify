@@ -1,0 +1,7 @@
+{
+  "steps": [
+    {"operation":"local.set","key":"focus_goal","value":"One small task"},
+    {"operation":"local.assert","key":"focus_goal","value":"One small task"}
+  ],
+  "permissions": ["local.write.preview"]
+}
