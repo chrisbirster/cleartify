@@ -92,6 +92,8 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  moderationRuntime: options.ModerationRuntimeEnabled,
+  moderationDB: options.ModerationDB,
   identityLinks: options.IdentityLinks,
   linkSocial: options.LinkSocial,
 		clearSessions: options.ClearSessions,
