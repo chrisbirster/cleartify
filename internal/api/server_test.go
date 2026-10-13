@@ -24,7 +24,7 @@ func TestWaitlistEndpointPersistsSignupAndConsent(t *testing.T) {
 	}
 
 	handler := New(waitlist.NewService(store), "http://localhost:3000")
-	body := []byte(`{"name":"Chris","email":"Chris@example.com","phone":"(717) 555-1212","emailUpdates":true}`)
+	body := []byte(`{"name":"Chris","email":"Chris@example.com","phone":"(717) 555-1212","emailUpdates":true,"acceptPolicies":true}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/waitlist", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Origin", "http://localhost:3000")
@@ -80,7 +80,7 @@ func TestWaitlistEndpointRejectsInvalidPhone(t *testing.T) {
 	}
 
 	handler := New(waitlist.NewService(store), "")
-	body := []byte(`{"name":"Chris","email":"chris@example.com","phone":"call-me-maybe","emailUpdates":false}`)
+	body := []byte(`{"name":"Chris","email":"chris@example.com","phone":"call-me-maybe","emailUpdates":false,"acceptPolicies":true}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/waitlist", bytes.NewReader(body))
 	res := httptest.NewRecorder()
 
