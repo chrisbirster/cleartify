@@ -1,6 +1,6 @@
 # Cleartify milestone roadmap — 88-task evidence tracker
 
-Updated: 2026-10-13. **Source:** actual GitHub PR states and current `dev` (merged PRs #7–#24, including #12 and #23; M0 #6 still open; this audit #25 still open; social implementation PRs #26/#27 open and unmerged). The original 88-item checklist was not available as a canonical tracked file, so these are **88 normalized task descriptions derived from the agreed M0–M10 milestones**, not a claim of verbatim recovery. Statuses refer to evidence, **not deployment**.
+Updated: 2026-10-13. **Source:** actual merged GitHub PR states and current `dev` at the refresh (PRs #7–#24, #26, #27 and #28 merged; #6, #25, #29, #30 and #31 open). This is an **audit of merged work**, not a prediction that open PRs will merge. The original 88-item checklist was not available as a canonical tracked file, so these are **88 normalized task descriptions derived from the agreed M0–M10 milestones**, not a claim of verbatim recovery. Statuses refer to evidence, **not deployment**.
 
 **Legend:** `done` = code or documentation confirmed merged into dev; `in progress` = unmerged PR or pending implementation (explicit PR evidence noted); `blocked-on-owner` = product, legal, identity or launch approval required. An engineering task marked `in progress` without a PR is **not implemented**. CI success of a PR is not a merge. No task is marked done only because of a green PR.
 
@@ -13,8 +13,8 @@ Updated: 2026-10-13. **Source:** actual GitHub PR states and current `dev` (merg
 | 3 | Define three-sided product model | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
 | 4 | Define first-user journey | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
 | 5 | Define public/private data split | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
-| 6 | Agree social identity onboarding | **in progress** — owner said "at protocol login required" Oct 13; PR #6 documentation and social-registration PR #27 remain open |
-| 7 | Resolve default-follow consent | **in progress** — owner said "Following is automatic but removable"; implementation PR #26 open and flag off |
+| 6 | Agree social identity onboarding | **in progress** — owner said "at protocol login required" Oct 13; flag-off social-account PR #27 merged, but M0 product contract #6 remains open |
+| 7 | Resolve default-follow consent | **in progress** — owner said "Following is automatic but removable"; local default-follow/unfollow PR #26 merged with its flag default off, while M0 PR #6 remains open |
 | 8 | Approve pivot and M0 product contract | **in progress** — owner said "Social-first"; PR #6 document still open, so contract not yet merged |
 
 ## M1
@@ -40,7 +40,7 @@ Updated: 2026-10-13. **Source:** actual GitHub PR states and current `dev` (merg
 | 4 | Upgrade Go toolchain | **done** — merged into `dev` |
 | 5 | Pin Indigo SDK and hash dependencies | **done** — merged into `dev` |
 | 6 | Implement OAuth handlers behind flag | **done** — PR #18 merged into `dev`; feature flag remains off pending real-PDS verification |
-| 7 | Run real hosted-PDS E2E verification | **in progress** — pending implementation |
+| 7 | Run real hosted-PDS E2E verification | **blocked-on-owner** — requires owner-controlled hosted-PDS account, staging secrets and authorized end-to-end exercise; not yet verified |
 | 8 | Approve identity and phone account linking | **blocked-on-owner** — owner decision pending |
 
 ## M3
@@ -51,8 +51,8 @@ Updated: 2026-10-13. **Source:** actual GitHub PR states and current `dev` (merg
 | 2 | Add public profile read API | **done** — merged into `dev` |
 | 3 | Replace mock profile view | **done** — merged into `dev` |
 | 4 | Add DID-based follow model | **done** — merged into `dev` |
-| 5 | Authenticate profile creation/claims | **in progress** — pending implementation |
-| 6 | Implement owner-scoped follow/unfollow | **in progress** — pending implementation |
+| 5 | Authenticate profile creation/claims | **in progress** — PR #27 merged OAuth-bound local private registration and PR #28 merged DID-match local claim; independent PDS handle↔DID proof and public owner claim remain unfinished; flags default off |
+| 6 | Implement owner-scoped follow/unfollow | **done** — PRs #26/#28 merged local session-owned follow/unfollow with durable /@chris opt-out; no PDS graph writes, flag off |
 | 7 | Enforce reports/block/anti-impersonation | **in progress** — pending implementation |
 | 8 | Validate profile disclosure and creator attribution | **blocked-on-owner** — owner decision pending |
 
@@ -77,7 +77,7 @@ Updated: 2026-10-13. **Source:** actual GitHub PR states and current `dev` (merg
 | 2 | Require exact version installation for requests | **done** — merged into `dev` |
 | 3 | Add admin-only request/approval APIs | **done** — merged into `dev` |
 | 4 | Test idempotent one-time decisions | **done** — merged into `dev` |
-| 5 | Add authenticated self-service installations | **in progress** — pending implementation |
+| 5 | Add authenticated self-service installations | **in progress** — PR #29 open, adds acknowledged immutable install approval requests only; no executable Clear installation or DID-to-phone link |
 | 6 | Implement bounded declarative protocol runner | **in progress** — pending implementation |
 | 7 | Implement cancel/retry/version-pin and audit | **in progress** — pending implementation |
 | 8 | Approve consequential action permission policy | **blocked-on-owner** — owner decision pending |
@@ -90,7 +90,7 @@ Updated: 2026-10-13. **Source:** actual GitHub PR states and current `dev` (merg
 | 2 | Tie alpha eligibility to verified beta activation | **done** — PR #20 merged into `dev` |
 | 3 | Document staging smoke and gates | **done** — PR #20 merged into `dev` |
 | 4 | Enforce session-bound eligibility on all routes | **in progress** — pending implementation |
-| 5 | Run staging invite-to-activation smoke | **in progress** — pending implementation |
+| 5 | Run staging invite-to-activation smoke | **blocked-on-owner** — staging deployment, provider secrets and authorized real PDS/beta smoke not performed; readiness-update PR #30 open |
 | 6 | Recruit creator and tester cohort | **in progress** — pending implementation |
 | 7 | Measure first run and repeat use | **in progress** — pending implementation |
 | 8 | Approve actual alpha invitations and privacy | **blocked-on-owner** — owner decision pending |
@@ -150,7 +150,7 @@ Updated: 2026-10-13. **Source:** actual GitHub PR states and current `dev` (merg
 ## Reconciliation notes
 
 - PR #12 has **merged into dev** with explicitly draft `/privacy` and `/terms` content and `CurrentPolicyVersion` draft marker. Owner approved this development-only foundation, **not** finalized legal wording or public launch. Final privacy/terms and retention/deletion sign-off remain blocked on owner/legal review.
-- M2 OAuth PR #18 is verified merged; the login flag remains off until real-PDS validation.
-- PRs #7–#24 (including #12 and #23) are verified merged to `dev`. PR #6 remains open. M9 PR #23 is now done **only for listing/pricing schema, tests and decision documentation**, not payments or entitlements. M0 PR #6 contains the October 13 owner statements plus an explicitly unapproved proposed retention policy; it is not merged.
-- M5 approval records do not execute Clear workflows; M6 membership predicate is not authenticated route-wide enforcement. Social owner decisions (required AT login; automatic but removable Chris follow; social-first; protocol authorship rule) are documented in open PR #6, not proof that OAuth real-PDS login or public claims are verified. Separate flag-off PRs #26 (default-follow/unfollow) and #27 (ATProto-required social account creation) remain open; neither is marked done here.
+- M2 OAuth PR #18 and flag-off social creation PR #27 are verified merged; ATProto login remains disabled until real hosted-PDS verification. Neither OAuth DID ownership nor local claims proves arbitrary handle ownership.
+- PRs #7–#24 (including #12 and #23), #26, #27 and #28 are verified merged to `dev`. PR #6 remains open. M9 PR #23 is now done **only for listing/pricing schema, tests and decision documentation**, not payments or entitlements. M0 PR #6 contains the October 13 owner statements plus an explicitly unapproved proposed retention policy; it is not merged.
+- M5 approval records do not execute Clear workflows; M6 membership predicate is not authenticated route-wide enforcement. Social owner decisions (required AT login; automatic but removable Chris follow; social-first; protocol authorship rule) are documented in open PR #6, not proof that OAuth real-PDS login or public claims are verified. Flag-off PRs #26 and #27 are merged, and PR #28 implements local DID-scoped claim/follow; these do not replace real PDS handle verification. PR #29 (install request/manifest approval), #30 (alpha smoke docs), #31 (CSRF/rate hardening) remain open and cannot be marked done until merged; rerun integration tests after merges.
 - Recheck this ledger after **each merge**; statuses cannot predict future merges or infrastructure smoke test results.
