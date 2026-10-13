@@ -6,6 +6,25 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS marketplace_entitlements (
+ id TEXT PRIMARY KEY,
+ listing_id TEXT NOT NULL REFERENCES marketplace_listings(id),
+ buyer_did TEXT NOT NULL,
+ provider TEXT NOT NULL CHECK(provider='fake'),
+ provider_receipt TEXT NOT NULL UNIQUE,
+ status TEXT NOT NULL CHECK(status IN ('active','refunded')),
+ created_at TEXT NOT NULL,
+ refunded_at TEXT,
+ UNIQUE(listing_id,buyer_did)
+ )`,
+ `CREATE TABLE IF NOT EXISTS marketplace_payment_audit (
+ id TEXT PRIMARY KEY,
+ entitlement_id TEXT NOT NULL REFERENCES marketplace_entitlements(id),
+ event TEXT NOT NULL CHECK(event IN ('fake_purchase','fake_refund')),
+ actor_did TEXT NOT NULL,
+ recorded_at TEXT NOT NULL
+ )`,
+
  `CREATE TABLE IF NOT EXISTS agent_message_consents (
  sender_agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
  recipient_agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
