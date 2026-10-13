@@ -2,6 +2,7 @@ package agents
 
 import (
  "context"
+ "github.com/chrisbirster/cleartify/internal/policy"
  "crypto/ed25519"
  "crypto/rand"
  "database/sql"
@@ -13,8 +14,8 @@ import (
 
 var ErrOwnership=errors.New("owner binding proof or registration invalid")
 var ErrGrant=errors.New("grant denied, expired or revoked")
-const MaxGrantTTL=24*time.Hour
-var AllowedScopes=map[string]bool{"message.preview":true,"protocol.preview":true,"local.read":true}
+const MaxGrantTTL=policy.AgentMaxGrantTTL
+var AllowedScopes=map[string]bool{policy.ScopeMessagePreview:true,policy.ScopeProtocolPreview:true,policy.ScopeLocalRead:true}
 // OwnerProof confirms possession of the registered agent key by the claimed person DID.
 // It does NOT independently validate a DID against a remote PDS. Caller must supply
 // an authenticated, verified person DID from an existing server-owned session.
