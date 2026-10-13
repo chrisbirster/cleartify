@@ -144,6 +144,26 @@ var schemaStatements = []string{
        revoked_at TEXT
     )`,
     `CREATE INDEX IF NOT EXISTS idx_alpha_memberships_revoked ON alpha_memberships(revoked_at)`,
+	`CREATE TABLE IF NOT EXISTS agent_interop_keys (
+       key_id TEXT PRIMARY KEY,
+       agent_id TEXT NOT NULL,
+       algorithm TEXT NOT NULL CHECK(algorithm='Ed25519'),
+       public_key BLOB NOT NULL,
+       created_at TEXT NOT NULL,
+       revoked_at TEXT
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_agent_interop_keys_agent ON agent_interop_keys(agent_id,revoked_at)`,
+    `CREATE TABLE IF NOT EXISTS agent_interop_messages (
+       message_id TEXT PRIMARY KEY,
+       sender_agent_id TEXT NOT NULL,
+       recipient_agent_id TEXT NOT NULL,
+       key_id TEXT NOT NULL REFERENCES agent_interop_keys(key_id),
+       payload_digest TEXT NOT NULL,
+       signature BLOB NOT NULL,
+       issued_at TEXT NOT NULL,
+       expires_at TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','rejected','accepted','expired'))
+    )`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
