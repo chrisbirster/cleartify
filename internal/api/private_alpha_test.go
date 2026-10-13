@@ -6,6 +6,7 @@ import (
  "net/http"
  "net/http/httptest"
  "testing"
+ "github.com/chrisbirster/cleartify/internal/clearsession"
 )
 type eligibilityStub struct{allow bool;err error;seen string}
 func(e *eligibilityStub)Eligible(_ context.Context,id string)(bool,error){e.seen=id;return e.allow,e.err}
@@ -19,7 +20,7 @@ func TestPrivateAlphaGate(t *testing.T){
  }{
   t.Run(tc.name,func(t *testing.T){
    gate:=&eligibilityStub{allow:tc.allow,err:tc.gateErr}
-   h:=New(Options{PrivateAlphaRoutesEnabled:tc.flag,AlphaEligibility:gate,ClearPrincipalResolver:func(*http.Request)(string,error){return tc.principal,tc.authErr}})
+   h:=New(Options{PrivateAlphaRoutesEnabled:tc.flag,ClearSessionsEnabled:true,ClearSessions:&clearsession.Service{},AlphaEligibility:gate,ClearPrincipalResolver:func(*http.Request)(string,error){return tc.principal,tc.authErr}})
    w:=httptest.NewRecorder()
    h.ServeHTTP(w,httptest.NewRequest(http.MethodGet,"/api/me/alpha-eligibility?userId=someone-else",nil))
    if w.Code!=tc.status {t.Fatalf("got %d expected %d: %s",w.Code,tc.status,w.Body.String())}
@@ -28,7 +29,7 @@ func TestPrivateAlphaGate(t *testing.T){
  }
 }
 func TestPrivateAlphaMissingDependencies(t *testing.T){
- h:=New(Options{PrivateAlphaRoutesEnabled:true})
+ h:=New(Options{PrivateAlphaRoutesEnabled:true,ClearSessionsEnabled:true,ClearSessions:&clearsession.Service{}})
  w:=httptest.NewRecorder();h.ServeHTTP(w,httptest.NewRequest(http.MethodGet,"/api/me/alpha-eligibility",nil))
  if w.Code!=503{t.Fatalf("fail open: %d",w.Code)}
 }
