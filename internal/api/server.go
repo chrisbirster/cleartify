@@ -49,6 +49,8 @@ type Options struct {
  FakeInstallRunEnabled bool
  FakeInstallRunDB *sql.DB
  FakeInstallRunPush func(context.Context)error
+ CreatorTakedownsEnabled bool
+ CreatorTakedowns *protocols.Takedowns
  CreatorPublishingEnabled bool
  CreatorDraftsEnabled bool
  CreatorDrafts *protocols.DraftService
@@ -95,6 +97,7 @@ type Server struct {
  fakeCheckout *marketplace.Service
  fakeInstallRunDB *sql.DB
  fakeInstallRunPush func(context.Context)error
+ creatorTakedowns *protocols.Takedowns
  creatorPublishingEnabled bool
  creatorDrafts *protocols.DraftService
  clearPrincipalResolver ClearPrincipal
@@ -141,6 +144,7 @@ func New(options Options) http.Handler {
   alphaEligibility:options.AlphaEligibility,
   privateAlphaEnabled:options.PrivateAlphaRoutesEnabled,
   creatorPublishingEnabled:options.CreatorPublishingEnabled,
+  creatorTakedowns:options.CreatorTakedowns,
   creatorDrafts:options.CreatorDrafts,
   moderation:options.Moderation,
   agentDirectoryDB:options.AgentDirectoryDB,
@@ -199,6 +203,11 @@ func New(options Options) http.Handler {
  if options.CreatorDraftsEnabled && options.OAuth!=nil && options.CreatorDrafts!=nil {mux.HandleFunc("POST /api/me/protocol-drafts",s.createCreatorDraft)}
  if options.CreatorPublishingEnabled && options.CreatorDraftsEnabled && options.OAuth!=nil && options.CreatorDrafts!=nil {
   mux.HandleFunc("POST /api/me/protocol-drafts/{id}/visibility",s.updateCreatorVisibility)
+ }
+ if options.CreatorTakedownsEnabled && options.CreatorTakedowns!=nil && options.OAuth!=nil {
+  mux.HandleFunc("POST /api/me/protocols/{id}/takedown-requests",s.creatorTakedownRequest)
+  mux.HandleFunc("GET /api/me/protocols/{id}/lineage",s.creatorLineage)
+  mux.HandleFunc("POST /api/admin/creator-takedowns/{id}/decision",s.creatorTakedownDecision)
  }
  if options.PrivateAlphaRoutesEnabled && options.ClearSessionsEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.alphaPrivateRoute(s.alphaEligibilityStatus))}
  if options.ClearSessionsEnabled && options.ClearSessions != nil {if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/clear-session",s.alphaPrivateRoute(s.meClearSession))} else {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession)};mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
