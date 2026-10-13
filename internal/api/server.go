@@ -97,6 +97,7 @@ type Server struct {
  creatorDrafts *protocols.DraftService
  clearPrincipalResolver ClearPrincipal
  alphaEligibility alphaEligibility
+ privateAlphaEnabled bool
  clearSessions *clearsession.Service
 	waitlist   *waitlist.Service
 	beta       *beta.Service
@@ -135,6 +136,7 @@ func New(options Options) http.Handler {
 		clearSessions: options.ClearSessions,
   clearPrincipalResolver: options.ClearPrincipalResolver,
   alphaEligibility:options.AlphaEligibility,
+  privateAlphaEnabled:options.PrivateAlphaRoutesEnabled,
   creatorPublishingEnabled:options.CreatorPublishingEnabled,
   creatorDrafts:options.CreatorDrafts,
   moderation:options.Moderation,
