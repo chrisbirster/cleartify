@@ -1,0 +1,25 @@
+name: Resolve Indigo dependency
+on:
+  push:
+    branches: [feat/m2-indigo-oauth-login-20261012]
+permissions:
+  contents: write
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.1'
+      - run: |
+          go get github.com/bluesky-social/indigo/atproto/auth/oauth@b2619d864df0
+          go mod tidy
+          go mod verify
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add go.mod go.sum
+          git rm .github/workflows/indigo-bootstrap.yml
+          git commit -m "build: pin Indigo OAuth dependency"
+          git push origin HEAD:feat/m2-indigo-oauth-login-20261012
