@@ -6,6 +6,9 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS clear_fake_install_runs (id TEXT PRIMARY KEY, install_request_id TEXT NOT NULL UNIQUE REFERENCES protocol_install_requests(id), user_id TEXT NOT NULL REFERENCES users(id), actor_did TEXT NOT NULL, publication_id TEXT NOT NULL REFERENCES published_protocols(id), manifest_sha256 TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('reserved','completed','failed')), result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL, finished_at TEXT)`,
+ `CREATE INDEX IF NOT EXISTS idx_clear_fake_install_user ON clear_fake_install_runs(user_id,created_at)`,
+ `CREATE TABLE IF NOT EXISTS clear_fake_install_audit (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES clear_fake_install_runs(id), action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
  `CREATE TABLE IF NOT EXISTS creator_publications (protocol_id TEXT PRIMARY KEY REFERENCES published_protocols(id), visibility TEXT NOT NULL CHECK(visibility IN ('private','unlisted','public')), original_source_id TEXT, provenance_note TEXT NOT NULL, approved_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
  `CREATE TABLE IF NOT EXISTS creator_publication_audit (id TEXT PRIMARY KEY, protocol_id TEXT NOT NULL REFERENCES published_protocols(id), actor_did TEXT NOT NULL, from_visibility TEXT NOT NULL, to_visibility TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
  `CREATE TABLE IF NOT EXISTS social_moderation_cases (id TEXT PRIMARY KEY, subject_did TEXT NOT NULL REFERENCES social_profiles(did), kind TEXT NOT NULL CHECK(kind IN ('review','appeal')), status TEXT NOT NULL CHECK(status IN ('pending','upheld','released','rejected')), rationale TEXT NOT NULL, created_at TEXT NOT NULL, decided_at TEXT, decision_reason TEXT)`,
