@@ -36,6 +36,7 @@ export function Home() {
           email: data.get('email'),
           phone: data.get('phone'),
           emailUpdates: data.get('emailUpdates') === 'on',
+          referralCode: new URLSearchParams(window.location.search).get('ref') ?? '',
           acceptPolicies: data.get('acceptPolicies') === 'on',
         }),
       });

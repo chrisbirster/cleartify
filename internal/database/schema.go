@@ -86,6 +86,96 @@ var schemaStatements = []string{
 		FOREIGN KEY(user_id) REFERENCES users(id),
 		UNIQUE(user_id, protocol_key)
 	)`,
+	`CREATE TABLE IF NOT EXISTS atproto_oauth_requests (
+		state TEXT PRIMARY KEY,
+		payload_ciphertext BLOB NOT NULL,
+		browser_nonce_hash TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		expires_at TEXT NOT NULL
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_atproto_oauth_requests_expires ON atproto_oauth_requests(expires_at)`,
+	`CREATE TABLE IF NOT EXISTS atproto_oauth_sessions (
+		account_did TEXT NOT NULL,
+		session_id TEXT NOT NULL,
+		payload_ciphertext BLOB NOT NULL,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL,
+		PRIMARY KEY(account_did,session_id)
+	)`,
+	`CREATE TABLE IF NOT EXISTS atproto_browser_sessions (
+		token_digest TEXT PRIMARY KEY,
+		account_did TEXT NOT NULL,
+		oauth_session_id TEXT NOT NULL,
+		expires_at TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		FOREIGN KEY(account_did,oauth_session_id) REFERENCES atproto_oauth_sessions(account_did,session_id)
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_atproto_browser_sessions_expiry ON atproto_browser_sessions(expires_at)`,
+	`CREATE TABLE IF NOT EXISTS social_profiles (did TEXT PRIMARY KEY, handle TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL, bio TEXT NOT NULL DEFAULT '', avatar_url TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL CHECK(kind IN ('person','agent')), public_visible INTEGER NOT NULL DEFAULT 0 CHECK(public_visible IN (0,1)), claimed INTEGER NOT NULL DEFAULT 0 CHECK(claimed IN (0,1)), updated_at TEXT NOT NULL)`,
+	`CREATE INDEX IF NOT EXISTS idx_social_profiles_visibility ON social_profiles(public_visible,handle)`,
+	`CREATE TABLE IF NOT EXISTS social_follows (follower_did TEXT NOT NULL, subject_did TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(follower_did,subject_did), FOREIGN KEY(follower_did) REFERENCES social_profiles(did), FOREIGN KEY(subject_did) REFERENCES social_profiles(did), CHECK(follower_did <> subject_did))`,
+	`CREATE INDEX IF NOT EXISTS idx_social_follows_subject ON social_follows(subject_did)`,
+	`CREATE TABLE IF NOT EXISTS published_protocols (
+		id TEXT PRIMARY KEY,
+		creator_did TEXT NOT NULL,
+		slug TEXT NOT NULL,
+		version INTEGER NOT NULL CHECK(version > 0),
+		title TEXT NOT NULL,
+		summary TEXT NOT NULL,
+		license TEXT NOT NULL,
+		spec_json TEXT NOT NULL,
+		status TEXT NOT NULL CHECK(status IN ('draft','published','withdrawn')),
+		created_at TEXT NOT NULL,
+		UNIQUE(creator_did,slug,version)
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_protocols_discovery ON published_protocols(status,created_at DESC)`,
+	`CREATE TABLE IF NOT EXISTS clear_run_requests (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id),
+        publication_id TEXT NOT NULL REFERENCES published_protocols(id),
+        status TEXT NOT NULL DEFAULT 'pending_approval' CHECK(status IN ('pending_approval','approved','rejected','cancelled')),
+        requested_at TEXT NOT NULL,
+        decided_at TEXT,
+        UNIQUE(id,user_id)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_clear_run_requests_user ON clear_run_requests(user_id,status)`,
+	`CREATE TABLE IF NOT EXISTS alpha_memberships (
+       user_id TEXT PRIMARY KEY REFERENCES users(id),
+       admitted_by TEXT NOT NULL,
+       admitted_at TEXT NOT NULL,
+       revoked_at TEXT
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_alpha_memberships_revoked ON alpha_memberships(revoked_at)`,
+	`CREATE TABLE IF NOT EXISTS agent_registrations (
+        id TEXT PRIMARY KEY,
+        owner_did TEXT NOT NULL REFERENCES social_profiles(did),
+        display_name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'unverified' CHECK(status IN ('unverified','verified','disabled')),
+        created_at TEXT NOT NULL,
+        UNIQUE(owner_did,display_name)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_agent_registrations_owner ON agent_registrations(owner_did,status)`,
+	`CREATE TABLE IF NOT EXISTS agent_interop_keys (
+       key_id TEXT PRIMARY KEY,
+       agent_id TEXT NOT NULL,
+       algorithm TEXT NOT NULL CHECK(algorithm='Ed25519'),
+       public_key BLOB NOT NULL,
+       created_at TEXT NOT NULL,
+       revoked_at TEXT
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_agent_interop_keys_agent ON agent_interop_keys(agent_id,revoked_at)`,
+    `CREATE TABLE IF NOT EXISTS agent_interop_messages (
+       message_id TEXT PRIMARY KEY,
+       sender_agent_id TEXT NOT NULL,
+       recipient_agent_id TEXT NOT NULL,
+       key_id TEXT NOT NULL REFERENCES agent_interop_keys(key_id),
+       payload_digest TEXT NOT NULL,
+       signature BLOB NOT NULL,
+       issued_at TEXT NOT NULL,
+       expires_at TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','rejected','accepted','expired'))
+    )`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }

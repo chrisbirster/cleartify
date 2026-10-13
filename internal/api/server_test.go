@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -62,12 +63,12 @@ func TestWaitlistEndpointPersistsSignupAndConsent(t *testing.T) {
 	if err := store.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM consents`).Scan(&consents); err != nil {
 		t.Fatalf("count consents: %v", err)
 	}
-	var version string
-	if err:=store.DB.QueryRowContext(ctx,"SELECT policy_version FROM policy_acceptances LIMIT 1").Scan(&version);err!=nil {t.Fatal(err)}
-	if version!=waitlist.CurrentPolicyVersion {t.Fatalf("wrong version %q",version)}
 	if consents != 1 {
 		t.Fatalf("consents = %d, want 1", consents)
 	}
+	var version string
+	if err := store.DB.QueryRowContext(ctx,"SELECT policy_version FROM policy_acceptances LIMIT 1").Scan(&version);err!=nil {t.Fatal(err)}
+	if version!=waitlist.CurrentPolicyVersion {t.Fatalf("wrong policy version %q",version)}
 }
 
 func TestWaitlistEndpointRejectsInvalidPhone(t *testing.T) {
@@ -92,4 +93,40 @@ func TestWaitlistEndpointRejectsInvalidPhone(t *testing.T) {
 	if res.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d; body=%s", res.Code, http.StatusBadRequest, res.Body.String())
 	}
+}
+
+func TestWaitlistReferralAttribution(t *testing.T) {
+ ctx := context.Background()
+ store, err := database.Open(ctx, database.Config{Path: ":memory:"})
+ if err != nil { t.Fatal(err) }
+ defer store.Close()
+ if err := store.Migrate(ctx); err != nil { t.Fatal(err) }
+ handler := New(Options{Waitlist:waitlist.NewService(store)})
+ for _, tc := range []struct{ code string; status int }{
+  {"friend_123", http.StatusCreated},
+  {"bad code!", http.StatusBadRequest},
+ } {
+  body, _ := json.Marshal(map[string]any{"name":"Chris","email":"chris@example.com","phone":"+17175551212","referralCode":tc.code,"acceptPolicies":true})
+  r:=httptest.NewRequest(http.MethodPost,"/api/waitlist",bytes.NewReader(body))
+  w:=httptest.NewRecorder()
+  handler.ServeHTTP(w,r)
+  if w.Code!=tc.status {t.Fatalf("%q status %d want %d: %s",tc.code,w.Code,tc.status,w.Body.String())}
+ }
+ var source string
+ if err:=store.DB.QueryRowContext(ctx,"SELECT source FROM waitlist_entries WHERE email_normalized = ?", "chris@example.com").Scan(&source);err!=nil{t.Fatal(err)}
+ if source!="ref:friend_123" {t.Fatalf("source=%q",source)}
+}
+
+func TestWaitlistEndpointRejectsUnacceptedPoliciesWithoutWriting(t *testing.T) {
+ ctx:=context.Background()
+ store,err:=database.Open(ctx,database.Config{Path:":memory:"});if err!=nil{t.Fatal(err)}
+ defer store.Close()
+ if err:=store.Migrate(ctx);err!=nil{t.Fatal(err)}
+ handler:=New(Options{Waitlist:waitlist.NewService(store)})
+ body:=[]byte("{\"name\":\"Chris\",\"email\":\"chris@example.com\",\"phone\":\"+17175551212\",\"emailUpdates\":true}")
+ req:=httptest.NewRequest(http.MethodPost,"/api/waitlist",bytes.NewReader(body))
+ res:=httptest.NewRecorder();handler.ServeHTTP(res,req)
+ if res.Code!=http.StatusBadRequest{t.Fatalf("status=%d body=%s",res.Code,res.Body.String())}
+ var n int;if err:=store.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM waitlist_entries").Scan(&n);err!=nil{t.Fatal(err)}
+ if n!=0 {t.Fatalf("signup persisted without acceptance: %d",n)}
 }

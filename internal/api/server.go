@@ -5,20 +5,34 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"regexp"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/beta"
+	"github.com/chrisbirster/cleartify/internal/agents"
+	"github.com/chrisbirster/cleartify/internal/clear"
+	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/notifications"
+	"github.com/chrisbirster/cleartify/internal/protocols"
+	"github.com/chrisbirster/cleartify/internal/social"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
+
+var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
 	Waitlist   *waitlist.Service
 	Beta       *beta.Service
 	AppOrigin  string
 	AdminToken string
+	AgentRegistrationEnabled bool
+	Agents *agents.Service
+	Clear *clear.Service
+	OAuth *atproto.OAuthHandler
+	Protocols *protocols.Reader
+	Profiles *social.Reader
 }
 
 type Server struct {
@@ -26,6 +40,11 @@ type Server struct {
 	beta       *beta.Service
 	appOrigin  string
 	adminToken string
+	agents *agents.Service
+	clear *clear.Service
+	protocols *protocols.Reader
+	profiles *social.Reader
+	signupLimiter *signupLimiter
 }
 
 func New(options Options) http.Handler {
@@ -34,16 +53,27 @@ func New(options Options) http.Handler {
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
 		adminToken: options.AdminToken,
+		agents: options.Agents,
+		clear: options.Clear,
+		protocols: options.Protocols,
+		profiles: options.Profiles,
+		signupLimiter: newSignupLimiter(),
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+	mux.HandleFunc("POST /api/admin/clear/run-requests",s.createRunRequest)
+	mux.HandleFunc("POST /api/admin/clear/run-requests/{id}/decision",s.decideRunRequest)
+	mux.HandleFunc("GET /api/protocols",s.discoverProtocols)
+	mux.HandleFunc("GET /api/profiles/{handle}",s.getPublicProfile)
 	mux.HandleFunc("POST /api/waitlist", s.joinWaitlist)
 	mux.HandleFunc("POST /api/admin/invites", s.createBetaInvite)
 	mux.HandleFunc("POST /api/beta/start", s.startBetaActivation)
 	mux.HandleFunc("POST /api/beta/resend", s.resendBetaCode)
 	mux.HandleFunc("POST /api/beta/verify", s.verifyBetaCode)
 
+	if options.OAuth!=nil {options.OAuth.Register(mux)}
+	if options.AgentRegistrationEnabled {mux.HandleFunc("POST /api/admin/agents",s.registerAgent)}
 	return s.middleware(mux)
 }
 
@@ -55,6 +85,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
+	if !s.limitSignup(w,r) { return }
 	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
 
 	var req struct {
@@ -62,19 +93,26 @@ func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		Email        string `json:"email"`
 		Phone        string `json:"phone"`
 		EmailUpdates bool   `json:"emailUpdates"`
+		ReferralCode string `json:"referralCode"`
 		AcceptPolicies bool `json:"acceptPolicies"`
 	}
 	if !decodeJSON(w, r, &req) {
 		return
 	}
 
+	if req.ReferralCode != "" && !referralCodePattern.MatchString(req.ReferralCode) {
+		writeJSON(w,http.StatusBadRequest,map[string]any{"error":"validation_error","field":"referralCode"})
+		return
+	}
+	source := "landing"
+	if req.ReferralCode != "" {source = "ref:" + req.ReferralCode}
 	_, err := s.waitlist.Join(r.Context(), waitlist.Signup{
 		Name:         req.Name,
 		Email:        req.Email,
 		Phone:        req.Phone,
 		EmailUpdates: req.EmailUpdates,
+		Source:       source,
 		AcceptPolicies: req.AcceptPolicies,
-		Source:       "landing",
 	})
 	if err != nil {
 		var validation *waitlist.ValidationError
@@ -313,4 +351,61 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		slog.Error("write response", "error", err)
 	}
+}
+
+func (s *Server) getPublicProfile(w http.ResponseWriter,r *http.Request){
+ if s.profiles==nil {writeJSON(w,http.StatusServiceUnavailable,map[string]string{"error":"not_configured"});return}
+ p,err:=s.profiles.PublicByHandle(r.Context(),r.PathValue("handle"))
+ if err!=nil {
+  if errors.Is(err,social.ErrInvalidHandle){writeJSON(w,http.StatusBadRequest,map[string]string{"error":"invalid_handle"});return}
+  if errors.Is(err,social.ErrNotFound){writeJSON(w,http.StatusNotFound,map[string]string{"error":"profile_not_found"});return}
+  slog.Error("public profile lookup", "error", err)
+  writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return
+ }
+ writeJSON(w,http.StatusOK,p)
+}
+
+func (s *Server) discoverProtocols(w http.ResponseWriter,r *http.Request){
+ if s.protocols==nil {writeJSON(w,http.StatusServiceUnavailable,map[string]string{"error":"not_configured"});return}
+ result,err:=s.protocols.Discover(r.Context(),20)
+ if err!=nil{slog.Error("protocol discovery", "error",err);writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return}
+ writeJSON(w,http.StatusOK,map[string]any{"protocols":result})
+}
+
+func(s *Server) authorizedClear(w http.ResponseWriter,r *http.Request) bool {
+ if s.clear==nil || s.adminToken=="" {writeJSON(w,http.StatusServiceUnavailable,map[string]string{"error":"not_configured"});return false}
+ if !secureBearerMatch(r.Header.Get("Authorization"),s.adminToken){writeJSON(w,http.StatusUnauthorized,map[string]string{"error":"unauthorized"});return false}
+ return true
+}
+func(s *Server) createRunRequest(w http.ResponseWriter,r *http.Request){
+ if !s.authorizedClear(w,r){return}
+ var req struct{UserID string `json:"userId"`;PublicationID string `json:"publicationId"`}
+ if !decodeJSON(w,r,&req){return}
+ id,err:=s.clear.Request(r.Context(),req.UserID,req.PublicationID)
+ if err!=nil {if errors.Is(err,clear.ErrNotPublished){writeJSON(w,http.StatusBadRequest,map[string]string{"error":"not_installed_or_published"});return};slog.Error("run request", "error",err);writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return}
+ writeJSON(w,http.StatusAccepted,map[string]any{"id":id,"status":"pending_approval","executed":false})
+}
+func(s *Server) decideRunRequest(w http.ResponseWriter,r *http.Request){
+ if !s.authorizedClear(w,r){return}
+ var req struct{UserID string `json:"userId"`;Approve bool `json:"approve"`}
+ if !decodeJSON(w,r,&req){return}
+ if err:=s.clear.Decide(r.Context(),req.UserID,r.PathValue("id"),req.Approve);err!=nil{
+ if errors.Is(err,clear.ErrNotPending){writeJSON(w,http.StatusConflict,map[string]string{"error":"not_pending"});return}
+ writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return}
+ status:="rejected";if req.Approve{status="approved"}
+ writeJSON(w,http.StatusOK,map[string]any{"status":status,"executed":false})
+}
+
+func(s *Server) registerAgent(w http.ResponseWriter,r *http.Request){
+ if s.agents==nil||s.adminToken=="" {writeJSON(w,http.StatusServiceUnavailable,map[string]string{"error":"not_configured"});return}
+ if !secureBearerMatch(r.Header.Get("Authorization"),s.adminToken) {writeJSON(w,http.StatusUnauthorized,map[string]string{"error":"unauthorized"});return}
+ var req struct{OwnerDID string `json:"ownerDid"`; DisplayName string `json:"displayName"`; Description string `json:"description"`}
+ if !decodeJSON(w,r,&req){return}
+ reg,err:=s.agents.Register(r.Context(),req.OwnerDID,req.DisplayName,req.Description)
+ if err!=nil {
+  if errors.Is(err,agents.ErrInvalidRegistration){writeJSON(w,http.StatusBadRequest,map[string]string{"error":"invalid_registration"});return}
+  slog.Error("agent registration failed","error",err)
+  writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return
+ }
+ writeJSON(w,http.StatusCreated,reg)
 }

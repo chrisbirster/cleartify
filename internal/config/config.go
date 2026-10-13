@@ -15,6 +15,10 @@ type Config struct {
 	DatabasePath     string
 	TursoRemoteURL   string
 	TursoAuthToken   string
+	AgentRegistrationEnabled bool
+	AtprotoOAuthEnabled bool
+	AtprotoPublicOrigin string
+	AtprotoSessionKey string
 }
 
 func Load() Config {
@@ -29,6 +33,10 @@ func Load() Config {
 		DatabasePath:     env("DATABASE_PATH", "./data/cleartify.db"),
 		TursoRemoteURL:   strings.TrimSpace(os.Getenv("TURSO_REMOTE_URL")),
 		TursoAuthToken:   strings.TrimSpace(os.Getenv("TURSO_AUTH_TOKEN")),
+		AgentRegistrationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_REGISTRATION_ENABLED")),"true"),
+		AtprotoOAuthEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("ATPROTO_OAUTH_ENABLED")),"true"),
+		AtprotoPublicOrigin: strings.TrimSpace(os.Getenv("ATPROTO_PUBLIC_ORIGIN")),
+		AtprotoSessionKey: strings.TrimSpace(os.Getenv("ATPROTO_SESSION_KEY_B64")),
 	}
 }
 
