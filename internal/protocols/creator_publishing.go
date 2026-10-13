@@ -43,6 +43,9 @@ func (s DraftService) PublishDraft(ctx context.Context,actor,id,target,provenanc
  // No backward changes to immutable visibility in this first workflow.
  valid:=(previous=="draft"&&target=="private")||(previous=="private"&&(target=="unlisted"||target=="public"))||(previous=="unlisted"&&target=="public")
  if !valid{return ErrPublishingConflict}
+ var activeHold int
+ if err=tx.QueryRowContext(ctx,"SELECT count(*) FROM creator_takedown_requests WHERE protocol_id=? AND status='hidden'",id).Scan(&activeHold);err!=nil{return err}
+ if activeHold>0{return ErrPublishingConflict}
  now:=time.Now().UTC().Format(time.RFC3339Nano)
  if previous=="draft"{
   _,err=tx.ExecContext(ctx,`INSERT INTO creator_publications(protocol_id,visibility,original_source_id,provenance_note,approved_at,updated_at) VALUES(?,?,?,?,?,?)`,id,target,input.RemixOf,provenance,now,now)
@@ -50,6 +53,10 @@ func (s DraftService) PublishDraft(ctx context.Context,actor,id,target,provenanc
   _,err=tx.ExecContext(ctx,`UPDATE creator_publications SET visibility=?,updated_at=? WHERE protocol_id=? AND visibility=?`,target,now,id,previous)
  }
  if err!=nil{return err}
+ if previous=="draft"&&input.RemixOf!="" {
+  _,err=tx.ExecContext(ctx,`INSERT INTO creator_remix_lineage(protocol_id,parent_protocol_id,attribution,recorded_at) VALUES(?,?,?,?)`,id,input.RemixOf,input.Attribution,now)
+  if err!=nil{return err}
+ }
  if target!="private"{
   result,e:=tx.ExecContext(ctx,`UPDATE published_protocols SET status='published' WHERE id=? AND status IN ('draft','published')`,id);if e!=nil{return e}
   n,e:=result.RowsAffected();if e!=nil||n!=1{return ErrPublishingConflict}

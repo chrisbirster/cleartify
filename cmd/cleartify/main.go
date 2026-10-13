@@ -111,6 +111,8 @@ func main() {
   FakeInstallRunEnabled:cfg.FakeInstallRunEnabled && cfg.PrivateAlphaRoutesEnabled && cfg.ClearSessionsEnabled && cfg.AtprotoOAuthEnabled,
   FakeInstallRunDB:db.DB,
   FakeInstallRunPush:db.Push,
+  CreatorTakedownsEnabled:cfg.CreatorTakedownsEnabled && cfg.AtprotoOAuthEnabled,
+  CreatorTakedowns:&protocols.Takedowns{DB:db.DB},
   CreatorPublishingEnabled:cfg.CreatorPublishingEnabled && cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
   CreatorDraftsEnabled:cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
   CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens},

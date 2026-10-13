@@ -21,6 +21,7 @@ type Config struct {
  FakeCheckoutEnabled bool
  FakeInstallRunEnabled bool
  FakeRunRecoveryEnabled bool
+ CreatorTakedownsEnabled bool
  CreatorPublishingEnabled bool
  CreatorDraftsEnabled bool
  PrivateAlphaRoutesEnabled bool
@@ -62,6 +63,7 @@ func Load() Config {
  FakeCheckoutEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("FAKE_CHECKOUT_ENABLED")),"true"),
  FakeRunRecoveryEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("FAKE_RUN_RECOVERY_ENABLED")),"true"),
  FakeInstallRunEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("FAKE_INSTALL_RUN_ENABLED")),"true"),
+ CreatorTakedownsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_TAKEDOWNS_ENABLED")),"true"),
  CreatorPublishingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_PUBLISHING_ENABLED")),"true"),
  CreatorDraftsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_DRAFTS_ENABLED")),"true"),
  PrivateAlphaRoutesEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("PRIVATE_ALPHA_ROUTES_ENABLED")),"true"),

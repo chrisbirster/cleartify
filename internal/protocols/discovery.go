@@ -20,7 +20,7 @@ type Published struct {
 type Reader struct {DB *sql.DB;PaidEnforcement bool;HoldVisibility bool}
 func (r Reader) Discover(ctx context.Context,limit int)([]Published,error){
  if limit<=0||limit>50{limit=20}
- query:=`SELECT id,creator_did,slug,version,title,summary,license FROM published_protocols WHERE status='published' AND NOT EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=published_protocols.id AND c.visibility!='public') ORDER BY created_at DESC,id DESC LIMIT ?`
+ query:=`SELECT id,creator_did,slug,version,title,summary,license FROM published_protocols WHERE status='published' AND NOT EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=published_protocols.id AND c.visibility!='public') AND NOT EXISTS (SELECT 1 FROM creator_takedown_requests t WHERE t.protocol_id=published_protocols.id AND t.status='hidden') ORDER BY created_at DESC,id DESC LIMIT ?`
  if r.PaidEnforcement {query=`SELECT id,creator_did,slug,version,title,summary,license FROM published_protocols WHERE status='published' AND NOT EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=published_protocols.id AND c.visibility!='public') AND NOT EXISTS (SELECT 1 FROM marketplace_listings l WHERE l.protocol_id=published_protocols.id AND l.status='listed' AND l.pricing_kind='one_time' AND l.price_minor>0) ORDER BY created_at DESC,id DESC LIMIT ?`}
  if r.HoldVisibility {query=strings.Replace(query,"ORDER BY created_at", "AND NOT EXISTS (SELECT 1 FROM social_impersonation_holds h WHERE h.subject_did=published_protocols.creator_did AND h.released_at IS NULL) ORDER BY created_at",1)}
  rows,err:=r.DB.QueryContext(ctx,query,limit)
@@ -34,7 +34,7 @@ var ErrNotFound=errors.New("published protocol not found")
 func(r Reader) Version(ctx context.Context,creatorDID,slug string,version int)(Published,error){
  var p Published
  if !strings.HasPrefix(creatorDID,"did:")||slug==""||len(slug)>100||version<1{return p,ErrNotFound}
- query:=`SELECT id,creator_did,slug,version,title,summary,license FROM published_protocols WHERE creator_did=? AND slug=? AND version=? AND status='published' AND NOT EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=published_protocols.id AND c.visibility='private')`
+ query:=`SELECT id,creator_did,slug,version,title,summary,license FROM published_protocols WHERE creator_did=? AND slug=? AND version=? AND status='published' AND NOT EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=published_protocols.id AND c.visibility='private') AND NOT EXISTS (SELECT 1 FROM creator_takedown_requests t WHERE t.protocol_id=published_protocols.id AND t.status='hidden')`
  if r.HoldVisibility {query+=` AND NOT EXISTS (SELECT 1 FROM social_impersonation_holds h WHERE h.subject_did=published_protocols.creator_did AND h.released_at IS NULL)`}
  err:=r.DB.QueryRowContext(ctx,query,creatorDID,slug,version).Scan(&p.ID,&p.CreatorDID,&p.Slug,&p.Version,&p.Title,&p.Summary,&p.License)
  if errors.Is(err,sql.ErrNoRows){return Published{},ErrNotFound}
