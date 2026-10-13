@@ -30,6 +30,7 @@ type Options struct {
  DBAbuseEnabled bool
  DBAbuseDB *sql.DB
  DBAbuseSecret string
+ IdentityRecoveryEnabled bool
  IdentityLinkingEnabled bool
  IdentityLinks *LinkPersistence
  LinkSocial SocialDIDVerifier
@@ -197,6 +198,10 @@ func New(options Options) http.Handler {
   mux.HandleFunc("GET /api/me/identity-link/preview",s.alphaPrivateRoute(s.linkPreview))
   mux.HandleFunc("POST /api/me/identity-link/confirm",s.alphaPrivateRoute(s.linkConfirm))
   mux.HandleFunc("DELETE /api/me/identity-link",s.alphaPrivateRoute(s.linkUnlink))
+  if options.IdentityRecoveryEnabled {
+   mux.HandleFunc("POST /api/me/identity-link/disconnect",s.alphaPrivateRoute(s.linkDisconnectAll))
+   mux.HandleFunc("POST /api/me/identity-link/recover",s.alphaPrivateRoute(s.linkRecoverLocal))
+  }
  }
  if options.AgentDirectoryEnabled && options.AgentDirectoryDB!=nil {mux.HandleFunc("GET /api/agents",s.listAgentDirectory)}
  if options.SocialModerationEnabled && options.OAuth!=nil && options.Moderation!=nil {mux.HandleFunc("PUT /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("DELETE /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("POST /api/me/reports",s.createSocialReport)}
