@@ -149,7 +149,7 @@ func (s *Service) Invite(ctx context.Context, email string) (InviteResult, error
 	message := notifications.Email{
 		To: entry.Email,
 		Subject: "You're in — meet Clear",
-		Text: fmt.Sprintf("Hey %s,\\n\\nYou're invited to the Cleartify beta.\\n\\nActivate your invite:\\n%s\\n\\nThe link expires in 7 days.", entry.Name, activationURL),
+		Text: fmt.Sprintf("Hey %s,\n\nYou're invited to the Cleartify beta.\n\nActivate your invite:\n%s\n\nThe link expires in 7 days.", entry.Name, activationURL),
 	}
 	if err := s.sender.SendEmail(ctx, message); err != nil {
 		_, _ = s.db.DB.ExecContext(ctx, `
