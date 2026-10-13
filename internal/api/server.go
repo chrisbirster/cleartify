@@ -12,6 +12,7 @@ import (
 
 	"github.com/chrisbirster/cleartify/internal/beta"
 	"github.com/chrisbirster/cleartify/internal/notifications"
+	"github.com/chrisbirster/cleartify/internal/protocols"
 	"github.com/chrisbirster/cleartify/internal/social"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
@@ -23,6 +24,7 @@ type Options struct {
 	Beta       *beta.Service
 	AppOrigin  string
 	AdminToken string
+	Protocols *protocols.Reader
 	Profiles *social.Reader
 }
 
@@ -31,6 +33,7 @@ type Server struct {
 	beta       *beta.Service
 	appOrigin  string
 	adminToken string
+	protocols *protocols.Reader
 	profiles *social.Reader
 	signupLimiter *signupLimiter
 }
@@ -41,12 +44,14 @@ func New(options Options) http.Handler {
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
 		adminToken: options.AdminToken,
+		protocols: options.Protocols,
 		profiles: options.Profiles,
 		signupLimiter: newSignupLimiter(),
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+	mux.HandleFunc("GET /api/protocols",s.discoverProtocols)
 	mux.HandleFunc("GET /api/profiles/{handle}",s.getPublicProfile)
 	mux.HandleFunc("POST /api/waitlist", s.joinWaitlist)
 	mux.HandleFunc("POST /api/admin/invites", s.createBetaInvite)
@@ -341,4 +346,11 @@ func (s *Server) getPublicProfile(w http.ResponseWriter,r *http.Request){
   writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return
  }
  writeJSON(w,http.StatusOK,p)
+}
+
+func (s *Server) discoverProtocols(w http.ResponseWriter,r *http.Request){
+ if s.protocols==nil {writeJSON(w,http.StatusServiceUnavailable,map[string]string{"error":"not_configured"});return}
+ result,err:=s.protocols.Discover(r.Context(),20)
+ if err!=nil{slog.Error("protocol discovery", "error",err);writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return}
+ writeJSON(w,http.StatusOK,map[string]any{"protocols":result})
 }

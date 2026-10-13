@@ -17,6 +17,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/security"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
+	"github.com/chrisbirster/cleartify/internal/protocols"
 	"github.com/chrisbirster/cleartify/internal/social"
 )
 
@@ -62,6 +63,7 @@ func main() {
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
 		AdminToken: cfg.AdminToken,
+		Protocols: &protocols.Reader{DB:db.DB},
 		Profiles: &social.Reader{DB:db.DB},
 	})
 
