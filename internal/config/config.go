@@ -2,10 +2,13 @@ package config
 
 import (
 	"os"
+ "strconv"
 	"strings"
 )
 
 type Config struct {
+ FakeAccountingEnabled bool
+ FakeSellerFeeBPS int64
  DBAbuseEnabled bool
  DBAbuseProxyEnabled bool
  DBAbuseCleanupEnabled bool
@@ -52,6 +55,8 @@ type Config struct {
 func Load() Config {
 	appOrigin := strings.TrimRight(env("APP_ORIGIN", "http://localhost:3000"), "/")
 	return Config{
+ FakeAccountingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("FAKE_ACCOUNTING_ENABLED")),"true"),
+ FakeSellerFeeBPS: fakeSellerFeeBPS(),
  DBAbuseProxyEnabled:strings.EqualFold(strings.TrimSpace(os.Getenv("DB_SIGNUP_TRUSTED_PROXY_ENABLED")),"true"),
  DBAbuseCleanupEnabled:strings.EqualFold(strings.TrimSpace(os.Getenv("DB_SIGNUP_COUNTER_CLEANUP_ENABLED")),"true"),
  DBAbuseTrustedProxyCIDRs:strings.TrimSpace(os.Getenv("DB_SIGNUP_TRUSTED_PROXY_CIDRS")),
@@ -101,4 +106,12 @@ func env(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func fakeSellerFeeBPS() int64 {
+ raw:=strings.TrimSpace(os.Getenv("FAKE_SELLER_FEE_BPS"))
+ if raw==""{return 0}
+ n,err:=strconv.ParseInt(raw,10,64)
+ if err!=nil||n<0||n>10000{return -1} // enabled accounting rejects misconfiguration
+ return n
 }

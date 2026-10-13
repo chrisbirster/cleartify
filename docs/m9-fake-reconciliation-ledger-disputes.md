@@ -1,0 +1,17 @@
+# M9 fake-only reconciliation, seller ledger, fee and disputes
+
+**Default OFF — internal engineering implementation, October 13, 2026.** `FAKE_ACCOUNTING_ENABLED=false`; `FAKE_SELLER_FEE_BPS=0` by default (0–10,000 basis points supported, integer; invalid config is rejected by the enabled accounting service). These configuration keys do **not** automatically schedule or mount an accounting service. An operator of a local test harness must explicitly construct `marketplace.FakeAccounting{DB,Enabled,FeeBPS}` using reviewed settings. No real payment provider, keys, SDK, settlement, transfers, payouts or deployment.
+
+## Accounting and reconciliation
+
+Call `RunReconciliationJob(ctx)` explicitly from local harness code. It first runs the existing fake-entitlement audit reconciliation, refusing to book new ledger entries if payment audits disagree. It then reads **committed** fake purchases and refunds and idempotently inserts a sale and (if refunded) equal-and-opposite reversal, uniquely keyed by entitlement and entry kind. This means repeated jobs do not double-credit the seller. Each sale snapshots listing price, currency, seller DID, fee and net amount; fees are computed as `(gross_minor * fee_bps + 5000) / 10000` (half-up rounding to integer minor units), bounded by the existing listing price ceiling. The same fee amount is reversed on refund. `SellerBalance` reads net entries; these are **fake accounting units**, never payable balances. This is a manually invoked reconciliation primitive, **not a background scheduler** or multi-currency accounting engine.
+
+## Dispute and refund flow
+
+`OpenDispute(ctx,buyerDID,entitlementID,reasonKey)` accepts only the original buyer of an active **fake** entitlement. Accepted internal reason keys: `not_received`, `not_as_described`, `other`. A unique entitlement dispute prevents duplicate open requests and records an audit event. `ResolveDispute(ctx,operator,entitlementID,refund)` requires a nonempty **trusted caller-supplied** operator identifier and is **not exposed through HTTP**. The caller must authenticate/authorize a human moderator before invoking it; this service primitive alone is **not** an authorization boundary. A refund decision atomically marks the fake entitlement refunded, records the existing fake refund audit, and records the dispute decision. Existing access checks deny refunded entitlements. Non-refund closure also remains recorded and irreversible without a future reviewed reopening design.
+
+There is no automated adjudication, seller payout, chargeback-provider integration, notification, support UI, dispute expiry or new HTTP route. No implicit real-world right, obligation, fee schedule, or legal wording is established by these internal engineering defaults.
+
+## Test and operational limits
+
+Use `go test -p 1 ./internal/marketplace ./internal/config` or existing `go test -p 1 ./...` CI. Tests cover fee rounding, duplicated reconciliation, buyer-only disputes, invalid reasons, audit trail, refund entitlement revocation and exact fee reversal, flag off and invalid fee rates. Durable tables are additive; existing fake purchase and refund code remains unchanged. Current job does not detect historical price changes after purchase because the source listing price is read during first reconciliation; production-grade immutable sale-price capture, independent ledger-audit verification, job scheduling and transaction ordering must be reviewed separately before any real-provider work.
