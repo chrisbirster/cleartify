@@ -83,6 +83,8 @@ func main() {
 		OAuth: oauthHandler,
 		Protocols: &protocols.Reader{DB:db.DB},
 		Profiles: &social.Reader{DB:db.DB},
+		ProtocolInstallFlowEnabled: cfg.ProtocolInstallFlowEnabled && cfg.AtprotoOAuthEnabled,
+		InstallFlow: &protocols.InstallService{Store:db},
 		DefaultFollowEnabled: cfg.SocialDefaultFollowEnabled && cfg.AtprotoOAuthEnabled,
 		DefaultFollow: defaultFollow,
 		SocialAccountRegistrationEnabled: cfg.SocialAccountRegistrationEnabled && cfg.AtprotoOAuthEnabled,
