@@ -29,6 +29,8 @@ var schemaStatements = []string{
 		recorded_at TEXT NOT NULL,
 		FOREIGN KEY(waitlist_entry_id) REFERENCES waitlist_entries(id)
 	)`,
+	`CREATE TABLE IF NOT EXISTS policy_acceptances (id TEXT PRIMARY KEY, waitlist_entry_id TEXT NOT NULL, policy_version TEXT NOT NULL, accepted_at TEXT NOT NULL, FOREIGN KEY(waitlist_entry_id) REFERENCES waitlist_entries(id))`,
+	`CREATE INDEX IF NOT EXISTS idx_policy_acceptances_waitlist ON policy_acceptances(waitlist_entry_id, accepted_at)`,
 	`CREATE INDEX IF NOT EXISTS idx_consents_waitlist
 		ON consents(waitlist_entry_id, recorded_at)`,
 	`CREATE TABLE IF NOT EXISTS beta_invites (

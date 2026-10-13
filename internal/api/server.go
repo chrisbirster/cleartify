@@ -94,6 +94,7 @@ func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		Phone        string `json:"phone"`
 		EmailUpdates bool   `json:"emailUpdates"`
 		ReferralCode string `json:"referralCode"`
+		AcceptPolicies bool `json:"acceptPolicies"`
 	}
 	if !decodeJSON(w, r, &req) {
 		return
@@ -111,6 +112,7 @@ func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		Phone:        req.Phone,
 		EmailUpdates: req.EmailUpdates,
 		Source:       source,
+		AcceptPolicies: req.AcceptPolicies,
 	})
 	if err != nil {
 		var validation *waitlist.ValidationError
