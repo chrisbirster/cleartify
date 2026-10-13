@@ -4,7 +4,6 @@ import(
  "bytes"
  "context"
  "encoding/base64"
- "net/http"
  "net/http/httptest"
  "testing"
  "github.com/chrisbirster/cleartify/internal/atproto"
