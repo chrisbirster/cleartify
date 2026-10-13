@@ -6,6 +6,18 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS agent_local_outbox (
+  message_id TEXT PRIMARY KEY REFERENCES agent_interop_messages(message_id),
+  state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','leased','delivered','dead')),
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts>=0),
+  available_at TEXT NOT NULL,
+  lease_token TEXT,
+  lease_until TEXT,
+  last_error_key TEXT,
+  updated_at TEXT NOT NULL
+ )`,
+ `CREATE INDEX IF NOT EXISTS idx_agent_local_outbox_due ON agent_local_outbox(state,available_at,lease_until)`,
+
  `CREATE TABLE IF NOT EXISTS fake_seller_ledger (entitlement_id TEXT NOT NULL REFERENCES marketplace_entitlements(id), entry_kind TEXT NOT NULL CHECK(entry_kind IN ('sale','reversal')), seller_did TEXT NOT NULL, gross_minor INTEGER NOT NULL, fee_minor INTEGER NOT NULL, net_minor INTEGER NOT NULL, currency TEXT NOT NULL CHECK(currency='USD'), recorded_at TEXT NOT NULL, PRIMARY KEY(entitlement_id,entry_kind))`,
  `CREATE TABLE IF NOT EXISTS fake_payment_disputes (entitlement_id TEXT PRIMARY KEY REFERENCES marketplace_entitlements(id), requester_did TEXT NOT NULL, reason_key TEXT NOT NULL CHECK(reason_key IN ('not_received','not_as_described','other')), status TEXT NOT NULL CHECK(status IN ('open','resolved_refund','resolved_no_refund')), opened_at TEXT NOT NULL, decided_at TEXT)`,
  `CREATE TABLE IF NOT EXISTS fake_payment_dispute_audit (entitlement_id TEXT NOT NULL REFERENCES fake_payment_disputes(entitlement_id), event TEXT NOT NULL CHECK(event IN ('opened','resolved_refund','resolved_no_refund')), actor_did TEXT NOT NULL, recorded_at TEXT NOT NULL, PRIMARY KEY(entitlement_id,event))`,
