@@ -33,6 +33,7 @@ type Options struct {
  IdentityLinkingEnabled bool
  IdentityLinks *LinkPersistence
  LinkSocial SocialDIDVerifier
+ ModerationBroaderEnabled bool
  ModerationEnforcementEnabled bool
  ModerationRuntimeEnabled bool
  ModerationDB *sql.DB
@@ -82,6 +83,7 @@ type Server struct {
  dbAbuseSecret string
  identityLinks *LinkPersistence
  linkSocial SocialDIDVerifier
+ moderationBroader bool
  moderationEnforcement bool
  moderationMetrics *moderationCounters
  moderationRuntime bool
@@ -119,6 +121,7 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  moderationBroader:options.ModerationBroaderEnabled && options.ModerationRuntimeEnabled && options.ModerationDB!=nil,
   moderationEnforcement:options.ModerationEnforcementEnabled && options.ModerationRuntimeEnabled && options.ModerationDB!=nil,
   moderationMetrics:&moderationCounters{},
   dbAbuseEnabled: options.DBAbuseEnabled,
@@ -180,6 +183,10 @@ func New(options Options) http.Handler {
   mux.HandleFunc("POST /api/admin/moderation/subjects/{did}/evaluate",s.evaluateModeration)
   mux.HandleFunc("POST /api/admin/moderation/subjects/{did}/appeal",s.appealModeration)
   mux.HandleFunc("POST /api/admin/moderation/cases/{id}/decision",s.decideModeration)
+  if s.moderationBroader && options.OAuth!=nil {
+   mux.HandleFunc("GET /api/me/moderation/hold",s.myModerationHold)
+   mux.HandleFunc("POST /api/me/moderation/appeal",s.myModerationAppeal)
+  }
  }
  if options.IdentityLinkingEnabled && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.LinkSocial!=nil && options.IdentityLinks!=nil && options.IdentityLinks.DB!=nil {
   mux.HandleFunc("POST /api/me/identity-link/start",s.alphaPrivateRoute(s.linkStart))
