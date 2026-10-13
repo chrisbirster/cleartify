@@ -79,6 +79,7 @@ func main() {
  handler := api.New(api.Options{
   PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
   AlphaEligibility:alpha.Gate{DB:db.DB},
+  ClearPrincipalResolver:api.ClearSessionPrincipal(clearSessions),
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
   ClearSessions:clearSessions,
 		Waitlist:   waitlistService,
