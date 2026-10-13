@@ -6,6 +6,13 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS social_impersonation_holds (
+ subject_did TEXT PRIMARY KEY REFERENCES social_profiles(did),
+ reason TEXT NOT NULL CHECK(reason IN ('reserved','lookalike','reports')),
+ created_at TEXT NOT NULL,
+ released_at TEXT
+ )`,
+
  `CREATE TABLE IF NOT EXISTS marketplace_entitlements (
  id TEXT PRIMARY KEY,
  listing_id TEXT NOT NULL REFERENCES marketplace_listings(id),
