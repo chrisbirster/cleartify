@@ -15,6 +15,8 @@ func TestDraftValidationRejectsExecutableOrInvalidRemix(t *testing.T){
   {`{"steps":[],"remixOf":"original-1"}`,"CC0-1.0",false},
   {`{"steps":[],"remixOf":"original-1","attribution":"Original source: original-1"}`,"all-rights-reserved",false},
   {`{"steps":[],"remixOf":"original-1","attribution":"Original source: original-1"}`,"CC-BY-4.0",true},
+  {`{"steps":[],"remixOf":"_urlSafe-PublicationId","attribution":"Original source attribution"}`,"CC-BY-4.0",true},
+  {`{"steps":[],"remixOf":"-urlSafePublicationId","attribution":"Original source attribution"}`,"CC-BY-4.0",true},
   {`{"steps":[],"attribution":"Unlinked claim"}`,"CC0-1.0",false},
   {`{"steps":null}`,"CC0-1.0",false},
   {`{"steps":[],"executable":"rm -rf"}`,"CC0-1.0",false},
