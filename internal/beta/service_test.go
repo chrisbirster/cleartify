@@ -60,7 +60,7 @@ func TestInviteStartVerifyCreatesPhoneFirstAccount(t *testing.T) {
 		t.Fatalf("emails = %d, want 1", len(sender.emails))
 	}
 
-	if strings.Contains(sender.emails[0].Text, \`\\n\`) || !strings.Contains(sender.emails[0].Text, "\nActivate your invite:\n") {
+	if strings.Contains(sender.emails[0].Text, "\\n") || !strings.Contains(sender.emails[0].Text, "\nActivate your invite:\n") {
 		t.Fatalf("invite email must use real line breaks: %q", sender.emails[0].Text)
 	}
 
