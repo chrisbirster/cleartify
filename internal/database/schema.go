@@ -6,6 +6,16 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS agent_message_consents (
+ sender_agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
+ recipient_agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
+ recipient_owner_did TEXT NOT NULL,
+ granted_at TEXT NOT NULL,
+ expires_at TEXT NOT NULL,
+ revoked_at TEXT,
+ PRIMARY KEY(sender_agent_id,recipient_agent_id)
+ )`,
+
  `CREATE TABLE IF NOT EXISTS agent_owner_bindings (
  agent_id TEXT PRIMARY KEY REFERENCES agent_registrations(id),
  owner_did TEXT NOT NULL,
