@@ -24,6 +24,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/security"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 	"github.com/chrisbirster/cleartify/internal/protocols"
+ "github.com/chrisbirster/cleartify/internal/marketplace"
 	"github.com/chrisbirster/cleartify/internal/social"
 )
 
@@ -91,6 +92,8 @@ func main() {
   AgentDirectoryDB:db.DB,
   SocialModerationEnabled:cfg.SocialModerationEnabled && cfg.AtprotoOAuthEnabled,
   Moderation:&social.Moderation{DB:db.DB,Tokens:tokens},
+  FakeCheckoutEnabled:cfg.FakeCheckoutEnabled && cfg.AtprotoOAuthEnabled,
+  FakeCheckout:&marketplace.Service{DB:db.DB,Provider:marketplace.FakeProvider{},Enabled:cfg.FakeCheckoutEnabled && cfg.AtprotoOAuthEnabled},
   FakeInstallRunEnabled:cfg.FakeInstallRunEnabled && cfg.PrivateAlphaRoutesEnabled && cfg.ClearSessionsEnabled && cfg.AtprotoOAuthEnabled,
   FakeInstallRunDB:db.DB,
   FakeInstallRunPush:db.Push,
