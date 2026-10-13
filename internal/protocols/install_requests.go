@@ -16,7 +16,7 @@ import (
 var ErrInstallUnavailable=errors.New("published protocol or valid permission manifest unavailable")
 var ErrManifestChanged=errors.New("permission manifest digest mismatch")
 var ErrInstallDecision=errors.New("install request is not pending or publication changed")
-type InstallService struct {Store *database.Store; StrictPermissions bool}
+type InstallService struct {Store *database.Store; StrictPermissions bool;PaidEnforcement bool}
 type Manifest struct {
  PublicationID string `json:"publicationId"`
  Title string `json:"title"`
@@ -33,6 +33,11 @@ func(s InstallService) manifest(ctx context.Context,id string)(installSnapshot,e
  var spec,title,slug string;var version int
  err:=s.Store.DB.QueryRowContext(ctx,`SELECT title,slug,version,spec_json FROM published_protocols WHERE id=? AND status='published'`,id).Scan(&title,&slug,&version,&spec)
  if errors.Is(err,sql.ErrNoRows){return x,ErrInstallUnavailable};if err!=nil{return x,err}
+ if s.PaidEnforcement {
+  var priced int
+  if err=s.Store.DB.QueryRowContext(ctx,"SELECT count(*) FROM marketplace_listings WHERE protocol_id=? AND status='listed' AND pricing_kind='one_time' AND price_minor>0",id).Scan(&priced);err!=nil{return x,err}
+  if priced>0{return x,ErrInstallUnavailable}
+ }
  if len(spec)>65536||version<=0||strings.TrimSpace(slug)==""{return x,ErrInstallUnavailable}
  if s.StrictPermissions && ValidatePreviewPermissions([]byte(spec))!=nil {return x,ErrInstallUnavailable}
  var raw struct{Permissions []string `json:"permissions"`}
