@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/beta"
+ "github.com/chrisbirster/cleartify/internal/clearsession"
 	"github.com/chrisbirster/cleartify/internal/agents"
 	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
@@ -23,6 +24,8 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ ClearSessionsEnabled bool
+ ClearSessions *clearsession.Service
 	Waitlist   *waitlist.Service
 	Beta       *beta.Service
 	AppOrigin  string
@@ -44,6 +47,7 @@ type Options struct {
 }
 
 type Server struct {
+ clearSessions *clearsession.Service
 	waitlist   *waitlist.Service
 	beta       *beta.Service
 	appOrigin  string
@@ -64,7 +68,8 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
-		waitlist:   options.Waitlist,
+		clearSessions: options.ClearSessions,
+  waitlist:   options.Waitlist,
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
 		adminToken: options.AdminToken,
@@ -84,6 +89,7 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.ClearSessionsEnabled && options.ClearSessions != nil {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession);mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
 	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
 		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
 		mux.HandleFunc("POST /api/me/protocol-install-requests",s.requestProtocolInstall)
@@ -267,14 +273,17 @@ func (s *Server) verifyBetaCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := s.beta.Verify(r.Context(), req.ActivationToken, req.Code)
+	result, err := s.beta.Verify(r.Context(), req.ActivationToken, req.Code)
 	if err != nil {
 		writeBetaError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{
-		"activated": true,
-	})
+	if s.clearSessions != nil {
+   raw,issueErr:=s.clearSessions.Issue(r.Context(),result.UserID)
+   if issueErr!=nil {slog.Error("Clear session issuance failed","error",issueErr);writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"session_unavailable"});return}
+   http.SetCookie(w,&http.Cookie{Name:"clear_session",Value:raw,Path:"/api/me/",HttpOnly:true,Secure:strings.HasPrefix(s.appOrigin,"https://"),SameSite:http.SameSiteStrictMode,MaxAge:int(clearsession.IdleLimit.Seconds())})
+  }
+  writeJSON(w,http.StatusCreated,map[string]any{"activated":true})
 }
 
 func writeBetaError(w http.ResponseWriter, err error) {
