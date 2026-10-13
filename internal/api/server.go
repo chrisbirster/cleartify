@@ -56,6 +56,7 @@ type Server struct {
 	defaultFollow *social.DefaultFollow
 	oauth *atproto.OAuthHandler
 	signupLimiter *signupLimiter
+	mutationLimiter *mutationLimiter
 }
 
 func New(options Options) http.Handler {
@@ -74,6 +75,7 @@ func New(options Options) http.Handler {
 		defaultFollow: options.DefaultFollow,
 		oauth: options.OAuth,
 		signupLimiter: newSignupLimiter(),
+		mutationLimiter: newMutationLimiter(),
 	}
 
 	mux := http.NewServeMux()
@@ -97,7 +99,7 @@ func New(options Options) http.Handler {
 
 	if options.OAuth!=nil {options.OAuth.Register(mux)}
 	if options.AgentRegistrationEnabled {mux.HandleFunc("POST /api/admin/agents",s.registerAgent)}
-	return s.middleware(mux)
+	return s.middleware(s.protectSensitive(mux))
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
