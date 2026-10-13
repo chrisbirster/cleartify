@@ -46,7 +46,7 @@ func TestRealClearSessionsAlphaAccessAndCrossUser(t *testing.T){
  if w.Code!=404{t.Fatalf("gate flag should hide alpha route: %d",w.Code)}
 }
 func TestAlphaRouteFailsClosedWithoutValidator(t *testing.T){
- h:=New(Options{ClearSessionsEnabled:true,PrivateAlphaRoutesEnabled:true,AlphaEligibility:&eligibilityStub{allow:true}})
+ h:=New(Options{ClearSessionsEnabled:true,PrivateAlphaRoutesEnabled:true,ClearSessions:&clearsession.Service{},AlphaEligibility:&eligibilityStub{allow:true}})
  for _,path:=range []string{"/api/me/clear-session","/api/me/alpha-eligibility"}{
   w:=httptest.NewRecorder();h.ServeHTTP(w,httptest.NewRequest("GET",path,nil))
   if w.Code!=503{t.Fatalf("%s fail-open %d",path,w.Code)}
