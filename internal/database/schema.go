@@ -6,6 +6,27 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS agent_owner_bindings (
+ agent_id TEXT PRIMARY KEY REFERENCES agent_registrations(id),
+ owner_did TEXT NOT NULL,
+ agent_public_key BLOB NOT NULL,
+ proof_signature BLOB NOT NULL,
+ verified_at TEXT NOT NULL,
+ revoked_at TEXT
+ )`,
+ `CREATE TABLE IF NOT EXISTS agent_scoped_grants (
+ id TEXT PRIMARY KEY,
+ owner_did TEXT NOT NULL,
+ agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
+ grantee_agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
+ scope TEXT NOT NULL,
+ created_at TEXT NOT NULL,
+ expires_at TEXT NOT NULL,
+ revoked_at TEXT,
+ CHECK(agent_id<>grantee_agent_id)
+ )`,
+ `CREATE INDEX IF NOT EXISTS idx_agent_grants_active ON agent_scoped_grants(agent_id,grantee_agent_id,scope,expires_at,revoked_at)`,
+
  `CREATE TABLE IF NOT EXISTS social_blocks (
   actor_did TEXT NOT NULL,
   subject_did TEXT NOT NULL,
