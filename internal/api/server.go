@@ -2,6 +2,7 @@ package api
 
 import (
 	"crypto/subtle"
+ "context"
  "database/sql"
 	"encoding/json"
 	"errors"
@@ -34,6 +35,9 @@ type Options struct {
  AgentDirectoryDB *sql.DB
  SocialModerationEnabled bool
  Moderation *social.Moderation
+ FakeInstallRunEnabled bool
+ FakeInstallRunDB *sql.DB
+ FakeInstallRunPush func(context.Context)error
  CreatorPublishingEnabled bool
  CreatorDraftsEnabled bool
  CreatorDrafts *protocols.DraftService
@@ -69,6 +73,8 @@ type Server struct {
  moderationDB *sql.DB
  agentDirectoryDB *sql.DB
  moderation *social.Moderation
+ fakeInstallRunDB *sql.DB
+ fakeInstallRunPush func(context.Context)error
  creatorPublishingEnabled bool
  creatorDrafts *protocols.DraftService
  clearPrincipalResolver ClearPrincipal
@@ -94,6 +100,8 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  fakeInstallRunDB:options.FakeInstallRunDB,
+  fakeInstallRunPush:options.FakeInstallRunPush,
   moderationRuntime: options.ModerationRuntimeEnabled,
   moderationDB: options.ModerationDB,
   identityLinks: options.IdentityLinks,
@@ -125,6 +133,10 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.FakeInstallRunEnabled && options.FakeInstallRunDB!=nil && options.FakeInstallRunPush!=nil && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.OAuth!=nil {
+  mux.HandleFunc("POST /api/me/fake-install-runs",s.privateAlpha(s.startFakeInstallRun))
+  mux.HandleFunc("GET /api/me/fake-install-runs/{id}",s.privateAlpha(s.getFakeInstallRun))
+ }
  if options.ModerationRuntimeEnabled && options.ModerationDB!=nil {
   mux.HandleFunc("GET /api/admin/moderation/cases",s.listModerationCases)
   mux.HandleFunc("POST /api/admin/moderation/subjects/{did}/evaluate",s.evaluateModeration)
