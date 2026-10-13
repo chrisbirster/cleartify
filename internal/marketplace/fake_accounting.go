@@ -40,12 +40,12 @@ func(a FakeAccounting)Reconcile(ctx context.Context)(int,error){
   if count!=1{return 0,ErrDenied}
   fee,e:=a.fee(x.gross);if e!=nil{return 0,e}
   now:=a.time()
-  res,e:=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'sale',?,?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,x.seller,x.gross,fee,x.gross-fee,x.currency,now)
+  res,e:=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'sale',?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,x.seller,x.gross,fee,x.gross-fee,x.currency,now)
   if e!=nil{return 0,e};n,e:=res.RowsAffected();if e!=nil{return 0,e};inserted+=int(n)
   if x.status=="refunded"{
    if e=tx.QueryRowContext(ctx,`SELECT COUNT(*) FROM marketplace_payment_audit WHERE entitlement_id=? AND event='fake_refund'`,x.id).Scan(&count);e!=nil{return 0,e}
    if count!=1{return 0,ErrDenied}
-   res,e=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'reversal',?,?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,x.seller,-x.gross,-fee,-(x.gross-fee),x.currency,now)
+   res,e=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'reversal',?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,x.seller,-x.gross,-fee,-(x.gross-fee),x.currency,now)
    if e!=nil{return 0,e};n,e=res.RowsAffected();if e!=nil{return 0,e};inserted+=int(n)
   }
  }
