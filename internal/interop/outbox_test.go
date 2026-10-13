@@ -47,7 +47,7 @@ func TestOutboxConcurrentClaimLeaseAndFencing(t *testing.T){
  if claimed,e:=b.Tick(ctx);claimed||e!=nil{t.Fatalf("claimed live lease %v %v",claimed,e)}
  now=now.Add(2*time.Second)
  if claimed,e:=b.Tick(ctx);!claimed||!errors.Is(e,ErrTransportDenied){t.Fatalf("lease takeover %v %v",claimed,e)}
- res,e=db.DB.ExecContext(ctx,`UPDATE agent_local_outbox SET state='delivered' WHERE message_id='m1' AND state='leased' AND lease_token='older'`);if e!=nil{t.Fatal(e)}
+ res,e:=db.DB.ExecContext(ctx,`UPDATE agent_local_outbox SET state='delivered' WHERE message_id='m1' AND state='leased' AND lease_token='older'`);if e!=nil{t.Fatal(e)}
  n,e:=res.RowsAffected();if e!=nil||n!=0{t.Fatalf("stale lease completed %d %v",n,e)}
  if sink.n!=0{t.Fatal("unauthorized delivery")}
 }
