@@ -77,6 +77,8 @@ func main() {
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
  handler := api.New(api.Options{
+  AgentDirectoryEnabled:cfg.AgentDirectoryEnabled,
+  AgentDirectoryDB:db.DB,
   PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
   AlphaEligibility:alpha.Gate{DB:db.DB},
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
