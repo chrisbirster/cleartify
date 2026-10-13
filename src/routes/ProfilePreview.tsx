@@ -20,7 +20,7 @@ export function ProfilePreview() {
   setLoading(true);setProfile(null);setMessage('');
   void (async ()=>{
    try {
-    const res=await fetch(`${apiBase}/api/profiles/${encodeURIComponent(handle)}`,{signal:controller.signal});
+    const res=await fetch(`${apiBase}/api/profiles/${encodeURIComponent(handle ?? '')}`,{signal:controller.signal});
     if(res.status===404){setMessage('This profile is not public or does not exist.');return}
     if(!res.ok){setMessage('Could not load this profile.');return}
     const data=await res.json() as Profile;
@@ -32,7 +32,7 @@ export function ProfilePreview() {
    }
   })();
   onCleanup(()=>controller.abort());
- });
+ }, undefined);
 
  return <main {...stylex.props(styles.page)}>
   <nav {...stylex.props(styles.nav)}>
