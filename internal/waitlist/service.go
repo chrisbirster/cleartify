@@ -149,9 +149,7 @@ func (s *Service) Join(ctx context.Context, input Signup) (string, error) {
    {"policy_acceptance","policy_version_pending",1},
    {"email_marketing","marketing_consent_version_pending",emailUpdates},
   }{
-   consentKeyID,e:=randomID();if e!=nil{return "",e}
-   _,e=tx.ExecContext(ctx,`INSERT INTO signup_consent_keys(waitlist_entry_id,consent_key,consent_version_key,accepted,recorded_at) VALUES(?,?,?,?,?)`,id,record.key,record.version,record.accepted,now)
-   _=consentKeyID
+   _,e:=tx.ExecContext(ctx,`INSERT INTO signup_consent_keys(waitlist_entry_id,consent_key,consent_version_key,accepted,recorded_at) VALUES(?,?,?,?,?)`,id,record.key,record.version,record.accepted,now)
    if e!=nil{return "",fmt.Errorf("record consent key: %w",e)}
   }
  }
