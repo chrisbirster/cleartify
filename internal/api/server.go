@@ -27,6 +27,9 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ DBAbuseEnabled bool
+ DBAbuseDB *sql.DB
+ DBAbuseSecret string
  IdentityLinkingEnabled bool
  IdentityLinks *LinkPersistence
  LinkSocial SocialDIDVerifier
@@ -72,6 +75,9 @@ type Options struct {
 }
 
 type Server struct {
+ dbAbuseEnabled bool
+ dbAbuseDB *sql.DB
+ dbAbuseSecret string
  identityLinks *LinkPersistence
  linkSocial SocialDIDVerifier
  moderationRuntime bool
@@ -107,6 +113,9 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  dbAbuseEnabled: options.DBAbuseEnabled,
+  dbAbuseDB: options.DBAbuseDB,
+  dbAbuseSecret: options.DBAbuseSecret,
   fakeCheckout:options.FakeCheckout,
   agentOwnership: options.AgentOwnership,
   fakeInstallRunDB:options.FakeInstallRunDB,
@@ -211,6 +220,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 	if !s.limitSignup(w,r) { return }
+ if !s.allowDBSignup(w,r) {return}
 	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
 
 	var req struct {
