@@ -62,6 +62,9 @@ func TestWaitlistEndpointPersistsSignupAndConsent(t *testing.T) {
 	if err := store.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM consents`).Scan(&consents); err != nil {
 		t.Fatalf("count consents: %v", err)
 	}
+	var acceptedVersion string
+	if err := store.DB.QueryRowContext(ctx, `SELECT policy_version FROM policy_acceptances LIMIT 1`).Scan(&acceptedVersion); err != nil { t.Fatalf("read policy acceptance: %v",err) }
+	if acceptedVersion != waitlist.CurrentPolicyVersion { t.Fatalf("policy version=%q",acceptedVersion) }
 	if consents != 1 {
 		t.Fatalf("consents = %d, want 1", consents)
 	}
