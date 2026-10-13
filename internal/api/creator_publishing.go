@@ -8,6 +8,7 @@ func(s *Server) updateCreatorVisibility(w http.ResponseWriter,r *http.Request){
  if !s.creatorPublishingEnabled||s.creatorDrafts==nil||s.socialAuth==nil{writeJSON(w,503,map[string]string{"error":"publishing_unavailable"});return}
  did,ok:=s.socialAuth.SocialSessionDID(r)
  if !ok{writeJSON(w,401,map[string]string{"error":"atproto_login_required"});return}
+ if s.moderationBroader && !s.enforceSubjectHold(w,r,did){return}
  var input struct{Visibility string `json:"visibility"`;Provenance string `json:"provenance"`}
  if !decodeJSON(w,r,&input){return}
  err:=s.creatorDrafts.PublishDraft(r.Context(),did,r.PathValue("id"),input.Visibility,input.Provenance)

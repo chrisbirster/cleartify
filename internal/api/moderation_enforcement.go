@@ -10,7 +10,7 @@ func(s *Server)localModerationMetrics(w http.ResponseWriter,r *http.Request){if 
 // enforceSubjectHold is called at user-facing write boundaries; fail closed on
 // datastore failures. The feature is entirely inert unless explicitly enabled.
 func(s *Server)enforceSubjectHold(w http.ResponseWriter,r *http.Request,did string)bool{
- if !s.moderationEnforcement{return true}
+ if !s.moderationEnforcement && !s.moderationBroader{return true}
  if s.moderationDB==nil{writeJSON(w,503,map[string]string{"error":"enforcement_unavailable"});return false}
  held,err:=s.subjectHeld(r,did)
  if err!=nil{writeJSON(w,503,map[string]string{"error":"enforcement_unavailable"});s.moderationMetrics.inc("hold_check_error");return false}
