@@ -31,6 +31,8 @@ type Options struct {
  LinkSocial SocialDIDVerifier
  ModerationRuntimeEnabled bool
  ModerationDB *sql.DB
+ AgentOwnershipEnabled bool
+ AgentOwnership *agents.Ownership
  AgentDirectoryEnabled bool
  AgentDirectoryDB *sql.DB
  SocialModerationEnabled bool
@@ -71,6 +73,7 @@ type Server struct {
  linkSocial SocialDIDVerifier
  moderationRuntime bool
  moderationDB *sql.DB
+ agentOwnership *agents.Ownership
  agentDirectoryDB *sql.DB
  moderation *social.Moderation
  fakeInstallRunDB *sql.DB
@@ -100,6 +103,7 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  agentOwnership: options.AgentOwnership,
   fakeInstallRunDB:options.FakeInstallRunDB,
   fakeInstallRunPush:options.FakeInstallRunPush,
   moderationRuntime: options.ModerationRuntimeEnabled,
@@ -133,6 +137,10 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.AgentOwnershipEnabled && options.AgentOwnership!=nil && options.OAuth!=nil {
+  mux.HandleFunc("POST /api/me/agents/{id}/ownership/start",s.agentOwnershipStart)
+  mux.HandleFunc("POST /api/me/agents/{id}/ownership/confirm",s.agentOwnershipConfirm)
+ }
  if options.FakeInstallRunEnabled && options.FakeInstallRunDB!=nil && options.FakeInstallRunPush!=nil && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.OAuth!=nil {
   mux.HandleFunc("POST /api/me/fake-install-runs",s.privateAlpha(s.startFakeInstallRun))
   mux.HandleFunc("GET /api/me/fake-install-runs/{id}",s.privateAlpha(s.getFakeInstallRun))
