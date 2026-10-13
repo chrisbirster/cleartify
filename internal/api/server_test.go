@@ -23,7 +23,7 @@ func TestWaitlistEndpointPersistsSignupAndConsent(t *testing.T) {
 		t.Fatalf("migrate database: %v", err)
 	}
 
-	handler := New(waitlist.NewService(store), "http://localhost:3000")
+	handler := New(Options{Waitlist: waitlist.NewService(store), AppOrigin: "http://localhost:3000"})
 	body := []byte(`{"name":"Chris","email":"Chris@example.com","phone":"(717) 555-1212","emailUpdates":true,"acceptPolicies":true}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/waitlist", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -62,9 +62,9 @@ func TestWaitlistEndpointPersistsSignupAndConsent(t *testing.T) {
 	if err := store.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM consents`).Scan(&consents); err != nil {
 		t.Fatalf("count consents: %v", err)
 	}
-	var acceptedVersion string
-	if err := store.DB.QueryRowContext(ctx, `SELECT policy_version FROM policy_acceptances LIMIT 1`).Scan(&acceptedVersion); err != nil { t.Fatalf("read policy acceptance: %v",err) }
-	if acceptedVersion != waitlist.CurrentPolicyVersion { t.Fatalf("policy version=%q",acceptedVersion) }
+	var version string
+	if err:=store.DB.QueryRowContext(ctx,"SELECT policy_version FROM policy_acceptances LIMIT 1").Scan(&version);err!=nil {t.Fatal(err)}
+	if version!=waitlist.CurrentPolicyVersion {t.Fatalf("wrong version %q",version)}
 	if consents != 1 {
 		t.Fatalf("consents = %d, want 1", consents)
 	}
@@ -82,7 +82,7 @@ func TestWaitlistEndpointRejectsInvalidPhone(t *testing.T) {
 		t.Fatalf("migrate database: %v", err)
 	}
 
-	handler := New(waitlist.NewService(store), "")
+	handler := New(Options{Waitlist: waitlist.NewService(store)})
 	body := []byte(`{"name":"Chris","email":"chris@example.com","phone":"call-me-maybe","emailUpdates":false,"acceptPolicies":true}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/waitlist", bytes.NewReader(body))
 	res := httptest.NewRecorder()

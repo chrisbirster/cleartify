@@ -49,7 +49,7 @@ func NewService(db *database.Store) *Service {
 const CurrentPolicyVersion = "2026-10-12-draft"
 
 func (s *Service) Join(ctx context.Context, input Signup) (string, error) {
-	if !input.AcceptPolicies { return "", &ValidationError{Field:"acceptPolicies",Message:"accept the terms and privacy notice"} }
+	if !input.AcceptPolicies { return "", &ValidationError{Field:"acceptPolicies",Message:"accept terms and privacy notice"} }
 	name := strings.TrimSpace(input.Name)
 	if name == "" || len(name) > 100 {
 		return "", &ValidationError{Field: "name", Message: "enter a name between 1 and 100 characters"}
@@ -140,10 +140,9 @@ func (s *Service) Join(ctx context.Context, input Signup) (string, error) {
 		return "", fmt.Errorf("record marketing consent: %w", err)
 	}
 
-	acceptanceID, err := randomID()
-	if err != nil { return "", err }
-	if _, err := tx.ExecContext(ctx, `INSERT INTO policy_acceptances (id,waitlist_entry_id,policy_version,accepted_at) VALUES(?,?,?,?)`, acceptanceID,id,CurrentPolicyVersion,now); err != nil { return "", fmt.Errorf("record policy acceptance: %w",err) }
-
+	acceptanceID,err := randomID()
+	if err != nil {return "",err}
+	if _,err := tx.ExecContext(ctx, `INSERT INTO policy_acceptances (id,waitlist_entry_id,policy_version,accepted_at) VALUES(?,?,?,?)`, acceptanceID,id,CurrentPolicyVersion,now);err != nil {return "",fmt.Errorf("record policy acceptance: %w",err)}
 	if err := tx.Commit(); err != nil {
 		return "", fmt.Errorf("commit waitlist transaction: %w", err)
 	}
