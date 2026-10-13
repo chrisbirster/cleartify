@@ -31,6 +31,61 @@ var schemaStatements = []string{
 	)`,
 	`CREATE INDEX IF NOT EXISTS idx_consents_waitlist
 		ON consents(waitlist_entry_id, recorded_at)`,
+	`CREATE TABLE IF NOT EXISTS beta_invites (
+		id TEXT PRIMARY KEY,
+		waitlist_entry_id TEXT NOT NULL,
+		status TEXT NOT NULL DEFAULT 'sent',
+		email_token_hash TEXT NOT NULL UNIQUE,
+		email_token_expires_at TEXT NOT NULL,
+		email_token_used_at TEXT,
+		activation_token_hash TEXT UNIQUE,
+		activation_expires_at TEXT,
+		challenge_code_hash TEXT,
+		challenge_expires_at TEXT,
+		challenge_sent_at TEXT,
+		challenge_attempts INTEGER NOT NULL DEFAULT 0,
+		max_challenge_attempts INTEGER NOT NULL DEFAULT 5,
+		activated_user_id TEXT,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL,
+		activated_at TEXT,
+		FOREIGN KEY(waitlist_entry_id) REFERENCES waitlist_entries(id)
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_beta_invites_waitlist_status
+		ON beta_invites(waitlist_entry_id, status)`,
+	`CREATE TABLE IF NOT EXISTS users (
+		id TEXT PRIMARY KEY,
+		display_name TEXT NOT NULL,
+		primary_email TEXT NOT NULL,
+		status TEXT NOT NULL DEFAULT 'active',
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL
+	)`,
+	`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_primary_email
+		ON users(primary_email)`,
+	`CREATE TABLE IF NOT EXISTS phone_identities (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		phone_e164 TEXT NOT NULL UNIQUE,
+		verified_at TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		FOREIGN KEY(user_id) REFERENCES users(id)
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_phone_identities_user
+		ON phone_identities(user_id)`,
+	`CREATE TABLE IF NOT EXISTS protocol_installations (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		protocol_key TEXT NOT NULL,
+		version INTEGER NOT NULL,
+		source TEXT NOT NULL,
+		enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+		created_at TEXT NOT NULL,
+		FOREIGN KEY(user_id) REFERENCES users(id),
+		UNIQUE(user_id, protocol_key)
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
+		ON protocol_installations(user_id, enabled)`,
 }
 
 func (s *Store) Migrate(ctx context.Context) error {
