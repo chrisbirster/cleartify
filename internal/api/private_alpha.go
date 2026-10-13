@@ -34,3 +34,11 @@ func (s *Server) privateAlpha(next http.HandlerFunc) http.HandlerFunc {
 func (s *Server) alphaEligibilityStatus(w http.ResponseWriter,r *http.Request){
  writeJSON(w,http.StatusOK,map[string]bool{"eligible":true})
 }
+
+// alphaPrivateRoute retains existing behavior when the private-alpha flag is
+// disabled, and enforces the validated Clear session and active membership
+// whenever that feature is enabled. Social-only routes are intentionally separate.
+func (s *Server) alphaPrivateRoute(next http.HandlerFunc) http.HandlerFunc {
+ if !s.privateAlphaEnabled { return next }
+ return s.privateAlpha(next)
+}
