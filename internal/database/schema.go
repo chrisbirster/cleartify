@@ -190,6 +190,20 @@ var schemaStatements = []string{
     )`,
     `CREATE INDEX IF NOT EXISTS idx_marketplace_listings_status ON marketplace_listings(status,created_at DESC)`,
 	`CREATE TABLE IF NOT EXISTS social_default_follow_optouts (follower_did TEXT NOT NULL, subject_did TEXT NOT NULL, opted_out_at TEXT NOT NULL, PRIMARY KEY(follower_did, subject_did))`,
+	`CREATE TABLE IF NOT EXISTS protocol_install_requests (
+        id TEXT PRIMARY KEY,
+        actor_did TEXT NOT NULL,
+        publication_id TEXT NOT NULL REFERENCES published_protocols(id),
+        protocol_version INTEGER NOT NULL CHECK(protocol_version>0),
+        spec_sha256 TEXT NOT NULL,
+        manifest_json TEXT NOT NULL,
+        manifest_sha256 TEXT NOT NULL,
+        acknowledged_at TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending_approval' CHECK(status IN ('pending_approval','approved','rejected')),
+        requested_at TEXT NOT NULL,
+        decided_at TEXT
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_protocol_install_requests_actor ON protocol_install_requests(actor_did,status)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
