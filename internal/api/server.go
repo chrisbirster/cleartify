@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/beta"
+	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/protocols"
@@ -25,6 +26,7 @@ type Options struct {
 	Beta       *beta.Service
 	AppOrigin  string
 	AdminToken string
+	Clear *clear.Service
 	OAuth *atproto.OAuthHandler
 	Protocols *protocols.Reader
 	Profiles *social.Reader
@@ -35,6 +37,7 @@ type Server struct {
 	beta       *beta.Service
 	appOrigin  string
 	adminToken string
+	clear *clear.Service
 	protocols *protocols.Reader
 	profiles *social.Reader
 	signupLimiter *signupLimiter
@@ -46,6 +49,7 @@ func New(options Options) http.Handler {
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
 		adminToken: options.AdminToken,
+		clear: options.Clear,
 		protocols: options.Protocols,
 		profiles: options.Profiles,
 		signupLimiter: newSignupLimiter(),
@@ -53,6 +57,8 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+	mux.HandleFunc("POST /api/admin/clear/run-requests",s.createRunRequest)
+	mux.HandleFunc("POST /api/admin/clear/run-requests/{id}/decision",s.decideRunRequest)
 	mux.HandleFunc("GET /api/protocols",s.discoverProtocols)
 	mux.HandleFunc("GET /api/profiles/{handle}",s.getPublicProfile)
 	mux.HandleFunc("POST /api/waitlist", s.joinWaitlist)
@@ -356,4 +362,28 @@ func (s *Server) discoverProtocols(w http.ResponseWriter,r *http.Request){
  result,err:=s.protocols.Discover(r.Context(),20)
  if err!=nil{slog.Error("protocol discovery", "error",err);writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return}
  writeJSON(w,http.StatusOK,map[string]any{"protocols":result})
+}
+
+func(s *Server) authorizedClear(w http.ResponseWriter,r *http.Request) bool {
+ if s.clear==nil || s.adminToken=="" {writeJSON(w,http.StatusServiceUnavailable,map[string]string{"error":"not_configured"});return false}
+ if !secureBearerMatch(r.Header.Get("Authorization"),s.adminToken){writeJSON(w,http.StatusUnauthorized,map[string]string{"error":"unauthorized"});return false}
+ return true
+}
+func(s *Server) createRunRequest(w http.ResponseWriter,r *http.Request){
+ if !s.authorizedClear(w,r){return}
+ var req struct{UserID string `json:"userId"`;PublicationID string `json:"publicationId"`}
+ if !decodeJSON(w,r,&req){return}
+ id,err:=s.clear.Request(r.Context(),req.UserID,req.PublicationID)
+ if err!=nil {if errors.Is(err,clear.ErrNotPublished){writeJSON(w,http.StatusBadRequest,map[string]string{"error":"not_installed_or_published"});return};slog.Error("run request", "error",err);writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return}
+ writeJSON(w,http.StatusAccepted,map[string]any{"id":id,"status":"pending_approval","executed":false})
+}
+func(s *Server) decideRunRequest(w http.ResponseWriter,r *http.Request){
+ if !s.authorizedClear(w,r){return}
+ var req struct{UserID string `json:"userId"`;Approve bool `json:"approve"`}
+ if !decodeJSON(w,r,&req){return}
+ if err:=s.clear.Decide(r.Context(),req.UserID,r.PathValue("id"),req.Approve);err!=nil{
+ if errors.Is(err,clear.ErrNotPending){writeJSON(w,http.StatusConflict,map[string]string{"error":"not_pending"});return}
+ writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return}
+ status:="rejected";if req.Approve{status="approved"}
+ writeJSON(w,http.StatusOK,map[string]any{"status":status,"executed":false})
 }

@@ -127,6 +127,16 @@ var schemaStatements = []string{
 		UNIQUE(creator_did,slug,version)
 	)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocols_discovery ON published_protocols(status,created_at DESC)`,
+	`CREATE TABLE IF NOT EXISTS clear_run_requests (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id),
+        publication_id TEXT NOT NULL REFERENCES published_protocols(id),
+        status TEXT NOT NULL DEFAULT 'pending_approval' CHECK(status IN ('pending_approval','approved','rejected','cancelled')),
+        requested_at TEXT NOT NULL,
+        decided_at TEXT,
+        UNIQUE(id,user_id)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_clear_run_requests_user ON clear_run_requests(user_id,status)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
