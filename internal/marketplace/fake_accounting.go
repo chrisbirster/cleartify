@@ -58,6 +58,15 @@ func(a FakeAccounting)SellerBalance(ctx context.Context,sellerDID string)(int64,
  e:=a.DB.QueryRowContext(ctx,`SELECT SUM(net_minor) FROM fake_seller_ledger WHERE seller_did=?`,sellerDID).Scan(&sum)
  return sum.Int64,e
 }
+// RunReconciliationJob is one bounded explicit local invocation, not a
+// scheduler or an external provider job. Audit mismatches prevent ledger writes.
+func(a FakeAccounting)RunReconciliationJob(ctx context.Context)(int,error){
+ if e:=a.check();e!=nil{return 0,e}
+ mismatch,e:=(Service{DB:a.DB,Provider:FakeProvider{},Enabled:true}).ReconcileFake(ctx)
+ if e!=nil{return 0,e}
+ if mismatch!=0{return 0,ErrDenied}
+ return a.Reconcile(ctx)
+}
 // OpenDispute is buyer-only, deduplicated and independently audited.
 func(a FakeAccounting)OpenDispute(ctx context.Context,buyerDID,entitlementID,reason string)error{
  if e:=a.check();e!=nil{return e}
