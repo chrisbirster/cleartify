@@ -33,6 +33,7 @@ type Options struct {
  IdentityLinkingEnabled bool
  IdentityLinks *LinkPersistence
  LinkSocial SocialDIDVerifier
+ ModerationEnforcementEnabled bool
  ModerationRuntimeEnabled bool
  ModerationDB *sql.DB
  AgentOwnershipEnabled bool
@@ -80,6 +81,8 @@ type Server struct {
  dbAbuseSecret string
  identityLinks *LinkPersistence
  linkSocial SocialDIDVerifier
+ moderationEnforcement bool
+ moderationMetrics *moderationCounters
  moderationRuntime bool
  moderationDB *sql.DB
  agentOwnership *agents.Ownership
@@ -113,6 +116,8 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  moderationEnforcement:options.ModerationEnforcementEnabled && options.ModerationRuntimeEnabled && options.ModerationDB!=nil,
+  moderationMetrics:&moderationCounters{},
   dbAbuseEnabled: options.DBAbuseEnabled,
   dbAbuseDB: options.DBAbuseDB,
   dbAbuseSecret: options.DBAbuseSecret,
@@ -151,6 +156,7 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if s.moderationEnforcement {mux.HandleFunc("GET /api/admin/moderation/local-metrics",s.localModerationMetrics)}
  if options.FakeCheckoutEnabled && options.OAuth!=nil && options.FakeCheckout!=nil {
   mux.HandleFunc("POST /api/me/fake-checkout",s.fakeCheckoutPurchase)
   mux.HandleFunc("GET /api/me/marketplace-listings/{id}/access",s.fakeCheckoutAccess)

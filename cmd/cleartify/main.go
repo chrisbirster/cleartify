@@ -88,6 +88,7 @@ func main() {
   IdentityLinkingEnabled:cfg.IdentityLinkingEnabled && cfg.AtprotoOAuthEnabled && cfg.ClearSessionsEnabled,
   IdentityLinks:&api.LinkPersistence{DB:db.DB,Push:db.Push},
   LinkSocial:oauthHandler,
+  ModerationEnforcementEnabled:cfg.ModerationEnforcementEnabled,
   ModerationRuntimeEnabled:cfg.ModerationRuntimeEnabled,
   ModerationDB:db.DB,
   AgentOwnershipEnabled:cfg.AgentOwnershipEnabled && cfg.AtprotoOAuthEnabled,

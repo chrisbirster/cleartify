@@ -14,6 +14,7 @@ func(s *Server) socialModerationPrincipal(w http.ResponseWriter,r *http.Request)
 }
 func(s *Server) setBlock(w http.ResponseWriter,r *http.Request){
  did,ok:=s.socialModerationPrincipal(w,r);if !ok{return}
+ if !s.enforceSubjectHold(w,r,did){return}
  err:=s.moderation.Block(r.Context(),did,r.PathValue("did"),r.Method==http.MethodPut)
  if err!=nil{
   switch{
@@ -27,6 +28,7 @@ func(s *Server) setBlock(w http.ResponseWriter,r *http.Request){
 }
 func(s *Server) createSocialReport(w http.ResponseWriter,r *http.Request){
  did,ok:=s.socialModerationPrincipal(w,r);if !ok{return}
+ if !s.enforceSubjectHold(w,r,did){return}
  var req struct{SubjectDID string `json:"subjectDid"`;Reason string `json:"reason"`}
  if !decodeJSON(w,r,&req){return}
  id,err:=s.moderation.Report(r.Context(),did,req.SubjectDID,req.Reason)

@@ -1,0 +1,7 @@
+# M6 broader moderation hooks — engineering defaults
+
+**DEFAULT (Oct 13 2026), owner can change.** `MODERATION_ENFORCEMENT_ENABLED=false`. Enforcement becomes active only alongside existing `MODERATION_RUNTIME_ENABLED=true` and a configured local database. No new external endpoint or metrics exporter.
+
+When enabled, the authenticated social block/report handlers check the **actor** against the existing active social impersonation holds. Held actors receive HTTP 403; database failures return 503 (fail closed). Existing moderation admin evaluation opens review cases, appeals queue against current active holds, and released decisions remove those holds. New in-process counters track allowed/denied hold checks, errors, evaluations, appeals and decisions. Counters are process-local and reset on restart; an *existing authenticated admin* can read them at `GET /api/admin/moderation/local-metrics` only when flag enabled. This is not a public or external metrics endpoint.
+
+**Boundary:** holds are currently enforced for social block/report writes only; existing discovery, publishing, installs, commerce and all other mutation routes are not comprehensively covered. Further policy decisions are required to decide subject-vs-actor holds, appeals authority, behavior while on hold, audit durability, scale-out counter aggregation, and legal/counsel review. Do not enable outside owner-approved controlled testing.

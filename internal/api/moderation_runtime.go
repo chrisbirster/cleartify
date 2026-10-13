@@ -31,6 +31,7 @@ func(s *Server) evaluateModeration(w http.ResponseWriter,r *http.Request){
  if label.OnHold{
   if err:=s.openModerationCase(r,did,"review","automated hold evaluation");err!=nil{writeJSON(w,503,map[string]string{"error":"case_unavailable"});return}
  }
+ if s.moderationEnforcement {s.moderationMetrics.inc("evaluation_completed");if label.OnHold{s.moderationMetrics.inc("hold_evaluated")}}
  writeJSON(w,200,label)
 }
 func(s *Server) openModerationCase(r *http.Request,did,kind,reason string)error{
@@ -54,6 +55,7 @@ func(s *Server) appealModeration(w http.ResponseWriter,r *http.Request){
  if !strings.HasPrefix(did,"did:")||len(did)>253||len(strings.TrimSpace(input.Reason))<5||len(input.Reason)>1000{writeJSON(w,400,map[string]string{"error":"invalid_appeal"});return}
  held,err:=s.subjectHeld(r,did);if err!=nil{writeJSON(w,503,map[string]string{"error":"moderation_unavailable"});return};if !held{writeJSON(w,409,map[string]string{"error":"no_active_hold"});return}
  if err=s.openModerationCase(r,did,"appeal",input.Reason);err!=nil{writeJSON(w,503,map[string]string{"error":"case_unavailable"});return}
+ if s.moderationEnforcement{s.moderationMetrics.inc("appeal_queued")}
  writeJSON(w,202,map[string]bool{"queued":true})
 }
 func(s *Server) listModerationCases(w http.ResponseWriter,r *http.Request){
@@ -85,5 +87,6 @@ func(s *Server) decideModeration(w http.ResponseWriter,r *http.Request){
  }
  _,err=tx.ExecContext(r.Context(),`INSERT INTO social_moderation_audit(id,case_id,actor,action,recorded_at) VALUES(?,?,'admin',?,?)`,moderationID(),r.PathValue("id"),input.Decision,now)
  if err!=nil||tx.Commit()!=nil{writeJSON(w,503,map[string]string{"error":"case_unavailable"});return}
+ if s.moderationEnforcement{s.moderationMetrics.inc("decision_"+input.Decision)}
  writeJSON(w,200,map[string]any{"status":input.Decision})
 }
