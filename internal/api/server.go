@@ -35,6 +35,8 @@ type Options struct {
 	Profiles *social.Reader
 	SocialAccountRegistrationEnabled bool
 	SocialAccounts *social.Accounts
+	DefaultFollowEnabled bool
+	DefaultFollow *social.DefaultFollow
 }
 
 type Server struct {
@@ -48,6 +50,8 @@ type Server struct {
 	profiles *social.Reader
 	socialAccounts *social.Accounts
 	socialAuth *atproto.OAuthHandler
+	defaultFollow *social.DefaultFollow
+	oauth *atproto.OAuthHandler
 	signupLimiter *signupLimiter
 }
 
@@ -63,12 +67,15 @@ func New(options Options) http.Handler {
 		profiles: options.Profiles,
 		socialAccounts: options.SocialAccounts,
 		socialAuth: options.OAuth,
+		defaultFollow: options.DefaultFollow,
+		oauth: options.OAuth,
 		signupLimiter: newSignupLimiter(),
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
 	if options.SocialAccountRegistrationEnabled && options.OAuth!=nil && options.SocialAccounts!=nil {mux.HandleFunc("POST /api/social/accounts",s.registerSocialAccount)}
+	if options.DefaultFollowEnabled && options.OAuth!=nil && options.DefaultFollow!=nil {mux.HandleFunc("DELETE /api/me/following/chris",s.removeDefaultFollow)}
 	mux.HandleFunc("POST /api/admin/clear/run-requests",s.createRunRequest)
 	mux.HandleFunc("POST /api/admin/clear/run-requests/{id}/decision",s.decideRunRequest)
 	mux.HandleFunc("GET /api/protocols",s.discoverProtocols)

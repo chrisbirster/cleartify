@@ -189,6 +189,7 @@ var schemaStatements = []string{
         UNIQUE(protocol_id)
     )`,
     `CREATE INDEX IF NOT EXISTS idx_marketplace_listings_status ON marketplace_listings(status,created_at DESC)`,
+	`CREATE TABLE IF NOT EXISTS social_default_follow_optouts (follower_did TEXT NOT NULL, subject_did TEXT NOT NULL, opted_out_at TEXT NOT NULL, PRIMARY KEY(follower_did, subject_did))`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
