@@ -6,6 +6,8 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS signup_abuse_windows (identity_hash TEXT NOT NULL, bucket INTEGER NOT NULL, attempts INTEGER NOT NULL CHECK(attempts>=0), PRIMARY KEY(identity_hash,bucket))`,
+ `CREATE TABLE IF NOT EXISTS signup_consent_keys (waitlist_entry_id TEXT NOT NULL REFERENCES waitlist_entries(id), consent_key TEXT NOT NULL, consent_version_key TEXT NOT NULL, accepted INTEGER NOT NULL CHECK(accepted IN (0,1)), recorded_at TEXT NOT NULL, PRIMARY KEY(waitlist_entry_id,consent_key,recorded_at))`,
  `CREATE TABLE IF NOT EXISTS agent_owner_challenges (nonce_hash TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, public_key BLOB NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)`,
  `CREATE TABLE IF NOT EXISTS agent_owner_audit (id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
  `CREATE TABLE IF NOT EXISTS clear_fake_install_runs (id TEXT PRIMARY KEY, install_request_id TEXT NOT NULL UNIQUE REFERENCES protocol_install_requests(id), user_id TEXT NOT NULL REFERENCES users(id), actor_did TEXT NOT NULL, publication_id TEXT NOT NULL REFERENCES published_protocols(id), manifest_sha256 TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('reserved','completed','failed')), result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL, finished_at TEXT)`,
