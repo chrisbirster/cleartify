@@ -17,10 +17,12 @@ type Published struct {
  Summary string `json:"summary"`
  License string `json:"license"`
 }
-type Reader struct {DB *sql.DB}
+type Reader struct {DB *sql.DB;PaidEnforcement bool}
 func (r Reader) Discover(ctx context.Context,limit int)([]Published,error){
  if limit<=0||limit>50{limit=20}
- rows,err:=r.DB.QueryContext(ctx,`SELECT id,creator_did,slug,version,title,summary,license FROM published_protocols WHERE status='published' AND NOT EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=published_protocols.id AND c.visibility!='public') ORDER BY created_at DESC,id DESC LIMIT ?`,limit)
+ query:=`SELECT id,creator_did,slug,version,title,summary,license FROM published_protocols WHERE status='published' AND NOT EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=published_protocols.id AND c.visibility!='public') ORDER BY created_at DESC,id DESC LIMIT ?`
+ if r.PaidEnforcement {query=`SELECT id,creator_did,slug,version,title,summary,license FROM published_protocols WHERE status='published' AND NOT EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=published_protocols.id AND c.visibility!='public') AND NOT EXISTS (SELECT 1 FROM marketplace_listings l WHERE l.protocol_id=published_protocols.id AND l.status='listed' AND l.pricing_kind='one_time' AND l.price_minor>0) ORDER BY created_at DESC,id DESC LIMIT ?`}
+ rows,err:=r.DB.QueryContext(ctx,query,limit)
  if err!=nil{return nil,fmt.Errorf("list protocols: %w",err)}
  defer rows.Close()
  out:=make([]Published,0)
