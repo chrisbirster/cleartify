@@ -77,6 +77,10 @@ func main() {
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
  handler := api.New(api.Options{
+  SocialModerationEnabled:cfg.SocialModerationEnabled && cfg.AtprotoOAuthEnabled,
+  Moderation:&social.Moderation{DB:db.DB,Tokens:tokens},
+  CreatorDraftsEnabled:cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
+  CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens},
   PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
   AlphaEligibility:alpha.Gate{DB:db.DB},
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
