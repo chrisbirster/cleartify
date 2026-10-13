@@ -14,12 +14,14 @@ import (
 type Server struct {
 	waitlist  *waitlist.Service
 	appOrigin string
+	signupLimiter *signupLimiter
 }
 
 func New(waitlistService *waitlist.Service, appOrigin string) http.Handler {
 	s := &Server{
 		waitlist:  waitlistService,
 		appOrigin: strings.TrimRight(appOrigin, "/"),
+		signupLimiter: newSignupLimiter(),
 	}
 
 	mux := http.NewServeMux()
@@ -37,6 +39,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
+	if !s.limitSignup(w,r) { return }
 	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
 
 	var req struct {
