@@ -7,6 +7,8 @@ import (
 
 type Config struct {
  SocialModerationEnabled bool
+ CreatorDraftsEnabled bool
+ PrivateAlphaRoutesEnabled bool
  ClearSessionsEnabled bool
 	Port             string
 	AppOrigin        string
@@ -31,6 +33,8 @@ func Load() Config {
 	appOrigin := strings.TrimRight(env("APP_ORIGIN", "http://localhost:3000"), "/")
 	return Config{
  SocialModerationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_MODERATION_ENABLED")),"true"),
+ CreatorDraftsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_DRAFTS_ENABLED")),"true"),
+ PrivateAlphaRoutesEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("PRIVATE_ALPHA_ROUTES_ENABLED")),"true"),
  ClearSessionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CLEAR_SESSIONS_ENABLED")),"true"),
 		Port:             env("PORT", "8080"),
 		AppOrigin:        appOrigin,
