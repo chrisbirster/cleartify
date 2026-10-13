@@ -8,6 +8,7 @@ import (
 type Config struct {
  IdentityLinkingEnabled bool
  ModerationRuntimeEnabled bool
+ AgentOwnershipEnabled bool
  AgentDirectoryEnabled bool
  StrictProtocolPermissionsEnabled bool
  SocialModerationEnabled bool
@@ -40,6 +41,7 @@ func Load() Config {
 	return Config{
  IdentityLinkingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("IDENTITY_LINKING_ENABLED")),"true"),
  ModerationRuntimeEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("MODERATION_RUNTIME_ENABLED")),"true"),
+ AgentOwnershipEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_OWNERSHIP_ENABLED")),"true"),
  AgentDirectoryEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_DIRECTORY_ENABLED")),"true"),
  StrictProtocolPermissionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("STRICT_PROTOCOL_PERMISSIONS_ENABLED")),"true"),
  SocialModerationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_MODERATION_ENABLED")),"true"),
