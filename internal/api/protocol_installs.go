@@ -22,6 +22,11 @@ func(s *Server) requestProtocolInstall(w http.ResponseWriter,r *http.Request){
  r.Body=http.MaxBytesReader(w,r.Body,4096)
  var req struct{PublicationID string `json:"publicationId"`;AcknowledgedManifestSHA256 string `json:"acknowledgedManifestSha256"`}
  if !decodeJSON(w,r,&req){return}
+ if s.paidEnforcement {
+  allowed,e:=s.fakeCheckout.PublicationAccess(r.Context(),did,req.PublicationID)
+  if e!=nil{writeJSON(w,503,map[string]string{"error":"entitlement_unavailable"});return}
+  if !allowed{writeJSON(w,403,map[string]string{"error":"purchase_required"});return}
+ }
  id,err:=s.installFlow.Request(r.Context(),did,req.PublicationID,req.AcknowledgedManifestSHA256)
  if err!=nil{
   switch {

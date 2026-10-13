@@ -40,6 +40,11 @@ func(s *Server) startFakeInstallRun(w http.ResponseWriter,r *http.Request){
  if err!=nil{writeJSON(w,503,map[string]string{"error":"fake_run_unavailable"});return}
  digest:=sha256.Sum256([]byte(spec));actualSpec=hex.EncodeToString(digest[:])
  if status!="approved"||actor!=did||expectedVersion!=actualVersion||expectedSpec!=actualSpec{writeJSON(w,409,map[string]string{"error":"install_not_approved_or_changed"});return}
+ if s.paidEnforcement {
+  allowed,e:=s.fakeCheckout.PublicationAccess(r.Context(),did,pub)
+  if e!=nil{writeJSON(w,503,map[string]string{"error":"entitlement_unavailable"});return}
+  if !allowed{writeJSON(w,403,map[string]string{"error":"purchase_required"});return}
+ }
  var visibility string
  err=tx.QueryRowContext(r.Context(),`SELECT visibility FROM creator_publications WHERE protocol_id=?`,pub).Scan(&visibility)
  if err!=nil||visibility=="private"{writeJSON(w,409,map[string]string{"error":"publication_not_accessible"});return}

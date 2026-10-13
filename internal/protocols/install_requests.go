@@ -16,7 +16,7 @@ import (
 var ErrInstallUnavailable=errors.New("published protocol or valid permission manifest unavailable")
 var ErrManifestChanged=errors.New("permission manifest digest mismatch")
 var ErrInstallDecision=errors.New("install request is not pending or publication changed")
-type InstallService struct {Store *database.Store; StrictPermissions bool}
+type InstallService struct {Store *database.Store; StrictPermissions bool;PaidEnforcement bool}
 type Manifest struct {
  PublicationID string `json:"publicationId"`
  Title string `json:"title"`
@@ -49,6 +49,11 @@ func(s InstallService) manifest(ctx context.Context,id string)(installSnapshot,e
  return x,nil
 }
 func(s InstallService) Preview(ctx context.Context,publicationID string)(Manifest,error){
+ if s.PaidEnforcement {
+  var count int
+  if err:=s.Store.DB.QueryRowContext(ctx,"SELECT count(*) FROM marketplace_listings WHERE protocol_id=? AND status='listed' AND pricing_kind='one_time' AND price_minor>0",publicationID).Scan(&count);err!=nil{return Manifest{},err}
+  if count>0{return Manifest{},ErrInstallUnavailable}
+ }
  x,err:=s.manifest(ctx,publicationID);return x.Manifest,err
 }
 func(s InstallService) Request(ctx context.Context,actorDID,publicationID,ackDigest string)(string,error){
