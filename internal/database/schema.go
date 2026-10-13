@@ -29,6 +29,8 @@ var schemaStatements = []string{
 		recorded_at TEXT NOT NULL,
 		FOREIGN KEY(waitlist_entry_id) REFERENCES waitlist_entries(id)
 	)`,
+	`CREATE TABLE IF NOT EXISTS policy_acceptances (id TEXT PRIMARY KEY, waitlist_entry_id TEXT NOT NULL, policy_version TEXT NOT NULL, accepted_at TEXT NOT NULL, FOREIGN KEY(waitlist_entry_id) REFERENCES waitlist_entries(id))`,
+	`CREATE INDEX IF NOT EXISTS idx_policy_acceptances_waitlist ON policy_acceptances(waitlist_entry_id, accepted_at)`,
 	`CREATE INDEX IF NOT EXISTS idx_consents_waitlist
 		ON consents(waitlist_entry_id, recorded_at)`,
 	`CREATE TABLE IF NOT EXISTS beta_invites (
@@ -174,6 +176,20 @@ var schemaStatements = []string{
        expires_at TEXT NOT NULL,
        status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','rejected','accepted','expired'))
     )`,
+	`CREATE TABLE IF NOT EXISTS marketplace_listings (
+        id TEXT PRIMARY KEY,
+        protocol_id TEXT NOT NULL REFERENCES published_protocols(id),
+        creator_did TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('draft','listed','unlisted')) DEFAULT 'draft',
+        title TEXT NOT NULL,
+        currency TEXT NOT NULL CHECK(currency IN ('USD')),
+        price_minor INTEGER NOT NULL CHECK(price_minor >= 0 AND price_minor <= 1000000),
+        pricing_kind TEXT NOT NULL CHECK(pricing_kind IN ('free','one_time')),
+        created_at TEXT NOT NULL,
+        UNIQUE(protocol_id)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_marketplace_listings_status ON marketplace_listings(status,created_at DESC)`,
+	`CREATE TABLE IF NOT EXISTS social_default_follow_optouts (follower_did TEXT NOT NULL, subject_did TEXT NOT NULL, opted_out_at TEXT NOT NULL, PRIMARY KEY(follower_did, subject_did))`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }

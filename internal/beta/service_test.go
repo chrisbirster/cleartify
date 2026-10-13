@@ -41,7 +41,7 @@ func TestInviteStartVerifyCreatesPhoneFirstAccount(t *testing.T) {
 
 	if _, err := waitlist.NewService(store).Join(ctx, waitlist.Signup{
 		Name: "Chris", Email: "chris@example.com", Phone: "(717) 555-1212",
-		EmailUpdates: true, Source: "test",
+		EmailUpdates: true, Source: "test", AcceptPolicies: true,
 	}); err != nil {
 		t.Fatalf("join waitlist: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestInviteLinkCanOnlyStartOnce(t *testing.T) {
 	}
 
 	if _, err := waitlist.NewService(store).Join(ctx, waitlist.Signup{
-		Name: "Chris", Email: "chris@example.com", Phone: "+17175551212",
+		Name: "Chris", Email: "chris@example.com", Phone: "+17175551212", AcceptPolicies: true,
 	}); err != nil {
 		t.Fatalf("join waitlist: %v", err)
 	}
