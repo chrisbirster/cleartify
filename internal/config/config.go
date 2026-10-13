@@ -18,6 +18,7 @@ type Config struct {
 	SocialDefaultFollowEnabled bool
 	SocialAccountRegistrationEnabled bool
 	ProtocolInstallFlowEnabled bool
+	SocialProfileActionsEnabled bool
 	AgentRegistrationEnabled bool
 	AtprotoOAuthEnabled bool
 	AtprotoPublicOrigin string
@@ -39,6 +40,7 @@ func Load() Config {
 		SocialDefaultFollowEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_DEFAULT_FOLLOW_ENABLED")),"true"),
 		SocialAccountRegistrationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_ACCOUNT_REGISTRATION_ENABLED")),"true"),
 		ProtocolInstallFlowEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("PROTOCOL_INSTALL_FLOW_ENABLED")),"true"),
+		SocialProfileActionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_PROFILE_ACTIONS_ENABLED")),"true"),
 		AgentRegistrationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_REGISTRATION_ENABLED")),"true"),
 		AtprotoOAuthEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("ATPROTO_OAUTH_ENABLED")),"true"),
 		AtprotoPublicOrigin: strings.TrimSpace(os.Getenv("ATPROTO_PUBLIC_ORIGIN")),
