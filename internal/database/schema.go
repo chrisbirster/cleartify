@@ -113,6 +113,20 @@ var schemaStatements = []string{
 	`CREATE INDEX IF NOT EXISTS idx_social_profiles_visibility ON social_profiles(public_visible,handle)`,
 	`CREATE TABLE IF NOT EXISTS social_follows (follower_did TEXT NOT NULL, subject_did TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(follower_did,subject_did), FOREIGN KEY(follower_did) REFERENCES social_profiles(did), FOREIGN KEY(subject_did) REFERENCES social_profiles(did), CHECK(follower_did <> subject_did))`,
 	`CREATE INDEX IF NOT EXISTS idx_social_follows_subject ON social_follows(subject_did)`,
+	`CREATE TABLE IF NOT EXISTS published_protocols (
+		id TEXT PRIMARY KEY,
+		creator_did TEXT NOT NULL,
+		slug TEXT NOT NULL,
+		version INTEGER NOT NULL CHECK(version > 0),
+		title TEXT NOT NULL,
+		summary TEXT NOT NULL,
+		license TEXT NOT NULL,
+		spec_json TEXT NOT NULL,
+		status TEXT NOT NULL CHECK(status IN ('draft','published','withdrawn')),
+		created_at TEXT NOT NULL,
+		UNIQUE(creator_did,slug,version)
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_protocols_discovery ON published_protocols(status,created_at DESC)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
