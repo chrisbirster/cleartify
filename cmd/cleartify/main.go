@@ -85,6 +85,7 @@ func main() {
   CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens},
   PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
   AlphaEligibility:alpha.Gate{DB:db.DB},
+  ClearPrincipalResolver:api.ClearSessionPrincipal(clearSessions),
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
   ClearSessions:clearSessions,
 		Waitlist:   waitlistService,
