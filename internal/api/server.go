@@ -24,6 +24,8 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ SocialModerationEnabled bool
+ Moderation *social.Moderation
  ClearSessionsEnabled bool
  ClearSessions *clearsession.Service
 	Waitlist   *waitlist.Service
@@ -47,6 +49,7 @@ type Options struct {
 }
 
 type Server struct {
+ moderation *social.Moderation
  clearSessions *clearsession.Service
 	waitlist   *waitlist.Service
 	beta       *beta.Service
@@ -69,6 +72,7 @@ type Server struct {
 func New(options Options) http.Handler {
 	s := &Server{
 		clearSessions: options.ClearSessions,
+  moderation:options.Moderation,
   waitlist:   options.Waitlist,
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
@@ -89,6 +93,7 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.SocialModerationEnabled && options.OAuth!=nil && options.Moderation!=nil {mux.HandleFunc("PUT /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("DELETE /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("POST /api/me/reports",s.createSocialReport)}
  if options.ClearSessionsEnabled && options.ClearSessions != nil {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession);mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
 	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
 		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
