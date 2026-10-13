@@ -11,6 +11,7 @@ type Config struct {
  AgentDirectoryEnabled bool
  StrictProtocolPermissionsEnabled bool
  SocialModerationEnabled bool
+ FakeInstallRunEnabled bool
  CreatorPublishingEnabled bool
  CreatorDraftsEnabled bool
  PrivateAlphaRoutesEnabled bool
@@ -42,6 +43,7 @@ func Load() Config {
  AgentDirectoryEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_DIRECTORY_ENABLED")),"true"),
  StrictProtocolPermissionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("STRICT_PROTOCOL_PERMISSIONS_ENABLED")),"true"),
  SocialModerationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_MODERATION_ENABLED")),"true"),
+ FakeInstallRunEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("FAKE_INSTALL_RUN_ENABLED")),"true"),
  CreatorPublishingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_PUBLISHING_ENABLED")),"true"),
  CreatorDraftsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_DRAFTS_ENABLED")),"true"),
  PrivateAlphaRoutesEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("PRIVATE_ALPHA_ROUTES_ENABLED")),"true"),
