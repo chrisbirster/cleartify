@@ -51,7 +51,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	tokens, err := security.NewTokens(cfg.AppSecret)
+	// Recovery is a startup gate: never serve requests if an interrupted
+ // fake run cannot be reconciled and its audit durably persisted.
+ if cfg.FakeRunRecoveryEnabled && cfg.FakeInstallRunEnabled {
+  recovered, recoveryErr := api.RecoverReservedFakeRuns(ctx, db.DB, db.Push)
+  if recoveryErr != nil {slog.Error("fake run recovery failed closed","error",recoveryErr);os.Exit(1)}
+  if recovered>0 {slog.Warn("interrupted fake runs marked failed; never automatically re-executed","count",recovered)}
+ }
+ tokens, err := security.NewTokens(cfg.AppSecret)
 	if err != nil {
 		slog.Error("configure app security", "error", err)
 		os.Exit(1)
