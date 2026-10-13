@@ -38,7 +38,7 @@ func requiresProtectedMutation(r *http.Request) (bool,bool){
  if r.Method!=http.MethodPost&&r.Method!=http.MethodPut&&r.Method!=http.MethodPatch&&r.Method!=http.MethodDelete{return false,false}
  p:=r.URL.Path
  if strings.HasPrefix(p,"/api/me/")||p=="/api/social/accounts"{return true,true}
- if p=="/api/admin/agents"||strings.HasPrefix(p,"/api/admin/clear/run-requests")||strings.HasPrefix(p,"/api/admin/protocol-install-requests")||p=="/api/admin/invites" {return true,false}
+ if strings.HasPrefix(p,"/api/admin/moderation/")||p=="/api/admin/agents"||strings.HasPrefix(p,"/api/admin/clear/run-requests")||strings.HasPrefix(p,"/api/admin/protocol-install-requests")||p=="/api/admin/invites" {return true,false}
  return false,false
 }
 // protectSensitive wraps only registered routes. Disabled feature flags

@@ -28,6 +28,8 @@ type Options struct {
  IdentityLinkingEnabled bool
  IdentityLinks *LinkPersistence
  LinkSocial SocialDIDVerifier
+ ModerationRuntimeEnabled bool
+ ModerationDB *sql.DB
  AgentDirectoryEnabled bool
  AgentDirectoryDB *sql.DB
  SocialModerationEnabled bool
@@ -62,6 +64,8 @@ type Options struct {
 type Server struct {
  identityLinks *LinkPersistence
  linkSocial SocialDIDVerifier
+ moderationRuntime bool
+ moderationDB *sql.DB
  agentDirectoryDB *sql.DB
  moderation *social.Moderation
  creatorDrafts *protocols.DraftService
@@ -88,6 +92,8 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  moderationRuntime: options.ModerationRuntimeEnabled,
+  moderationDB: options.ModerationDB,
   identityLinks: options.IdentityLinks,
   linkSocial: options.LinkSocial,
 		clearSessions: options.ClearSessions,
@@ -116,6 +122,12 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.ModerationRuntimeEnabled && options.ModerationDB!=nil {
+  mux.HandleFunc("GET /api/admin/moderation/cases",s.listModerationCases)
+  mux.HandleFunc("POST /api/admin/moderation/subjects/{did}/evaluate",s.evaluateModeration)
+  mux.HandleFunc("POST /api/admin/moderation/subjects/{did}/appeal",s.appealModeration)
+  mux.HandleFunc("POST /api/admin/moderation/cases/{id}/decision",s.decideModeration)
+ }
  if options.IdentityLinkingEnabled && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.LinkSocial!=nil && options.IdentityLinks!=nil && options.IdentityLinks.DB!=nil {
   mux.HandleFunc("POST /api/me/identity-link/start",s.linkStart)
   mux.HandleFunc("GET /api/me/identity-link/preview",s.linkPreview)
@@ -442,6 +454,7 @@ func (s *Server) getPublicProfile(w http.ResponseWriter,r *http.Request){
   slog.Error("public profile lookup", "error", err)
   writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return
  }
+ if s.moderationRuntime {held,err:=s.subjectHeld(r,p.DID);if err!=nil{writeJSON(w,503,map[string]string{"error":"moderation_unavailable"});return};if held {writeJSON(w,404,map[string]string{"error":"profile_not_found"});return}}
  writeJSON(w,http.StatusOK,p)
 }
 
