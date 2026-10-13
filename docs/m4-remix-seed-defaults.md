@@ -1,0 +1,10 @@
+# M4 draft, remix and attribution policy — internal defaults
+
+**DEFAULT (Oct 13 2026), owner can change.** Internal design and test policy only; not legal advice, a public copyright promise, or launch/publication approval.
+
+- All creator submissions remain **private draft only**, gated by the existing default-OFF creator-draft feature flag and trusted social session DID.
+- Draft specifications are declarative JSON with at most 32 local-only steps; executable operation allowlist: `local.set`, `local.assert`. Remote calls, arbitrary code, scripts, shell, payments and agent transport are rejected by the draft validator. Up to 16 unique local-preview permissions may be requested.
+- `remixOf` must identify a known upstream publication ID in a future approved remix workflow; for now the validator checks **syntax only**, not existence, license compatibility or upstream creator consent. A remix requires nonblank `attribution` with source/author information (3–500 characters). A remix cannot use the `all-rights-reserved` declaration. Self-attribution without a remix source is rejected.
+- **No public remix publishing is enabled.** Production must validate source existence, provenance, edition/immutability, license compatibility, required credits, takedowns, and creator authorization server-side. This work cannot assert the legal validity of any third-party license.
+- The two `fixtures/protocols/original-*.json` examples were newly authored for the Cleartify repository in this change, contain no externally sourced game text, puzzles or trademarks, and are intended as original Cleartify-owned *test fixtures* (not public licensed works). Their allocation/ownership and any outward license still require owner sign-off before publication. They are **not inserted into the database**, discoverable, endorsed, executable by production or automatically sold.
+- Review and security approval are required before using any of these draft rules for publication, user-facing licenses or legal representations.
