@@ -63,3 +63,15 @@ func(s *Service) RevokeUser(ctx context.Context,userID string)error{
  if err!=nil{return err}
  return s.Store.Push(ctx)
 }
+
+ // AuthenticateFresh requires a newly issued session, not one merely extended by idle activity.
+func(s *Service) AuthenticateFresh(ctx context.Context,raw string,maxAge time.Duration)(string,error){
+ id,err:=s.Authenticate(ctx,raw);if err!=nil{return "",err}
+ var issued string
+ err=s.Store.DB.QueryRowContext(ctx,`SELECT created_at FROM clear_user_sessions WHERE token_digest=? AND user_id=? AND revoked_at IS NULL`,s.Tokens.Digest(raw),id).Scan(&issued)
+ if err!=nil{return "",ErrUnauthenticated}
+ at,err:=time.Parse(time.RFC3339Nano,issued)
+ now:=s.clock()
+ if err!=nil||at.After(now)||now.Sub(at)>maxAge{return "",ErrUnauthenticated}
+ return id,nil
+}
