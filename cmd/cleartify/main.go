@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+ "net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -88,11 +89,17 @@ func main() {
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
  // Local transport has no HTTP listener, outbound network, or production delivery.
  _ = interop.NewLocalTransport(cfg.AgentTransportEnabled, db.DB, db.Push)
+ var trustedProxyNetworks []*net.IPNet
+ if cfg.DBAbuseEnabled && cfg.DBAbuseProxyEnabled {
+  networks,parseErr:=api.ParseTrustedProxyCIDRs(cfg.DBAbuseTrustedProxyCIDRs)
+  if parseErr!=nil {slog.Error("invalid trusted proxy CIDRs","error",parseErr);os.Exit(1)}
+  trustedProxyNetworks=networks
+ }
  handler := api.New(api.Options{
   DBAbuseEnabled:cfg.DBAbuseEnabled,
   DBAbuseProxyEnabled:cfg.DBAbuseEnabled && cfg.DBAbuseProxyEnabled,
   DBAbuseCleanupEnabled:cfg.DBAbuseEnabled && cfg.DBAbuseCleanupEnabled,
-  DBAbuseTrustedProxyCIDRs:api.ParseTrustedProxyCIDRs(cfg.DBAbuseTrustedProxyCIDRs),
+  DBAbuseTrustedProxyCIDRs:trustedProxyNetworks,
   DBAbuseDB:db.DB,
   DBAbuseSecret:cfg.AppSecret,
   IdentityRecoveryEnabled:cfg.IdentityRecoveryEnabled && cfg.IdentityLinkingEnabled && cfg.AtprotoOAuthEnabled && cfg.ClearSessionsEnabled,
