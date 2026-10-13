@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -9,25 +10,59 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chrisbirster/cleartify/internal/beta"
+	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
 
-var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
+var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}package api
 
-type Server struct {
-	waitlist  *waitlist.Service
-	appOrigin string
+import (
+	"crypto/subtle"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"regexp"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/chrisbirster/cleartify/internal/beta"
+	"github.com/chrisbirster/cleartify/internal/notifications"
+	"github.com/chrisbirster/cleartify/internal/waitlist"
+)
+
+)
+
+type Options struct {
+	Waitlist   *waitlist.Service
+	Beta       *beta.Service
+	AppOrigin  string
+	AdminToken string
 }
 
-func New(waitlistService *waitlist.Service, appOrigin string) http.Handler {
+type Server struct {
+	waitlist   *waitlist.Service
+	beta       *beta.Service
+	appOrigin  string
+	adminToken string
+}
+
+func New(options Options) http.Handler {
 	s := &Server{
-		waitlist:  waitlistService,
-		appOrigin: strings.TrimRight(appOrigin, "/"),
+		waitlist:   options.Waitlist,
+		beta:       options.Beta,
+		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
+		adminToken: options.AdminToken,
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("POST /api/waitlist", s.joinWaitlist)
+	mux.HandleFunc("POST /api/admin/invites", s.createBetaInvite)
+	mux.HandleFunc("POST /api/beta/start", s.startBetaActivation)
+	mux.HandleFunc("POST /api/beta/resend", s.resendBetaCode)
+	mux.HandleFunc("POST /api/beta/verify", s.verifyBetaCode)
 
 	return s.middleware(mux)
 }
@@ -49,22 +84,16 @@ func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		EmailUpdates bool   `json:"emailUpdates"`
 		ReferralCode string `json:"referralCode"`
 	}
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]any{
-			"error": "invalid_request",
-		})
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 
 	if req.ReferralCode != "" && !referralCodePattern.MatchString(req.ReferralCode) {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"error":"validation_error","field":"referralCode"})
+		writeJSON(w,http.StatusBadRequest,map[string]any{"error":"validation_error","field":"referralCode"})
 		return
 	}
 	source := "landing"
-	if req.ReferralCode != "" { source = "ref:" + req.ReferralCode }
-
+	if req.ReferralCode != "" {source = "ref:" + req.ReferralCode}
 	_, err := s.waitlist.Join(r.Context(), waitlist.Signup{
 		Name:         req.Name,
 		Email:        req.Email,
@@ -98,6 +127,163 @@ func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, map[string]any{"joined": true})
 }
 
+func (s *Server) createBetaInvite(w http.ResponseWriter, r *http.Request) {
+	if s.adminToken == "" {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": "admin_not_configured",
+		})
+		return
+	}
+	if !secureBearerMatch(r.Header.Get("Authorization"), s.adminToken) {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	var req struct {
+		Email string `json:"email"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+
+	result, err := s.beta.Invite(r.Context(), req.Email)
+	switch {
+	case err == nil:
+		writeJSON(w, http.StatusAccepted, map[string]any{
+			"invited":  true,
+			"inviteId": result.InviteID,
+		})
+	case errors.Is(err, beta.ErrInviteNotFound):
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"error": "waitlist_entry_not_found",
+		})
+	case errors.Is(err, notifications.ErrUnavailable):
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": "notification_delivery_unavailable",
+		})
+	default:
+		slog.Error("create beta invite failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": "internal_error",
+		})
+	}
+}
+
+func (s *Server) startBetaActivation(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Token string `json:"token"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+
+	result, err := s.beta.Start(r.Context(), req.Token)
+	if err != nil {
+		writeBetaError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{
+		"activationToken": result.ActivationToken,
+		"phoneHint":       result.PhoneHint,
+		"expiresIn":       result.ExpiresIn,
+	})
+}
+
+func (s *Server) resendBetaCode(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ActivationToken string `json:"activationToken"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+
+	result, err := s.beta.Resend(r.Context(), req.ActivationToken)
+	if err != nil {
+		writeBetaError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{
+		"activationToken": result.ActivationToken,
+		"phoneHint":       result.PhoneHint,
+		"expiresIn":       result.ExpiresIn,
+	})
+}
+
+func (s *Server) verifyBetaCode(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ActivationToken string `json:"activationToken"`
+		Code            string `json:"code"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+
+	_, err := s.beta.Verify(r.Context(), req.ActivationToken, req.Code)
+	if err != nil {
+		writeBetaError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"activated": true,
+	})
+}
+
+func writeBetaError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, beta.ErrInviteNotFound), errors.Is(err, beta.ErrActivationNotFound):
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"error":   "activation_not_found",
+			"message": "This beta activation link is not valid.",
+		})
+	case errors.Is(err, beta.ErrInviteExpired), errors.Is(err, beta.ErrActivationExpired):
+		writeJSON(w, http.StatusGone, map[string]any{
+			"error":   "activation_expired",
+			"message": "This beta activation has expired.",
+		})
+	case errors.Is(err, beta.ErrInviteUsed):
+		writeJSON(w, http.StatusConflict, map[string]any{
+			"error":   "invite_used",
+			"message": "This invitation link has already been used.",
+		})
+	case errors.Is(err, beta.ErrAlreadyActivated):
+		writeJSON(w, http.StatusConflict, map[string]any{
+			"error":   "already_activated",
+			"message": "This beta invitation is already activated.",
+		})
+	case errors.Is(err, beta.ErrInvalidCode):
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error":   "invalid_code",
+			"message": "That code did not match.",
+		})
+	case errors.Is(err, beta.ErrLocked):
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{
+			"error":   "activation_locked",
+			"message": "Too many incorrect attempts. This activation is locked.",
+		})
+	case errors.Is(err, beta.ErrResendTooSoon):
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{
+			"error":   "resend_too_soon",
+			"message": "Wait a minute before requesting another code.",
+		})
+	case errors.Is(err, beta.ErrPhoneAlreadyActive):
+		writeJSON(w, http.StatusConflict, map[string]any{
+			"error":   "phone_already_active",
+			"message": "That mobile number already belongs to an active Cleartify account.",
+		})
+	case errors.Is(err, notifications.ErrUnavailable):
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": "notification_delivery_unavailable",
+		})
+	default:
+		slog.Error("beta activation failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error": "internal_error",
+		})
+	}
+}
+
 func (s *Server) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -108,7 +294,7 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			if origin == s.appOrigin {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Vary", "Origin")
-				w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 				w.Header().Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
 			}
 		}
@@ -122,6 +308,28 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		slog.Debug("request", "method", r.Method, "path", r.URL.Path, "duration", time.Since(started))
 	})
+}
+
+func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "invalid_request",
+		})
+		return false
+	}
+	return true
+}
+
+func secureBearerMatch(header, expected string) bool {
+	const prefix = "Bearer "
+	if !strings.HasPrefix(header, prefix) {
+		return false
+	}
+	got := strings.TrimSpace(strings.TrimPrefix(header, prefix))
+	return len(got) == len(expected) && subtle.ConstantTimeCompare([]byte(got), []byte(expected)) == 1
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

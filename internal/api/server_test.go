@@ -1,9 +1,9 @@
 package api
 
 import (
-	"encoding/json"
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,7 +24,7 @@ func TestWaitlistEndpointPersistsSignupAndConsent(t *testing.T) {
 		t.Fatalf("migrate database: %v", err)
 	}
 
-	handler := New(waitlist.NewService(store), "http://localhost:3000")
+	handler := New(Options{Waitlist: waitlist.NewService(store), AppOrigin: "http://localhost:3000"})
 	body := []byte(`{"name":"Chris","email":"Chris@example.com","phone":"(717) 555-1212","emailUpdates":true}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/waitlist", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -80,7 +80,7 @@ func TestWaitlistEndpointRejectsInvalidPhone(t *testing.T) {
 		t.Fatalf("migrate database: %v", err)
 	}
 
-	handler := New(waitlist.NewService(store), "")
+	handler := New(Options{Waitlist: waitlist.NewService(store)})
 	body := []byte(`{"name":"Chris","email":"chris@example.com","phone":"call-me-maybe","emailUpdates":false}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/waitlist", bytes.NewReader(body))
 	res := httptest.NewRecorder()
@@ -92,14 +92,13 @@ func TestWaitlistEndpointRejectsInvalidPhone(t *testing.T) {
 	}
 }
 
-
 func TestWaitlistReferralAttribution(t *testing.T) {
  ctx := context.Background()
  store, err := database.Open(ctx, database.Config{Path: ":memory:"})
  if err != nil { t.Fatal(err) }
  defer store.Close()
  if err := store.Migrate(ctx); err != nil { t.Fatal(err) }
- handler := New(waitlist.NewService(store), "")
+ handler := New(Options{Waitlist:waitlist.NewService(store)})
  for _, tc := range []struct{ code string; status int }{
   {"friend_123", http.StatusCreated},
   {"bad code!", http.StatusBadRequest},
