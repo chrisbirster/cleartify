@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/api"
+	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/beta"
 	"github.com/chrisbirster/cleartify/internal/config"
 	"github.com/chrisbirster/cleartify/internal/database"
@@ -63,6 +64,7 @@ func main() {
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
 		AdminToken: cfg.AdminToken,
+		Clear: &clear.Service{DB:db.DB},
 		Protocols: &protocols.Reader{DB:db.DB},
 		Profiles: &social.Reader{DB:db.DB},
 	})
