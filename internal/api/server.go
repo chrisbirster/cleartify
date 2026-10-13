@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"regexp"
 	"net/http"
 	"strings"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
+
+var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
 	Waitlist   *waitlist.Service
@@ -65,17 +68,24 @@ func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		Email        string `json:"email"`
 		Phone        string `json:"phone"`
 		EmailUpdates bool   `json:"emailUpdates"`
+		ReferralCode string `json:"referralCode"`
 	}
 	if !decodeJSON(w, r, &req) {
 		return
 	}
 
+	if req.ReferralCode != "" && !referralCodePattern.MatchString(req.ReferralCode) {
+		writeJSON(w,http.StatusBadRequest,map[string]any{"error":"validation_error","field":"referralCode"})
+		return
+	}
+	source := "landing"
+	if req.ReferralCode != "" {source = "ref:" + req.ReferralCode}
 	_, err := s.waitlist.Join(r.Context(), waitlist.Signup{
 		Name:         req.Name,
 		Email:        req.Email,
 		Phone:        req.Phone,
 		EmailUpdates: req.EmailUpdates,
-		Source:       "landing",
+		Source:       source,
 	})
 	if err != nil {
 		var validation *waitlist.ValidationError
