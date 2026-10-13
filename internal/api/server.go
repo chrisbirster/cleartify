@@ -42,6 +42,7 @@ type Options struct {
  AgentDirectoryDB *sql.DB
  SocialModerationEnabled bool
  Moderation *social.Moderation
+ PaidEntitlementEnforcementEnabled bool
  FakeCheckoutEnabled bool
  FakeCheckout *marketplace.Service
  FakeInstallRunEnabled bool
@@ -88,6 +89,7 @@ type Server struct {
  agentOwnership *agents.Ownership
  agentDirectoryDB *sql.DB
  moderation *social.Moderation
+ paidEnforcement bool
  fakeCheckout *marketplace.Service
  fakeInstallRunDB *sql.DB
  fakeInstallRunPush func(context.Context)error
@@ -122,6 +124,7 @@ func New(options Options) http.Handler {
   dbAbuseDB: options.DBAbuseDB,
   dbAbuseSecret: options.DBAbuseSecret,
   fakeCheckout:options.FakeCheckout,
+  paidEnforcement:options.PaidEntitlementEnforcementEnabled && options.FakeCheckout!=nil,
   agentOwnership: options.AgentOwnership,
   fakeInstallRunDB:options.FakeInstallRunDB,
   fakeInstallRunPush:options.FakeInstallRunPush,
