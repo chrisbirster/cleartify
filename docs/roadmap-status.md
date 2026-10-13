@@ -1,6 +1,6 @@
 # Cleartify milestone roadmap — 88-task evidence tracker
 
-Updated: 2026-10-12. **Source:** repository `dev` and milestone PRs #5–#24 inspected in this workstream. The original 88-item checklist was not available as a canonical tracked file, so these are **88 normalized task descriptions derived from the agreed M0–M10 milestones**, not a claim of verbatim recovery. Statuses refer to evidence, **not deployment**.
+Updated: 2026-10-13. **Source:** repository `dev` and verified PR states #5–#25 (merged #18, #20, #21, #22, #24; open #6, #12, #23, #25). The original 88-item checklist was not available as a canonical tracked file, so these are **88 normalized task descriptions derived from the agreed M0–M10 milestones**, not a claim of verbatim recovery. Statuses refer to evidence, **not deployment**.
 
 **Legend:** `done` = code or documentation confirmed merged into dev; `in progress` = unmerged PR or pending implementation (explicit PR evidence noted); `blocked-on-owner` = product, legal, identity or launch approval required. An engineering task marked `in progress` without a PR is **not implemented**. CI success of a PR is not a merge. No task is marked done only because of a green PR.
 
@@ -39,7 +39,7 @@ Updated: 2026-10-12. **Source:** repository `dev` and milestone PRs #5–#24 ins
 | 3 | Add encrypted Turso auth storage | **done** — merged into `dev` |
 | 4 | Upgrade Go toolchain | **done** — merged into `dev` |
 | 5 | Pin Indigo SDK and hash dependencies | **done** — merged into `dev` |
-| 6 | Implement OAuth handlers behind flag | **in progress** — PR #18 merged into `dev`; exact CI/merge proof should be reconfirmed before calling done |
+| 6 | Implement OAuth handlers behind flag | **done** — PR #18 merged into `dev`; feature flag remains off pending real-PDS verification |
 | 7 | Run real hosted-PDS E2E verification | **in progress** — pending implementation |
 | 8 | Approve identity and phone account linking | **blocked-on-owner** — owner decision pending |
 
@@ -99,9 +99,9 @@ Updated: 2026-10-12. **Source:** repository `dev` and milestone PRs #5–#24 ins
 
 | # | Task | Status / evidence |
 |---:|---|---|
-| 1 | Add local agent registration schema | **in progress** — PR #21 open, CI must be green; not merged |
-| 2 | Create feature-flagged admin registration | **in progress** — PR #21 open, CI must be green; not merged |
-| 3 | Test unverified claimed-owner cases | **in progress** — PR #21 open, CI must be green; not merged |
+| 1 | Add local agent registration schema | **done** — PR #21 merged into `dev` (unverified local/admin-only registration) |
+| 2 | Create feature-flagged admin registration | **done** — PR #21 merged into `dev` (unverified local/admin-only registration) |
+| 3 | Test unverified claimed-owner cases | **done** — PR #21 merged into `dev` (unverified local/admin-only registration) |
 | 4 | Implement verified agent owner binding | **in progress** — pending implementation |
 | 5 | Expose safe directory/capability fields | **in progress** — pending implementation |
 | 6 | Build third-party self-hosted adapter | **in progress** — pending implementation |
@@ -112,9 +112,9 @@ Updated: 2026-10-12. **Source:** repository `dev` and milestone PRs #5–#24 ins
 
 | # | Task | Status / evidence |
 |---:|---|---|
-| 1 | Define signed message envelope | **in progress** — PR #22 open; not merged |
-| 2 | Add public-key and replay registry schema | **in progress** — PR #22 open; not merged |
-| 3 | Test local Ed25519 envelope verification | **in progress** — PR #22 open; not merged |
+| 1 | Define signed message envelope | **done** — PR #22 merged into `dev` (offline signature/registry only) |
+| 2 | Add public-key and replay registry schema | **done** — PR #22 merged into `dev` (offline signature/registry only) |
+| 3 | Test local Ed25519 envelope verification | **done** — PR #22 merged into `dev` (offline signature/registry only) |
 | 4 | Implement key ownership and rotation | **in progress** — pending implementation |
 | 5 | Implement replay-safe authenticated transport | **in progress** — pending implementation |
 | 6 | Enforce consent and capability grants | **in progress** — pending implementation |
@@ -138,7 +138,7 @@ Updated: 2026-10-12. **Source:** repository `dev` and milestone PRs #5–#24 ins
 
 | # | Task | Status / evidence |
 |---:|---|---|
-| 1 | Write public launch checklist | **in progress** — PR #24 open; not merged |
+| 1 | Write public launch checklist | **done** — PR #24 merged into `dev` (launch checklist document only) |
 | 2 | Threat model and security review | **in progress** — pending implementation |
 | 3 | Finalize privacy and terms | **blocked-on-owner** — owner decision pending |
 | 4 | Validate CI at final release SHA | **in progress** — pending implementation |
@@ -150,7 +150,7 @@ Updated: 2026-10-12. **Source:** repository `dev` and milestone PRs #5–#24 ins
 ## Reconciliation notes
 
 - M1 privacy/terms remains owner-blocked in draft PR #12; approval must precede public signup policy claims.
-- M2 OAuth PR #18 was reported merged; flag remains off until real-PDS validation.
-- M7 PR #21, M8 PR #22, M9 PR #23 and M10 PR #24 are not considered done until individually merged and reverified.
+- M2 OAuth PR #18 is verified merged; the login flag remains off until real-PDS validation.
+- M7 PR #21, M8 PR #22, and M10 checklist PR #24 are verified merged; only their documented slices are done. M9 PR #23 is open and **not done** until merged. M0 PR #6 and policy PR #12 remain open.
 - M5 approval records do not execute Clear workflows; M6 membership predicate is not authenticated route-wide enforcement.
 - Recheck this ledger after **each merge**; statuses cannot predict future merges or infrastructure smoke test results.
