@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/beta"
+	"github.com/chrisbirster/cleartify/internal/agents"
 	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/notifications"
@@ -26,6 +27,8 @@ type Options struct {
 	Beta       *beta.Service
 	AppOrigin  string
 	AdminToken string
+	AgentRegistrationEnabled bool
+	Agents *agents.Service
 	Clear *clear.Service
 	OAuth *atproto.OAuthHandler
 	Protocols *protocols.Reader
@@ -37,6 +40,7 @@ type Server struct {
 	beta       *beta.Service
 	appOrigin  string
 	adminToken string
+	agents *agents.Service
 	clear *clear.Service
 	protocols *protocols.Reader
 	profiles *social.Reader
@@ -49,6 +53,7 @@ func New(options Options) http.Handler {
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
 		adminToken: options.AdminToken,
+		agents: options.Agents,
 		clear: options.Clear,
 		protocols: options.Protocols,
 		profiles: options.Profiles,
@@ -68,6 +73,7 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("POST /api/beta/verify", s.verifyBetaCode)
 
 	if options.OAuth!=nil {options.OAuth.Register(mux)}
+	if options.AgentRegistrationEnabled {mux.HandleFunc("POST /api/admin/agents",s.registerAgent)}
 	return s.middleware(mux)
 }
 
@@ -386,4 +392,18 @@ func(s *Server) decideRunRequest(w http.ResponseWriter,r *http.Request){
  writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return}
  status:="rejected";if req.Approve{status="approved"}
  writeJSON(w,http.StatusOK,map[string]any{"status":status,"executed":false})
+}
+
+func(s *Server) registerAgent(w http.ResponseWriter,r *http.Request){
+ if s.agents==nil||s.adminToken=="" {writeJSON(w,http.StatusServiceUnavailable,map[string]string{"error":"not_configured"});return}
+ if !secureBearerMatch(r.Header.Get("Authorization"),s.adminToken) {writeJSON(w,http.StatusUnauthorized,map[string]string{"error":"unauthorized"});return}
+ var req struct{OwnerDID string `json:"ownerDid"`; DisplayName string `json:"displayName"`; Description string `json:"description"`}
+ if !decodeJSON(w,r,&req){return}
+ reg,err:=s.agents.Register(r.Context(),req.OwnerDID,req.DisplayName,req.Description)
+ if err!=nil {
+  if errors.Is(err,agents.ErrInvalidRegistration){writeJSON(w,http.StatusBadRequest,map[string]string{"error":"invalid_registration"});return}
+  slog.Error("agent registration failed","error",err)
+  writeJSON(w,http.StatusInternalServerError,map[string]string{"error":"internal_error"});return
+ }
+ writeJSON(w,http.StatusCreated,reg)
 }
