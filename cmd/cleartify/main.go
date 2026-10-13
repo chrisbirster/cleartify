@@ -15,6 +15,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/beta"
+ "github.com/chrisbirster/cleartify/internal/clearsession"
 	"github.com/chrisbirster/cleartify/internal/config"
 	"github.com/chrisbirster/cleartify/internal/database"
 	"github.com/chrisbirster/cleartify/internal/notifications"
@@ -72,7 +73,11 @@ func main() {
   defaultFollow=&social.DefaultFollow{Store:db}
   oauthHandler.SetOnVerifiedLogin(defaultFollow.OnVerifiedLogin)
  }
+ var clearSessions *clearsession.Service
+ if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
  handler := api.New(api.Options{
+  ClearSessionsEnabled:cfg.ClearSessionsEnabled,
+  ClearSessions:clearSessions,
 		Waitlist:   waitlistService,
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,

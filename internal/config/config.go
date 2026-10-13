@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+ ClearSessionsEnabled bool
 	Port             string
 	AppOrigin        string
 	AppURL           string
@@ -28,6 +29,7 @@ type Config struct {
 func Load() Config {
 	appOrigin := strings.TrimRight(env("APP_ORIGIN", "http://localhost:3000"), "/")
 	return Config{
+ ClearSessionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CLEAR_SESSIONS_ENABLED")),"true"),
 		Port:             env("PORT", "8080"),
 		AppOrigin:        appOrigin,
 		AppURL:           strings.TrimRight(env("APP_URL", appOrigin), "/"),

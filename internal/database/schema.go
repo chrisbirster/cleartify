@@ -6,6 +6,15 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS clear_user_sessions (
+   token_digest TEXT PRIMARY KEY,
+   user_id TEXT NOT NULL REFERENCES users(id),
+   created_at TEXT NOT NULL,
+   last_seen_at TEXT NOT NULL,
+   expires_at TEXT NOT NULL,
+   revoked_at TEXT
+ )`,
+ `CREATE INDEX IF NOT EXISTS idx_clear_user_sessions_user ON clear_user_sessions(user_id, revoked_at)`,
 	`CREATE TABLE IF NOT EXISTS waitlist_entries (
 		id TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
