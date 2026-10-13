@@ -12,6 +12,7 @@ import (
 
 	"github.com/chrisbirster/cleartify/internal/beta"
 	"github.com/chrisbirster/cleartify/internal/clear"
+	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/protocols"
 	"github.com/chrisbirster/cleartify/internal/social"
@@ -26,6 +27,7 @@ type Options struct {
 	AppOrigin  string
 	AdminToken string
 	Clear *clear.Service
+	OAuth *atproto.OAuthHandler
 	Protocols *protocols.Reader
 	Profiles *social.Reader
 }
@@ -65,6 +67,7 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("POST /api/beta/resend", s.resendBetaCode)
 	mux.HandleFunc("POST /api/beta/verify", s.verifyBetaCode)
 
+	if options.OAuth!=nil {options.OAuth.Register(mux)}
 	return s.middleware(mux)
 }
 
