@@ -78,6 +78,8 @@ func main() {
 		OAuth: oauthHandler,
 		Protocols: &protocols.Reader{DB:db.DB},
 		Profiles: &social.Reader{DB:db.DB},
+		SocialAccountRegistrationEnabled: cfg.SocialAccountRegistrationEnabled && cfg.AtprotoOAuthEnabled,
+		SocialAccounts:&social.Accounts{Store:db},
 	})
 
 	server := &http.Server{
