@@ -24,6 +24,7 @@ type Options struct {
 	Beta       *beta.Service
 	AppOrigin  string
 	AdminToken string
+	Protocols *protocols.Reader
 	Profiles *social.Reader
 }
 
