@@ -19,6 +19,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/protocols"
+ "github.com/chrisbirster/cleartify/internal/marketplace"
 	"github.com/chrisbirster/cleartify/internal/social"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
@@ -37,6 +38,8 @@ type Options struct {
  AgentDirectoryDB *sql.DB
  SocialModerationEnabled bool
  Moderation *social.Moderation
+ FakeCheckoutEnabled bool
+ FakeCheckout *marketplace.Service
  FakeInstallRunEnabled bool
  FakeInstallRunDB *sql.DB
  FakeInstallRunPush func(context.Context)error
@@ -76,6 +79,7 @@ type Server struct {
  agentOwnership *agents.Ownership
  agentDirectoryDB *sql.DB
  moderation *social.Moderation
+ fakeCheckout *marketplace.Service
  fakeInstallRunDB *sql.DB
  fakeInstallRunPush func(context.Context)error
  creatorPublishingEnabled bool
@@ -103,6 +107,7 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  fakeCheckout:options.FakeCheckout,
   agentOwnership: options.AgentOwnership,
   fakeInstallRunDB:options.FakeInstallRunDB,
   fakeInstallRunPush:options.FakeInstallRunPush,
@@ -137,6 +142,11 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.FakeCheckoutEnabled && options.OAuth!=nil && options.FakeCheckout!=nil {
+  mux.HandleFunc("POST /api/me/fake-checkout",s.fakeCheckoutPurchase)
+  mux.HandleFunc("GET /api/me/marketplace-listings/{id}/access",s.fakeCheckoutAccess)
+  mux.HandleFunc("POST /api/me/fake-entitlements/{id}/refund",s.fakeCheckoutRefund)
+ }
  if options.AgentOwnershipEnabled && options.AgentOwnership!=nil && options.OAuth!=nil {
   mux.HandleFunc("POST /api/me/agents/{id}/ownership/start",s.agentOwnershipStart)
   mux.HandleFunc("POST /api/me/agents/{id}/ownership/confirm",s.agentOwnershipConfirm)
