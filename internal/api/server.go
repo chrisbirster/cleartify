@@ -2,6 +2,7 @@ package api
 
 import (
 	"crypto/subtle"
+ "database/sql"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -24,6 +25,8 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ AgentDirectoryEnabled bool
+ AgentDirectoryDB *sql.DB
  PrivateAlphaRoutesEnabled bool
  ClearPrincipalResolver ClearPrincipal
  AlphaEligibility alphaEligibility
@@ -50,6 +53,7 @@ type Options struct {
 }
 
 type Server struct {
+ agentDirectoryDB *sql.DB
  clearPrincipalResolver ClearPrincipal
  alphaEligibility alphaEligibility
  clearSessions *clearsession.Service
@@ -76,6 +80,7 @@ func New(options Options) http.Handler {
 		clearSessions: options.ClearSessions,
   clearPrincipalResolver: options.ClearPrincipalResolver,
   alphaEligibility:options.AlphaEligibility,
+  agentDirectoryDB:options.AgentDirectoryDB,
   waitlist:   options.Waitlist,
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
@@ -96,6 +101,7 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.AgentDirectoryEnabled && options.AgentDirectoryDB!=nil {mux.HandleFunc("GET /api/agents",s.listAgentDirectory)}
  if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.privateAlpha(s.alphaEligibilityStatus))}
  if options.ClearSessionsEnabled && options.ClearSessions != nil {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession);mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
 	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
