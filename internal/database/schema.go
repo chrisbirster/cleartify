@@ -127,6 +127,13 @@ var schemaStatements = []string{
 		UNIQUE(creator_did,slug,version)
 	)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocols_discovery ON published_protocols(status,created_at DESC)`,
+	`CREATE TABLE IF NOT EXISTS alpha_memberships (
+       user_id TEXT PRIMARY KEY REFERENCES users(id),
+       admitted_by TEXT NOT NULL,
+       admitted_at TEXT NOT NULL,
+       revoked_at TEXT
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_alpha_memberships_revoked ON alpha_memberships(revoked_at)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
