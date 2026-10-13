@@ -1,0 +1,7 @@
+# M9 fake checkout and runtime access — engineering defaults
+
+**DEFAULT (Oct 13 2026), owner can change.** `FAKE_CHECKOUT_ENABLED=false` unless explicitly set to true with AT Protocol OAuth. Routes do not register when disabled or OAuth unavailable. No payment provider SDK, keys, external calls, or real monetary charge.
+
+Authenticated buyer OAuth session DID is the only identity used by `POST /api/me/fake-checkout` (listingId), `GET /api/me/marketplace-listings/{id}/access` and `POST /api/me/fake-entitlements/{id}/refund`. Client-supplied buyer/seller DIDs and amounts are ignored; listing price and currency come from database. Mutations enforce configured Origin and the existing sensitive-mutation middleware. A fake-only provider produces deterministic fake receipts; entitlement and audit are committed together. Existing DB uniqueness prevents duplicate purchases. Access queries current, active buyer entitlements at request time; refund revokes that access and emits an audit row. Cross-user checks use authenticated DID.
+
+**Boundary:** access is implemented on this new gated access-check route, NOT yet enforced on all existing protocol installation, catalog delivery, or runtime paths. Public discovery remains separate. Fake provider is not a licensed or production payment flow, and records marked fake must never grant real paid access. Remote Turso push semantics, full HTTP OAuth integration tests, item-level authorization, disputes and real provider/counsel approval remain open. Feature must stay off outside controlled fake tests.
