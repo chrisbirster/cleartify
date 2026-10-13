@@ -1,0 +1,13 @@
+# M2 authenticated DID-link ceremony — internal defaults
+
+**DEFAULT (Oct 13 2026), owner can change.** All endpoints require `IDENTITY_LINKING_ENABLED=true`, `CLEAR_SESSIONS_ENABLED=true`, and `ATPROTO_OAUTH_ENABLED=true` plus wired dependencies. Flags default **OFF**. No deployment, real-PDS verification, public legal text, or new public identity claim is authorized.
+
+- Start: server obtains the Clear user from a recently **issued** Clear session (within 10 minutes of phone verification) and the social DID from the persisted Indigo OAuth session with valid browser cookie. Neither identity is accepted from request JSON, URL or handles.
+- Challenge: 256-bit random browser-bound HttpOnly/Secure-in-HTTPS/SameSite=Strict cookie and SHA-256 digest-only DB storage; TTL 10 minutes. Each start creates a new single-use pending challenge.
+- Preview: shows private Clear user identifier and OAuth DID and warns that link grants no Clear access and publishes no private data. No automatic follow, merge or PDS writes.
+- Confirm: explicit `consent: true` and exact internal notice `internal-m2-v1`, recheck both principals, bind challenge and consume it atomically with one-to-one link and audit record. Same active DID cannot attach to two Clear users.
+- Unlink: independently recheck both identities with recent Clear authentication; explicit `confirm: true`; transactional revocation and minimal audit. No social logout or OAuth-token deletion is attempted because this OAuth session is the independent social login, not a connection-scoped credential. No existing Clear authorization is derived from the link.
+- Network mutation CSRF/origin protection follows the existing API middleware. No user-supplied identity fields are accepted. Generic conflict responses avoid revealing whether another account owns a DID.
+- Fake verifier test explicitly exercises forged cross-user cookie reuse, missing/revoked Clear sessions, consent, single-use replay, conflicting DID, unlink and disabled routes.
+
+**Remaining owner gates:** real PDS/Indigo OAuth smoke and refresh/revocation, owner approval of session-assurance freshness and consent copy, legal notice review, account recovery/rotation, durable alerting, and isolated staging. A recently issued Clear session is used as a conservative proxy for phone reauthentication; it is not a new phone challenge. A browser social session may be up to 24 hours old, so new social OAuth reauthentication remains a design/security approval before enabling. This change does not claim that fresh OAuth/PDS reauth was implemented or that identity linkage is production ready.
