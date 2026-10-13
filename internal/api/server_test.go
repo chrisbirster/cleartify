@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"bytes"
 	"context"
 	"net/http"
@@ -89,4 +90,27 @@ func TestWaitlistEndpointRejectsInvalidPhone(t *testing.T) {
 	if res.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d; body=%s", res.Code, http.StatusBadRequest, res.Body.String())
 	}
+}
+
+
+func TestWaitlistReferralAttribution(t *testing.T) {
+ ctx := context.Background()
+ store, err := database.Open(ctx, database.Config{Path: ":memory:"})
+ if err != nil { t.Fatal(err) }
+ defer store.Close()
+ if err := store.Migrate(ctx); err != nil { t.Fatal(err) }
+ handler := New(waitlist.NewService(store), "")
+ for _, tc := range []struct{ code string; status int }{
+  {"friend_123", http.StatusCreated},
+  {"bad code!", http.StatusBadRequest},
+ } {
+  body, _ := json.Marshal(map[string]any{"name":"Chris","email":"chris@example.com","phone":"+17175551212","referralCode":tc.code})
+  r:=httptest.NewRequest(http.MethodPost,"/api/waitlist",bytes.NewReader(body))
+  w:=httptest.NewRecorder()
+  handler.ServeHTTP(w,r)
+  if w.Code!=tc.status {t.Fatalf("%q status %d want %d: %s",tc.code,w.Code,tc.status,w.Body.String())}
+ }
+ var source string
+ if err:=store.DB.QueryRowContext(ctx,"SELECT source FROM waitlist_entries WHERE email_normalized = ?", "chris@example.com").Scan(&source);err!=nil{t.Fatal(err)}
+ if source!="ref:friend_123" {t.Fatalf("source=%q",source)}
 }
