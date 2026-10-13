@@ -33,3 +33,40 @@ Run in a distinct staging environment, never production. Use disposable email an
 
 ### Deployment go/no-go
 Go only when both `ci/go` and `ci/web` are green on the merge head, staging smoke is recorded, and the identity-bound alpha route middleware plus legal notice/retention review are complete. Otherwise leave the beta private and behind the existing activation controls.
+
+
+## October 13 flag inventory — staging planning only
+
+All flags listed below are **environment controls**, not instructions to change production configuration here. OAuth and private-alpha social features must remain disabled until owner verification and release sign-off.
+
+| Flag | Default | Readiness and required checks |
+| --- | --- | --- |
+| `ATPROTO_OAUTH_ENABLED` | false | Indigo OAuth integration; **block enablement** until live hosted PDS auth, callback, refresh, logout/revocation and token-storage tests pass |
+| `SOCIAL_ACCOUNT_REGISTRATION_ENABLED` | false | Requires OAuth; confirms unauthenticated requests cannot create social accounts; does not link a phone-first Clear account |
+| `SOCIAL_DEFAULT_FOLLOW_ENABLED` | false | Requires OAuth; local /@chris automatic follow, persistent user opt-out and no PDS follow write |
+| `SOCIAL_PROFILE_ACTIONS_ENABLED` | false | Requires OAuth; DID-bound local claims/follows; separately validate handle ownership against real PDS before public use |
+| `PROTOCOL_INSTALL_FLOW_ENABLED` | false | Proposed by PR #29, **do not assume present in dev until merged**. Requires OAuth; preview/acknowledge/version-pin/admin approval and never execute |
+| `AGENT_REGISTRATION_ENABLED` | false | Admin-only local, unverified agent listing; no external agent identity or network integration |
+
+**Prerequisites, not default flags:** exact staging `APP_ORIGIN` and `ATPROTO_PUBLIC_ORIGIN`, verified `ATPROTO_SESSION_KEY_B64`, `APP_SECRET`, admin bearer and staging-only Turso credentials. All secrets belong in the deployment/secret manager, **never Git, logs, screenshots or test artifacts**. `NOTIFICATION_MODE=debug` logs beta secrets and is prohibited for shared or public staging.
+
+## Updated staging smoke acceptance matrix (plan; not execution record)
+
+- [ ] **Flags off baseline:** new social registration, follow mutations, claim and install endpoints return 404/not registered; phone-first waitlist with draft policy acceptance and beta invite/phone verification continue unchanged. No public product claims from draft terms.
+- [ ] **Real PDS login (owner-controlled staging only):** test a disposable hosted AT Protocol account with metadata/PAR/PKCE/DPoP/callback, browser nonce, state replay/expired state, wrong Origin, token encryption, session logout/revocation, refresh, server restart and invalid DID/handle. Capture pass/fail evidence without tokens or user data.
+- [ ] **Identity boundary:** unauthenticated or forged-DID requests cannot claim/follow/install; stolen/expired/revoked cookies fail, requester cannot claim another DID's existing profile, and an unverified `acct-` placeholder cannot become publicly claimed. A local DID match is not independent PDS handle resolution.
+- [ ] **Default follow:** only an already claimed and public local /@chris DID may be followed; user may remove it, opt-out persists across logins, and explicit re-follow removes opt-out. No outgoing PDS follow messages.
+- [ ] **Profile actions:** verify exact-origin CSRF rejection, unknown/private target rejection, no self-follow, idempotent follow and unfollow, and no unauthorized account write. Exercise bounded body sizes and rate limits on all sensitive mutations.
+- [ ] **Manifest/approval (when PR #29 is actually merged):** published version manifest shows declared scopes and digest, missing/stale acknowledgement fails, immutable version and hash are recorded, approval requires administrator, duplicate decision fails, changed/withdrawn publication cannot be approved; approved status must not create an executable Clear installation.
+- [ ] **Alpha invitation:** only server-verified `beta_invites.status='activated'` and an active user can be admitted; revocation immediately removes eligibility. OAuth alone must **never** grant private Clear or alpha rights. Enforce eligibility at every future private endpoint.
+- [ ] **Operations:** record healthz, migration idempotency, CI commit SHA, rollout image digest, monitoring signals (5xx, latency, callback errors, invite abuse), alert owner, Turso backup and non-destructive rollback rehearsal. Owner records incident/rollback criteria and signs off.
+
+**Launch blockers unchanged:** route-wide session-bound alpha enforcement, DID↔phone-first Clear account-linking policy, verified live OAuth and handle ownership, final privacy/terms and retention/deletion owner sign-off, abuse controls and production monitoring. This checklist is not proof those items passed.
+
+## Owner-only actions (NOT performed by this documentation PR)
+
+1. **Hosted PDS validation:** use an owner-controlled disposable account, complete authentic browser OAuth flow and produce a redacted staging test record; decide whether DID/handle proof is sufficient for public claims.
+2. **Secrets and vendor permissions:** provision, rotate and revoke staging-only OAuth session key, app/admin secrets, Turso and email/SMS credentials through the approved secrets manager. Confirm separate provider scopes and no debug-secret logging.
+3. **Staging deployment and rollback:** authorize an operator to deploy a reviewed exact SHA to a separately isolated staging environment, verify migrations and backups, run the smoke matrix, and rehearse reversible rollback. **Do not run these steps from this PR.**
+4. **Product/legal gate:** finalize phone/social identity linking, privacy/terms, retention and deletion schedules, invite notice, default-follow disclosure and owner approval for a limited private alpha. Placeholder draft notices are not final.
+5. **Go/no-go:** after tests and risk review, record a signed decision to enable specific staging flags. Public launch remains a separate security and legal approval.

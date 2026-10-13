@@ -33,6 +33,8 @@ type Options struct {
 	OAuth *atproto.OAuthHandler
 	Protocols *protocols.Reader
 	Profiles *social.Reader
+	ProtocolInstallFlowEnabled bool
+	InstallFlow *protocols.InstallService
 	SocialAccountRegistrationEnabled bool
 	SocialAccounts *social.Accounts
 	SocialProfileActionsEnabled bool
@@ -50,12 +52,14 @@ type Server struct {
 	clear *clear.Service
 	protocols *protocols.Reader
 	profiles *social.Reader
+	installFlow *protocols.InstallService
 	socialAccounts *social.Accounts
 	socialActions *social.Actions
 	socialAuth *atproto.OAuthHandler
 	defaultFollow *social.DefaultFollow
 	oauth *atproto.OAuthHandler
 	signupLimiter *signupLimiter
+	mutationLimiter *mutationLimiter
 }
 
 func New(options Options) http.Handler {
@@ -68,16 +72,23 @@ func New(options Options) http.Handler {
 		clear: options.Clear,
 		protocols: options.Protocols,
 		profiles: options.Profiles,
+		installFlow: options.InstallFlow,
 		socialAccounts: options.SocialAccounts,
 		socialActions: options.SocialActions,
 		socialAuth: options.OAuth,
 		defaultFollow: options.DefaultFollow,
 		oauth: options.OAuth,
 		signupLimiter: newSignupLimiter(),
+		mutationLimiter: newMutationLimiter(),
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
+		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
+		mux.HandleFunc("POST /api/me/protocol-install-requests",s.requestProtocolInstall)
+		mux.HandleFunc("POST /api/admin/protocol-install-requests/{id}/decision",s.decideProtocolInstall)
+	}
 	if options.SocialProfileActionsEnabled && options.OAuth!=nil && options.SocialActions!=nil {
 		mux.HandleFunc("POST /api/me/profile/claim",s.claimOwnProfile)
 		mux.HandleFunc("PUT /api/me/following/{handle}",s.updateOwnFollow)
@@ -97,7 +108,7 @@ func New(options Options) http.Handler {
 
 	if options.OAuth!=nil {options.OAuth.Register(mux)}
 	if options.AgentRegistrationEnabled {mux.HandleFunc("POST /api/admin/agents",s.registerAgent)}
-	return s.middleware(mux)
+	return s.middleware(s.protectSensitive(mux))
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
