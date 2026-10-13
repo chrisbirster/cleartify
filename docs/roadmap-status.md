@@ -1,176 +1,95 @@
-# Cleartify milestone roadmap — 88-task evidence tracker
+# Cleartify M0–M10 — merged-code status and remaining gates
 
-Updated: 2026-10-13. **Source:** verified GitHub merged PR states and dev commit c2b22ec16c1c662b29b86b65d287d06828a762b6 at audit refresh. PRs #7–#24 and #26–#31 are merged (including #12 and #23); #6 and #25 remain open. This is an **audit of merged work**, not a prediction that open PRs will merge. The original 88-item checklist was not available as a canonical tracked file, so these are **88 normalized task descriptions derived from the agreed M0–M10 milestones**, not a claim of verbatim recovery. Statuses refer to evidence, **not deployment**.
+**As of October 13, 2026.** Audited against `dev` at `2947cf86e620dc78062ab7a406b33589af16dbc7`. GitHub confirms **#6 and #32–#48 merged**, including the final implementation sequence #33–#48. This is a repository/code status, **not** evidence of staging verification or launch approval. Earlier PRs #7–#24 and #26–#31 provide baseline foundations. The old 88-task tracker was a **normalized reconstruction**, not an authenticated copy of an original 88-item checklist; this document replaces its obsolete PR-by-PR claims rather than fabricating completion counts.
 
-**Legend:** `done` = code or documentation confirmed merged into dev; `in progress` = unmerged PR or pending implementation (explicit PR evidence noted); `blocked-on-owner` = product, legal, identity or launch approval required. An engineering task marked `in progress` without a PR is **not implemented**. CI success of a PR is not a merge. No task is marked done only because of a green PR.
+**Status rules:** **done** = nothing remains within the milestone's agreed deliverable, including necessary approvals; **code complete, owner-blocked** = all in-scope engineering is in `dev` and only explicitly owner-controlled verification, approvals, credentials, or deployment remain; **partial** = additional engineering can be done without owner-only action. A local prototype, schema, unit test, or green CI is **not** a finished production feature. Flags default OFF where specified; owner decisions in M0 do not turn development defaults into public legal promises.
 
+| Milestone | Status | Merged foundation | Main remaining boundary |
+|---|---|---|---|
+| **M0 Product contract** | **done** | #6 owner decisions and internal retention defaults, owner sign-off | Future public policy/counsel review belongs to M1/M10, not an open M0 decision |
+| **M1 Beta/onboarding** | **partial** | Waitlist, invitation, activation, UI, basic abuse controls, draft policy pages | Stronger distributed abuse protections and production-ready privacy/terms; owner/counsel approval |
+| **M2 Identity/OAuth** | **partial** | Flagged ATProto OAuth, Clear sessions (#33), DID-link persistence (#35), design (#32) | Actual authenticated DID-link ceremony, real-PDS tests, owner-controlled staging |
+| **M3 Social/trust** | **partial** | Profiles/follows, reports/blocks (#36), anti-impersonation hold library (#47) | Wire moderation holds into runtime, review/appeal and real handle verification |
+| **M4 Creator protocols** | **partial** | Discovery, immutable drafts (#37), preview permission guard (#38), draft validation/remix fixtures (#46) | Publishing workflow, verified remix provenance/license checks, 10 approved seed protocols |
+| **M5 Clear runner** | **partial** | Version-pinned install approvals, bounded fake local runner (#41), audit/cancel/retry | Authenticated install-to-run integration, durable audit, real isolated execution boundary |
+| **M6 Private alpha** | **partial** | Alpha memberships/gate (#34), Clear-session-protected private routes (#48), smoke docs | Extend gates to all future private actions, staging beta smoke, cohort/use metrics, owner approval |
+| **M7 Agent registration** | **partial** | Registration, safe directory (#39), local owner-key binding and scoped grants (#42) | Trusted authenticated runtime ownership ceremony and self-hosted adapter |
+| **M8 Agent collaboration** | **partial** | Ed25519 envelope/replay (#40), key rotation, consent checks, local two-agent test (#43) | Authenticated replay-safe transport, transactional revocation/consent, external interop |
+| **M9 Marketplace** | **partial** | Listings/pricing, fake-only seller/entitlement/refund/audit library (#44) | Authenticated checkout/access enforcement; real provider only with owner approval; seller/compliance decisions |
+| **M10 Release/operations** | **partial** | Launch checklist, source-SHA CI check, flag-off monitoring, rollback/backup docs (#45) | Real observability/alerts, disaster-recovery drill, staged E2E and launch sign-off |
 
-## Remaining owner-only actions (not completed by merged code)
+**Overall: 1 done (M0), 0 code complete/owner-blocked, 10 partial.** These statuses reflect remaining implementable work, not lack of effort or CI coverage. Individual tasks within a partial milestone can still be code complete and owner-blocked.
 
-These require decisions, credentials, independent verification, controlled staging or legal sign-off. CI and documentation do not constitute sign-off.
+## M0 — Product contract — **done**
 
-| Workstream | Owner action required | Gate |
-|---|---|---|
-| M0 product contract (#6) | Review/merge recorded October 13 decisions and approve or revise the expressly PROPOSED retention/deletion policy with category-specific periods | No final retention durations or public deletion promises |
-| M1/M10 legal | Finalize and review draft /terms and /privacy, access/deletion procedure and public notice | PR #12 is development-only placeholder text |
-| M2 social OAuth | Supply disposable **real hosted-PDS** account, isolated staging secrets and authorization for login, callback, refresh, logout/revocation, nonce/replay, session restart, DID/handle checks | AT Protocol OAuth flag remains off; tests do not substitute for real PDS |
-| M2/M3 identity | Decide DID-to-phone-first Clear identity linking, independent handle ownership and rotation, profile disclosure, default-follow notice and impersonation safeguards | Local DID-matched claims/follows are not independent PDS handle proof |
-| M4 creators | Approve creator licenses, attribution, remix, report/takedown and permission taxonomy | Discovery schema is not official endorsement |
-| M5 Clear | Sign off consequential permissions, runner sandbox, approved install activation, revocation, cancellation and audit | Requests/approval only; **no real execution or usable install** |
-| M6 private alpha | Provision staging secrets/providers/Turso, authorize a staged deploy/rollback, run hosted PDS/beta smoke, approve tester cohort, identity-bound access and alpha go/no-go | Checklist merged, live smoke not performed |
-| M7/M8 agents | Decide allowed agent identity claims, delegation, privacy, consent and abuse controls | Agent registry/envelope are local groundwork only |
-| M9 commerce | Decide provider, country scope, seller terms, fees, refunds, taxes, KYC and payouts | Pricing schema only; **no payment processing** |
-| M10 public launch | Approve legal/security review, alerts and incident ownership, backup/rollback proof, exact release-SHA acceptance and public go/no-go | Launch not authorized |
+- **Done in merged docs:** #6 establishes the social-first product direction, Clear/private-vs-social model, AT Protocol social login requirement, default Chris follow that users may remove, protocol authorship product boundaries, and five owner answers. The owner confirms **#6 merged** and personally signed off the M0 decisions and internal retention engineering defaults.
+- **Owner-only downstream boundaries:** The October 13 retention durations are **internal engineering defaults**, not published policy, legal advice, or promises. Counsel and owner must approve any retention/deletion language incorporated into public `/privacy` or `/terms` (tracked in M1/M10).
+- **Not built in M0:** No outstanding M0 code deliverable or M0 decision. Implementing later product features is not a reason to reopen M0.
 
-**Status rule:** The 88 tasks below are a normalized reconstruction, not the recovered original checklist. A row remains **in progress** if only its foundation is merged, and **blocked-on-owner** if the mandatory remaining step is an owner decision, secret, staging action or approval.
+## M1 — Beta onboarding and consent — **partial**
 
-## M0
+- **Done in merged code:** Waitlist, referral capture, beta invite/start/verification, landing/profile previews, lockfile/build CI, baseline signup/mutation throttling and origin/CSRF checks (#7–#16, #31), and dev-only draft policy/acceptance foundations (#12).
+- **Built up to owner boundary:** Activation flow can be tested locally; public terms/privacy, user-data retention/deletion handling and production invitation process require counsel/owner sign-off and controlled staging.
+- **Not built/verified:** Distributed abuse/rate-limit protections, production consent/legal acceptance verification and approved public notices. No real staged beta/onboarding validation is recorded.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Audit existing repository baseline | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
-| 2 | Review accepted architecture ADRs | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
-| 3 | Define three-sided product model | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
-| 4 | Define first-user journey | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
-| 5 | Define public/private data split | **in progress** — PR #6 / M0 doc review; earlier foundation merged but product contract not approved |
-| 6 | Agree social identity onboarding | **in progress** — owner said "at protocol login required" Oct 13; flag-off social-account PR #27 merged, but M0 product contract #6 remains open |
-| 7 | Resolve default-follow consent | **in progress** — owner said "Following is automatic but removable"; local default-follow/unfollow PR #26 merged with its flag default off, while M0 PR #6 remains open |
-| 8 | Approve pivot and M0 product contract | **in progress** — owner said "Social-first"; PR #6 document still open, so contract not yet merged |
+## M2 — Separate Clear account and AT Protocol identity — **partial**
 
-## M1
+- **Done in merged code/docs:** DID primitives, origin restrictions, encrypted ATProto-related storage, SDK/toolchain pinning, flag-off OAuth (#18), revocable hashed Clear sessions with 30-day idle limit (#33), transactional one-to-one DID/Clear link storage and challenge/audit primitives (#35), and DID linking design (#32).
+- **Built up to owner boundary:** Clear session security and persistence primitives and flag-off OAuth; **real hosted-PDS** authentication/refresh/restart/handle proof, isolated credentials and staging are owner-only verification. Retention defaults are approved internally, not public legal wording.
+- **Not built:** Full consented and authenticated DID↔Clear linking ceremony and API, disconnect UX, account recovery/key-rotation semantics and end-to-end linked identities. A stored link or local DID string is **not** real-PDS verification.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Land beta activation invitation flow | **done** — merged into `dev` |
-| 2 | Fix beta invitation CI regressions | **done** — merged into `dev` |
-| 3 | Implement waitlist endpoint | **done** — merged into `dev` |
-| 4 | Implement landing and profile preview | **done** — merged into `dev` |
-| 5 | Introduce rate limits | **done** — initial signup throttling merged; PR #31 merged extra CSRF / in-process mutation limits. Distributed abuse protection and trusted-proxy staging validation remain outstanding |
-| 6 | Add referral attribution | **done** — merged into `dev` |
-| 7 | Commit lockfile and npm ci | **done** — merged into `dev` |
-| 8 | Finalize terms/privacy and consent | **blocked-on-owner** — PR #12 merged **draft** policy acceptance/version and placeholder pages for `dev` only; legal wording, retention and public-launch approval still pending |
+## M3 — Profiles, social graph, moderation and trust — **partial**
 
-## M2
+- **Done in merged code:** DID-keyed profile/discovery reads, local follow/unfollow, default-follow opt-out (#26–#28), DID-authenticated registration/claim groundwork, locally stored reports/blocks (#36), and disabled-by-default reserved/lookalike handle screening, locally-claimed-vs-unverified labels and reversible report-threshold holds (#47).
+- **Built up to owner boundary:** Local moderation and hold models; owner/security approval for thresholds, appeals, false positives, disclosure and independent DID/handle verification.
+- **Not built:** Automatic hold enforcement in public discovery, follow/claim or publishing; moderator review/appeals UI and durable case audit, stronger confusable detection, robust report abuse resistance and PDS-backed handle proof. Label `locally_claimed_not_independently_verified` is deliberately **not** a verified identity badge.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Add stable DID identity primitive | **done** — merged into `dev` |
-| 2 | Define OAuth origin allowlist | **done** — merged into `dev` |
-| 3 | Add encrypted Turso auth storage | **done** — merged into `dev` |
-| 4 | Upgrade Go toolchain | **done** — merged into `dev` |
-| 5 | Pin Indigo SDK and hash dependencies | **done** — merged into `dev` |
-| 6 | Implement OAuth handlers behind flag | **done** — PR #18 merged into `dev`; feature flag remains off pending real-PDS verification |
-| 7 | Run real hosted-PDS E2E verification | **blocked-on-owner** — requires owner-controlled hosted-PDS account, staging secrets and authorized end-to-end exercise; not yet verified |
-| 8 | Approve identity and phone account linking | **blocked-on-owner** — owner decision pending |
+## M4 — Creator protocols, remix and attribution — **partial**
 
-## M3
+- **Done in merged code/docs:** Immutable draft/publication schema and safe discovery, DID-scoped draft creation (#37, default OFF), local preview permission allowlist (#38), bounded declarative draft validation, remix metadata/attribution policy defaults and **two original Cleartify-only test fixtures** (#46). Drafts do not automatically publish.
+- **Built up to owner boundary:** Internal license and attribution defaults plus sample fixtures; owner/counsel must review rights, source provenance, remix consent, takedowns and proposed public license wording before any publishing.
+- **Not built:** Authenticated creator **publishing/review** lifecycle, database-backed upstream remix source/license compatibility checks, full attribution lineage and moderation/takedown process; **10** original owner-approved licensed/seeded protocols (only **two non-published test fixtures** exist).
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Add DID-keyed public profile schema | **done** — merged into `dev` |
-| 2 | Add public profile read API | **done** — merged into `dev` |
-| 3 | Replace mock profile view | **done** — merged into `dev` |
-| 4 | Add DID-based follow model | **done** — merged into `dev` |
-| 5 | Authenticate profile creation/claims | **in progress** — PRs #27/#28 merged OAuth-DID-bound private registration and local DID-match claim; public handle ownership is not independently verified against a real PDS; flags remain off |
-| 6 | Implement owner-scoped follow/unfollow | **done** — PRs #26/#28 merged local session-owned follow/unfollow with durable /@chris opt-out; no PDS graph writes, flag off |
-| 7 | Enforce reports/block/anti-impersonation | **in progress** — pending implementation |
-| 8 | Validate profile disclosure and creator attribution | **blocked-on-owner** — owner decision pending |
+## M5 — Install approvals and Clear runner — **partial**
 
-## M4
+- **Done in merged code:** Run-request and install approval schemas/handlers, exact-version/spec-digest permission acknowledgement (#29), flag-off local permission guard (#38), and bounded declarative fake in-memory executor (#41) with local-only operations, cancel/retry and ordered **non-durable** audit events.
+- **Built up to owner boundary:** Safe local demonstration of run semantics; owner must approve consequential permission taxonomy, execution isolation/security, install activation and consent before real use.
+- **Not built:** Authenticated Clear user **installation-to-run** binding, durable run state/audit and scheduler, real isolated worker/executor, concurrency-safe cancellation, retry/recovery across process restarts and actual usable install. Approval records do **not** run protocols.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Define immutable protocol version schema | **done** — merged into `dev` |
-| 2 | Add public discovery read endpoint | **done** — merged into `dev` |
-| 3 | Test hidden draft/withdrawn records | **done** — merged into `dev` |
-| 4 | Add authenticated creator publishing | **in progress** — pending implementation |
-| 5 | Validate workflow permissions and input contracts | **in progress** — pending implementation |
-| 6 | Implement remix and attribution policy | **in progress** — pending implementation |
-| 7 | Seed 10 original licensed protocols | **in progress** — pending implementation |
-| 8 | Approve creator license/IP policy | **blocked-on-owner** — owner decision pending |
+## M6 — Private alpha access and evaluation — **partial**
 
-## M5
+- **Done in merged code/docs:** Alpha membership and activation eligibility (#20), flag-off authorization gate (#34), verified Clear-session-principal wiring for the currently identified private Clear status and eligibility routes (#48), cross-user spoofing and revoked membership/session tests, staged smoke checklists (#30).
+- **Built up to owner boundary:** Real protected routes fail closed on absent dependencies or revoked access **when flags are on**; staged beta/hosted-PDS smoke, credentials, tester cohort, actual alpha go/no-go remain owner-controlled. Logout stays accessible.
+- **Not built/verified:** Broad auth policy for **future private Clear actions**, complete DID-linked private data/runtime permission checks, tester invitation operations, first-run/repeat-use measurements and real staging E2E proof. Existing admin Clear actions retain **separate admin authorization**, not a private user gate.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Add durable Clear run request schema | **done** — merged into `dev` |
-| 2 | Require exact version installation for requests | **done** — merged into `dev` |
-| 3 | Add admin-only request/approval APIs | **done** — merged into `dev` |
-| 4 | Test idempotent one-time decisions | **done** — merged into `dev` |
-| 5 | Add authenticated self-service installations | **in progress** — PR #29 merged permission-manifest preview, explicit acknowledgement, pinned version/spec digest and approval request. No executable installation record or verified DID-to-private-Clear-user mapping; approval returns installed:false/executed:false |
-| 6 | Implement bounded declarative protocol runner | **in progress** — pending implementation |
-| 7 | Implement cancel/retry/version-pin and audit | **in progress** — PR #29 merged immutable version pin and approval metadata for install requests; real execution retry/cancel and auditable outcome lifecycle do not exist |
-| 8 | Approve consequential action permission policy | **blocked-on-owner** — owner decision pending |
+## M7 — Verified agent identity and scoped grants — **partial**
 
-## M6
+- **Done in merged code:** Local admin-only unverified agent registrations (#21), safe flag-off directory with no independent-verification claim (#39), signature-based agent key possession/owner-DID binding, scoped revocable grants with expiry and tests (#42).
+- **Built up to owner boundary:** Owner-binding library requires an **already trusted, independently authenticated DID caller**; no real PDS assertion or public agent verification is established. Owner must approve claim semantics, scope/security policy and listing representation.
+- **Not built:** Trusted authenticated API for registering/rotating owner identity and managing grants, secure signing-key enrollment ceremony, self-hosted third-party adapter, durable authorization audit and proof of independent agent ownership.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Add revocable alpha membership data | **done** — PR #20 merged into `dev` |
-| 2 | Tie alpha eligibility to verified beta activation | **done** — PR #20 merged into `dev` |
-| 3 | Document staging smoke and gates | **done** — PRs #20 and #30 merged eligibility and updated default-off feature flag/staging smoke/owner-only checklist; no staging test or deployment was performed |
-| 4 | Enforce session-bound eligibility on all routes | **in progress** — pending implementation |
-| 5 | Run staging invite-to-activation smoke | **blocked-on-owner** — PR #30 checklist merged, but owner-controlled staging secrets, actual staging deployment, hosted-PDS and beta activation smoke evidence are still missing |
-| 6 | Recruit creator and tester cohort | **in progress** — pending implementation |
-| 7 | Measure first run and repeat use | **in progress** — pending implementation |
-| 8 | Approve actual alpha invitations and privacy | **blocked-on-owner** — owner decision pending |
+## M8 — Agent-to-agent interop — **partial**
 
-## M7
+- **Done in merged code:** Signed Ed25519 envelope, local key/replay registry (#22/#40), local-only signing-key rotation, time-limited recipient consent checks plus sender-scoped-grant check, and two-agent local interop test (#43).
+- **Built up to owner boundary:** Offline in-process staging works without transport or execution; owner must approve inter-agent privacy, consent/delegation and trust assumptions.
+- **Not built:** Actual authenticated transport, remote agent interoperability, secure runtime integration, multi-device delivery acknowledgement, key recovery, and atomic consent/grant checks concurrent with revoke. Low-level replay API is **not** a production consent boundary.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Add local agent registration schema | **done** — PR #21 merged into `dev` (unverified local/admin-only registration) |
-| 2 | Create feature-flagged admin registration | **done** — PR #21 merged into `dev` (unverified local/admin-only registration) |
-| 3 | Test unverified claimed-owner cases | **done** — PR #21 merged into `dev` (unverified local/admin-only registration) |
-| 4 | Implement verified agent owner binding | **in progress** — pending implementation |
-| 5 | Expose safe directory/capability fields | **in progress** — pending implementation |
-| 6 | Build third-party self-hosted adapter | **in progress** — pending implementation |
-| 7 | Add revocable scoped agent grants | **in progress** — pending implementation |
-| 8 | Approve supported-agent listing claims | **blocked-on-owner** — owner decision pending |
+## M9 — Seller marketplace and payment foundations — **partial**
 
-## M8
+- **Done in merged code:** Listing/pricing schema and constraints (#23), disabled-by-default seller match against listing/protocol creator, fake-provider-only interface, local entitlements, simulated refund and audit tables/tests (#44).
+- **Built up to owner boundary:** Entire commerce path is **fake and library-only**, no provider keys or money movement. Actual provider, country/tax/KYC/payouts, seller contracts, fees/refund/legal conditions and limited paid-pilot authorization are owner/counsel/finance gates.
+- **Not built:** Authenticated production checkout/seller flows, entitlement enforcement for real installations/access, payment idempotency and reconciliation, real refunds/chargebacks, real provider integration and any paid creator pilot. Simulated receipt is **not** financial proof.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Define signed message envelope | **done** — PR #22 merged into `dev` (offline signature/registry only) |
-| 2 | Add public-key and replay registry schema | **done** — PR #22 merged into `dev` (offline signature/registry only) |
-| 3 | Test local Ed25519 envelope verification | **done** — PR #22 merged into `dev` (offline signature/registry only) |
-| 4 | Implement key ownership and rotation | **in progress** — pending implementation |
-| 5 | Implement replay-safe authenticated transport | **in progress** — pending implementation |
-| 6 | Enforce consent and capability grants | **in progress** — pending implementation |
-| 7 | Run two-agent isolated interoperability tests | **in progress** — pending implementation |
-| 8 | Approve agent collaboration and data limits | **blocked-on-owner** — owner decision pending |
+## M10 — Production readiness, observability and launch — **partial**
 
-## M9
+- **Done in merged code/docs:** Public-launch checklist (#24), origin/CSRF and baseline mutation hardening (#31), existing CI Go/web/Docker builds, source-checkout SHA validation script in CI, default-off in-memory HTTP status counters and rollback/backup runbook (#45).
+- **Built up to owner boundary:** Owner/security/counsel must authorize real staging, verify backups and restoration feasibility, select incidents/alert recipients, finalize public privacy/terms, review security and accept a known release SHA. Runbook is **documentation**, not evidence of a restore or rollback drill.
+- **Not built/verified:** Operational metrics exporter/real incident alerts, proven recovery drill, full security and staging end-to-end smoke, final release artifact provenance, public policy publication, launch readiness evidence and explicit owner go/no-go. No production deployment or launch was authorized.
 
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Define listing and price-in-cents schema | **done** — PR #23 verified merged into `dev` (schema/tests/docs only; no payment processing) |
-| 2 | Test pricing constraints | **done** — PR #23 verified merged into `dev` (schema/tests/docs only; no payment processing) |
-| 3 | Document seller/payment/legal decisions | **done** — PR #23 verified merged into `dev` (schema/tests/docs only; no payment processing) |
-| 4 | Implement creator seller authentication | **in progress** — pending implementation |
-| 5 | Implement entitlements and access control | **in progress** — pending implementation |
-| 6 | Integrate processor with refunds and audits | **in progress** — pending implementation |
-| 7 | Run limited paid creator pilot | **in progress** — pending implementation |
-| 8 | Approve fees payout taxes and seller terms | **blocked-on-owner** — owner decision pending |
+## Cross-cutting delivery boundaries and accounting
 
-## M10
-
-| # | Task | Status / evidence |
-|---:|---|---|
-| 1 | Write public launch checklist | **done** — PR #24 merged into `dev` (launch checklist document only) |
-| 2 | Threat model and security review | **in progress** — PR #31 merged origin/CSRF defense and in-process mutation throttling with tests; full OAuth, proxy, agent, data-handling, dependency and launch threat reviews not yet signed off |
-| 3 | Finalize privacy and terms | **blocked-on-owner** — owner decision pending |
-| 4 | Validate CI at final release SHA | **in progress** — pending implementation |
-| 5 | Prove staging end-to-end core loop | **in progress** — pending implementation |
-| 6 | Enable monitoring and incident alerts | **in progress** — pending implementation |
-| 7 | Rehearse rollback database recovery | **in progress** — pending implementation |
-| 8 | Owner go/no-go for public launch | **blocked-on-owner** — owner decision pending |
-
-## Reconciliation notes
-
-- PR #12 has **merged into dev** with explicitly draft `/privacy` and `/terms` content and `CurrentPolicyVersion` draft marker. Owner approved this development-only foundation, **not** finalized legal wording or public launch. Final privacy/terms and retention/deletion sign-off remain blocked on owner/legal review.
-- M2 OAuth PR #18 and flag-off social creation PR #27 are verified merged; ATProto login remains disabled until real hosted-PDS verification. Neither OAuth DID ownership nor local claims proves arbitrary handle ownership.
-- PRs #7–#24 (including #12 and #23) and #26–#31 are verified merged to dev. PR #6 (owner contract/proposed retention policy) and this audit PR #25 remain open. M9 PR #23 is now done **only for listing/pricing schema, tests and decision documentation**, not payments or entitlements. M0 PR #6 contains the October 13 owner statements plus an explicitly unapproved proposed retention policy; it is not merged.
-- M5 approval records do not execute Clear workflows; M6 membership predicate is not authenticated route-wide enforcement. Social owner decisions (required AT login; automatic but removable Chris follow; social-first; protocol authorship rule) are documented in open PR #6, not proof that OAuth real-PDS login or public claims are verified. Flag-off PRs #26 and #27 are merged, and PR #28 implements local DID-scoped claim/follow; these do not replace real PDS handle verification. PR #29 (install request and approval data), #30 (alpha flag/smoke documentation), and #31 (CSRF/rate-limit tests) have merged. Their bounded slices are done, but no Clear runtime execution, real staged alpha acceptance, distributed abuse limits or production launch is authorized.
-- Recheck this ledger after **each merge**; statuses cannot predict future merges or infrastructure smoke test results.
+- **Green CI establishes build/test success, not launch:** never treat mocked keys, fake payments, an in-memory audit or internal docs as real-world operation.
+- **Flags stay default OFF**, including private alpha, creator draft APIs, permission guards where configured, agent directory, moderation, OAuth and optional hooks. Library-only fake-runner, consent, impersonation and commerce pieces have no newly exposed production handlers.
+- **Owner-only:** real PDS access and validation, credentials/secrets, staging deployment and smoke tests, actual money/provider selection, counsel-approved legal language and retention text, incident/recovery exercise, public launch authorization.
+- **Engineering still open:** identity-link UI/API and recovery, moderation enforcement/appeals, creator publishing/remix checks, real guarded Clear installation runtime, agent transport and authenticated owner/grant/consent wiring, marketplace auth/access integration, stronger monitoring, distributed abuse controls and operational tests. These are why **M1–M10 are partial**, even though code slices and tests are merged.
+- **Audit trail:** relevant merged PRs **#6, #12, #18, #20–#24, #26–#48** (plus early foundations #7–#19 and #25 as applicable). This is a dated snapshot of `dev`; re-audit after future changes.
