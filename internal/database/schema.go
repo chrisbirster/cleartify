@@ -137,6 +137,13 @@ var schemaStatements = []string{
         UNIQUE(id,user_id)
     )`,
     `CREATE INDEX IF NOT EXISTS idx_clear_run_requests_user ON clear_run_requests(user_id,status)`,
+	`CREATE TABLE IF NOT EXISTS alpha_memberships (
+       user_id TEXT PRIMARY KEY REFERENCES users(id),
+       admitted_by TEXT NOT NULL,
+       admitted_at TEXT NOT NULL,
+       revoked_at TEXT
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_alpha_memberships_revoked ON alpha_memberships(revoked_at)`,
 	`CREATE TABLE IF NOT EXISTS agent_registrations (
         id TEXT PRIMARY KEY,
         owner_did TEXT NOT NULL REFERENCES social_profiles(did),
