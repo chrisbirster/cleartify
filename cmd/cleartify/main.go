@@ -90,6 +90,9 @@ func main() {
  _ = interop.NewLocalTransport(cfg.AgentTransportEnabled, db.DB, db.Push)
  handler := api.New(api.Options{
   DBAbuseEnabled:cfg.DBAbuseEnabled,
+  DBAbuseProxyEnabled:cfg.DBAbuseEnabled && cfg.DBAbuseProxyEnabled,
+  DBAbuseCleanupEnabled:cfg.DBAbuseEnabled && cfg.DBAbuseCleanupEnabled,
+  DBAbuseTrustedProxyCIDRs:api.ParseTrustedProxyCIDRs(cfg.DBAbuseTrustedProxyCIDRs),
   DBAbuseDB:db.DB,
   DBAbuseSecret:cfg.AppSecret,
   IdentityRecoveryEnabled:cfg.IdentityRecoveryEnabled && cfg.IdentityLinkingEnabled && cfg.AtprotoOAuthEnabled && cfg.ClearSessionsEnabled,
