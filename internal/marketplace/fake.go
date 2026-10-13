@@ -47,6 +47,10 @@ func(s Service)Purchase(ctx context.Context,actorBuyerDID,listingID string)(stri
  var amount int64;var currency string
  err=tx.QueryRowContext(ctx,`SELECT price_minor,currency FROM marketplace_listings WHERE id=? AND status='listed' AND pricing_kind='one_time'`,listingID).Scan(&amount,&currency)
  if errors.Is(err,sql.ErrNoRows){return "",ErrDenied};if err!=nil{return "",err}
+ var existing,status string
+ err=tx.QueryRowContext(ctx,`SELECT id,status FROM marketplace_entitlements WHERE buyer_did=? AND listing_id=?`,actorBuyerDID,listingID).Scan(&existing,&status)
+ if err==nil {if status=="active"{return existing,nil};return "",ErrDenied}
+ if !errors.Is(err,sql.ErrNoRows){return "",err}
  id,err:=randomID();if err!=nil{return "",err}
  receipt,err:=provider.Charge(ctx,id,amount,currency);if err!=nil{return "",err}
  if receipt.Provider!="fake"||receipt.ID!="fake-"+id{return "",ErrPayment}
@@ -77,4 +81,30 @@ func(s Service)Refund(ctx context.Context,actorDID,entitlementID string)error{
  auditID,err:=randomID();if err!=nil{return err}
  if _,err=tx.ExecContext(ctx,`INSERT INTO marketplace_payment_audit(id,entitlement_id,event,actor_did,recorded_at) VALUES(?,?,'fake_refund',?,?)`,auditID,entitlementID,actorDID,now);err!=nil{return err}
  return tx.Commit()
+}
+
+// PublicationAccess allows free/unlisted publications without a paid listing,
+// but requires a currently active fake entitlement for every priced listing.
+// This method is intentionally fake-only and never confers real-money access.
+func(s Service)PublicationAccess(ctx context.Context,buyerDID,publicationID string)(bool,error){
+ if !s.Enabled||s.DB==nil||!strings.HasPrefix(buyerDID,"did:"){return false,ErrDenied}
+ var paid int
+ err:=s.DB.QueryRowContext(ctx,`SELECT count(*) FROM marketplace_listings WHERE protocol_id=? AND status='listed' AND pricing_kind='one_time' AND price_minor>0`,publicationID).Scan(&paid)
+ if err!=nil{return false,err}
+ if paid==0{return true,nil}
+ var count int
+ err=s.DB.QueryRowContext(ctx,`SELECT count(*) FROM marketplace_entitlements e JOIN marketplace_listings l ON l.id=e.listing_id WHERE l.protocol_id=? AND l.status='listed' AND l.price_minor>0 AND e.buyer_did=? AND e.provider='fake' AND e.status='active'`,publicationID,buyerDID).Scan(&count)
+ return count>0,err
+}
+// ReconcileFake verifies that fake active/refunded entitlements each have one
+// corresponding purchase audit, and refunded records have one refund audit.
+func(s Service)ReconcileFake(ctx context.Context)(int,error){
+ if s.DB==nil{return 0,ErrDenied}
+ var mismatches int
+ err:=s.DB.QueryRowContext(ctx,`SELECT count(*) FROM marketplace_entitlements e WHERE e.provider='fake' AND (
+ (SELECT count(*) FROM marketplace_payment_audit a WHERE a.entitlement_id=e.id AND a.event='fake_purchase')!=1
+ OR (e.status='refunded' AND (SELECT count(*) FROM marketplace_payment_audit a WHERE a.entitlement_id=e.id AND a.event='fake_refund')!=1)
+ OR (e.status='active' AND EXISTS(SELECT 1 FROM marketplace_payment_audit a WHERE a.entitlement_id=e.id AND a.event='fake_refund'))
+ )`).Scan(&mismatches)
+ return mismatches,err
 }
