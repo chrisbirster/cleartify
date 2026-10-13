@@ -18,6 +18,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/notifications"
 	"github.com/chrisbirster/cleartify/internal/security"
 	"github.com/chrisbirster/cleartify/internal/waitlist"
+	"github.com/chrisbirster/cleartify/internal/social"
 )
 
 func main() {
@@ -69,6 +70,7 @@ func main() {
 		AppOrigin:  cfg.AppOrigin,
 		AdminToken: cfg.AdminToken,
 		OAuth: oauthHandler,
+		Profiles: &social.Reader{DB:db.DB},
 	})
 
 	server := &http.Server{
