@@ -76,6 +76,8 @@ func main() {
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
  handler := api.New(api.Options{
+  SocialModerationEnabled:cfg.SocialModerationEnabled && cfg.AtprotoOAuthEnabled,
+  Moderation:&social.Moderation{DB:db.DB,Tokens:tokens},
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
   ClearSessions:clearSessions,
 		Waitlist:   waitlistService,
