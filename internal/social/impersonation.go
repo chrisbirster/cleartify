@@ -2,6 +2,7 @@ package social
 
 import (
  "context"
+ "github.com/chrisbirster/cleartify/internal/policy"
  "database/sql"
  "errors"
  "strings"
@@ -9,7 +10,7 @@ import (
 )
 
 var ErrImpersonationReview=errors.New("impersonation review denied")
-const DefaultReportThreshold=2
+const DefaultReportThreshold=policy.ImpersonationDistinctReportHoldThreshold
 
 // DEFAULT (Oct 13 2026), owner can change. ASCII-only conservative
 // candidate screening; NOT an AT Protocol handle/PDS attestation.
