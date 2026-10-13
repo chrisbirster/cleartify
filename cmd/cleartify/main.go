@@ -119,7 +119,7 @@ func main() {
 		Agents:&agents.Service{DB:db.DB},
 		Clear: &clear.Service{DB:db.DB},
 		OAuth: oauthHandler,
-		Protocols: &protocols.Reader{DB:db.DB},
+		Protocols: &protocols.Reader{DB:db.DB,PaidEnforcement:cfg.PaidEntitlementEnforcementEnabled && cfg.FakeCheckoutEnabled},
 		Profiles: &social.Reader{DB:db.DB},
 		ProtocolInstallFlowEnabled: cfg.ProtocolInstallFlowEnabled && cfg.AtprotoOAuthEnabled,
 		InstallFlow: &protocols.InstallService{Store:db,StrictPermissions:cfg.StrictProtocolPermissionsEnabled,PaidEnforcement:cfg.PaidEntitlementEnforcementEnabled && cfg.FakeCheckoutEnabled},
