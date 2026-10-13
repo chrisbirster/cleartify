@@ -24,6 +24,9 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ PrivateAlphaRoutesEnabled bool
+ ClearPrincipalResolver ClearPrincipal
+ AlphaEligibility alphaEligibility
  ClearSessionsEnabled bool
  ClearSessions *clearsession.Service
 	Waitlist   *waitlist.Service
@@ -47,6 +50,8 @@ type Options struct {
 }
 
 type Server struct {
+ clearPrincipalResolver ClearPrincipal
+ alphaEligibility alphaEligibility
  clearSessions *clearsession.Service
 	waitlist   *waitlist.Service
 	beta       *beta.Service
@@ -69,6 +74,8 @@ type Server struct {
 func New(options Options) http.Handler {
 	s := &Server{
 		clearSessions: options.ClearSessions,
+  clearPrincipalResolver: options.ClearPrincipalResolver,
+  alphaEligibility:options.AlphaEligibility,
   waitlist:   options.Waitlist,
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
@@ -89,6 +96,7 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.privateAlpha(s.alphaEligibilityStatus))}
  if options.ClearSessionsEnabled && options.ClearSessions != nil {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession);mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
 	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
 		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
