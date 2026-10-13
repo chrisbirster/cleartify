@@ -170,8 +170,8 @@ func New(options Options) http.Handler {
   mux.HandleFunc("POST /api/me/agents/{id}/ownership/confirm",s.agentOwnershipConfirm)
  }
  if options.FakeInstallRunEnabled && options.FakeInstallRunDB!=nil && options.FakeInstallRunPush!=nil && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.OAuth!=nil {
-  mux.HandleFunc("POST /api/me/fake-install-runs",s.privateAlpha(s.startFakeInstallRun))
-  mux.HandleFunc("GET /api/me/fake-install-runs/{id}",s.privateAlpha(s.getFakeInstallRun))
+  mux.HandleFunc("POST /api/me/fake-install-runs",s.alphaPrivateRoute(s.startFakeInstallRun))
+  mux.HandleFunc("GET /api/me/fake-install-runs/{id}",s.alphaPrivateRoute(s.getFakeInstallRun))
  }
  if options.ModerationRuntimeEnabled && options.ModerationDB!=nil {
   mux.HandleFunc("GET /api/admin/moderation/cases",s.listModerationCases)
@@ -180,10 +180,10 @@ func New(options Options) http.Handler {
   mux.HandleFunc("POST /api/admin/moderation/cases/{id}/decision",s.decideModeration)
  }
  if options.IdentityLinkingEnabled && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.LinkSocial!=nil && options.IdentityLinks!=nil && options.IdentityLinks.DB!=nil {
-  mux.HandleFunc("POST /api/me/identity-link/start",s.linkStart)
-  mux.HandleFunc("GET /api/me/identity-link/preview",s.linkPreview)
-  mux.HandleFunc("POST /api/me/identity-link/confirm",s.linkConfirm)
-  mux.HandleFunc("DELETE /api/me/identity-link",s.linkUnlink)
+  mux.HandleFunc("POST /api/me/identity-link/start",s.alphaPrivateRoute(s.linkStart))
+  mux.HandleFunc("GET /api/me/identity-link/preview",s.alphaPrivateRoute(s.linkPreview))
+  mux.HandleFunc("POST /api/me/identity-link/confirm",s.alphaPrivateRoute(s.linkConfirm))
+  mux.HandleFunc("DELETE /api/me/identity-link",s.alphaPrivateRoute(s.linkUnlink))
  }
  if options.AgentDirectoryEnabled && options.AgentDirectoryDB!=nil {mux.HandleFunc("GET /api/agents",s.listAgentDirectory)}
  if options.SocialModerationEnabled && options.OAuth!=nil && options.Moderation!=nil {mux.HandleFunc("PUT /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("DELETE /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("POST /api/me/reports",s.createSocialReport)}
@@ -191,8 +191,8 @@ func New(options Options) http.Handler {
  if options.CreatorPublishingEnabled && options.CreatorDraftsEnabled && options.OAuth!=nil && options.CreatorDrafts!=nil {
   mux.HandleFunc("POST /api/me/protocol-drafts/{id}/visibility",s.updateCreatorVisibility)
  }
- if options.PrivateAlphaRoutesEnabled && options.ClearSessionsEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.privateAlpha(s.alphaEligibilityStatus))}
- if options.ClearSessionsEnabled && options.ClearSessions != nil {if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/clear-session",s.privateAlpha(s.meClearSession))} else {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession)};mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
+ if options.PrivateAlphaRoutesEnabled && options.ClearSessionsEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.alphaPrivateRoute(s.alphaEligibilityStatus))}
+ if options.ClearSessionsEnabled && options.ClearSessions != nil {if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/clear-session",s.alphaPrivateRoute(s.meClearSession))} else {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession)};mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
 	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
 		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
 		mux.HandleFunc("POST /api/me/protocol-install-requests",s.requestProtocolInstall)
