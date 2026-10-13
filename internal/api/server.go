@@ -27,6 +27,8 @@ var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 type Options struct {
  AgentDirectoryEnabled bool
  AgentDirectoryDB *sql.DB
+ SocialModerationEnabled bool
+ Moderation *social.Moderation
  CreatorDraftsEnabled bool
  CreatorDrafts *protocols.DraftService
  PrivateAlphaRoutesEnabled bool
@@ -56,6 +58,7 @@ type Options struct {
 
 type Server struct {
  agentDirectoryDB *sql.DB
+ moderation *social.Moderation
  creatorDrafts *protocols.DraftService
  clearPrincipalResolver ClearPrincipal
  alphaEligibility alphaEligibility
@@ -84,6 +87,7 @@ func New(options Options) http.Handler {
   clearPrincipalResolver: options.ClearPrincipalResolver,
   alphaEligibility:options.AlphaEligibility,
   creatorDrafts:options.CreatorDrafts,
+  moderation:options.Moderation,
   agentDirectoryDB:options.AgentDirectoryDB,
   waitlist:   options.Waitlist,
 		beta:       options.Beta,
@@ -106,6 +110,7 @@ func New(options Options) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
  if options.AgentDirectoryEnabled && options.AgentDirectoryDB!=nil {mux.HandleFunc("GET /api/agents",s.listAgentDirectory)}
+ if options.SocialModerationEnabled && options.OAuth!=nil && options.Moderation!=nil {mux.HandleFunc("PUT /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("DELETE /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("POST /api/me/reports",s.createSocialReport)}
  if options.CreatorDraftsEnabled && options.OAuth!=nil && options.CreatorDrafts!=nil {mux.HandleFunc("POST /api/me/protocol-drafts",s.createCreatorDraft)}
  if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.privateAlpha(s.alphaEligibilityStatus))}
  if options.ClearSessionsEnabled && options.ClearSessions != nil {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession);mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
