@@ -82,6 +82,8 @@ func main() {
   LinkSocial:oauthHandler,
   ModerationRuntimeEnabled:cfg.ModerationRuntimeEnabled,
   ModerationDB:db.DB,
+  AgentOwnershipEnabled:cfg.AgentOwnershipEnabled && cfg.AtprotoOAuthEnabled,
+  AgentOwnership:&agents.Ownership{DB:db.DB,Push:db.Push,Verifier:agents.LocalFakeVerifier{}},
   AgentDirectoryEnabled:cfg.AgentDirectoryEnabled,
   AgentDirectoryDB:db.DB,
   SocialModerationEnabled:cfg.SocialModerationEnabled && cfg.AtprotoOAuthEnabled,
