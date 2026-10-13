@@ -76,6 +76,8 @@ func main() {
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
  handler := api.New(api.Options{
+  CreatorDraftsEnabled:cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
+  CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens},
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
   ClearSessions:clearSessions,
 		Waitlist:   waitlistService,
