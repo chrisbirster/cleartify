@@ -79,6 +79,8 @@ func main() {
  handler := api.New(api.Options{
   AgentDirectoryEnabled:cfg.AgentDirectoryEnabled,
   AgentDirectoryDB:db.DB,
+  CreatorDraftsEnabled:cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
+  CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens},
   PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
   AlphaEligibility:alpha.Gate{DB:db.DB},
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,

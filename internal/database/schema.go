@@ -6,6 +6,39 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS identity_links (
+  id TEXT PRIMARY KEY,
+  clear_user_id TEXT NOT NULL REFERENCES users(id),
+  social_did TEXT NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('active','revoked')),
+  consent_version TEXT NOT NULL,
+  consented_at TEXT NOT NULL,
+  authn_clear_at TEXT NOT NULL,
+  authn_social_at TEXT NOT NULL,
+  linked_at TEXT NOT NULL,
+  revoked_at TEXT
+ )`,
+ `CREATE UNIQUE INDEX IF NOT EXISTS idx_identity_links_active_user ON identity_links(clear_user_id) WHERE status='active'`,
+ `CREATE UNIQUE INDEX IF NOT EXISTS idx_identity_links_active_did ON identity_links(social_did) WHERE status='active'`,
+ `CREATE TABLE IF NOT EXISTS identity_link_challenges (
+  nonce_hash TEXT PRIMARY KEY,
+  clear_user_id TEXT NOT NULL REFERENCES users(id),
+  social_did TEXT NOT NULL,
+  state TEXT NOT NULL CHECK(state IN ('pending','consumed','cancelled')),
+  consent_version TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts BETWEEN 0 AND 5),
+  consumed_at TEXT
+ )`,
+ `CREATE INDEX IF NOT EXISTS idx_identity_link_challenges_expires ON identity_link_challenges(expires_at)`,
+ `CREATE TABLE IF NOT EXISTS identity_link_events (
+  id TEXT PRIMARY KEY,
+  clear_user_id TEXT NOT NULL,
+  social_did TEXT NOT NULL,
+  action TEXT NOT NULL CHECK(action IN ('linked','unlinked','rejected')),
+  recorded_at TEXT NOT NULL
+ )`,
+
  `CREATE TABLE IF NOT EXISTS clear_user_sessions (
    token_digest TEXT PRIMARY KEY,
    user_id TEXT NOT NULL REFERENCES users(id),
