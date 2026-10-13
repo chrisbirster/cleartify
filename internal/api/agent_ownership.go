@@ -20,7 +20,7 @@ func(s *Server) agentOwnershipStart(w http.ResponseWriter,r *http.Request){
  nonce,err:=s.agentOwnership.Start(r.Context(),did,r.PathValue("id"),key)
  if err!=nil{writeJSON(w,403,map[string]string{"error":"ownership_denied"});return}
  w.Header().Set("Cache-Control","no-store")
- writeJSON(w,201,map[string]any{"challenge":nonce,"expiresInSeconds":300,"fakeVerifierOnly":true})
+ writeJSON(w,201,map[string]any{"challenge":nonce,"expiresInSeconds":300,"proofAlgorithm":"Ed25519"})
 }
 func(s *Server) agentOwnershipConfirm(w http.ResponseWriter,r *http.Request){
  did,ok:=s.agentOwnerSession(w,r);if !ok{return}
