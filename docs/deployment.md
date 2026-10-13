@@ -48,6 +48,10 @@ Later:
 deez.run              DEEZ/NUTS developer/spec site
 ```
 
+## Go toolchain
+
+The minimum module version is Go 1.26.0. CI uses Go 1.26.1 and the Docker builder uses `golang:1.26.1-bookworm`. Upgrade local Go to 1.26.1 before running `go test -p 1 ./...`, `go mod verify`, and production-equivalent Docker builds. The Turso embedded native library must be verified by the Go and Docker CI jobs before deployment. This change does not alter production database schema or runtime flags.
+
 ## Backend container
 
 The backend must remain runnable with ordinary Docker:
