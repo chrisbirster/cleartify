@@ -9,6 +9,7 @@ type Config struct {
  DBAbuseEnabled bool
  ConsentKeysEnabled bool
  IdentityLinkingEnabled bool
+ ModerationEnforcementEnabled bool
  ModerationRuntimeEnabled bool
  AgentTransportEnabled bool
  AgentOwnershipEnabled bool
@@ -46,6 +47,7 @@ func Load() Config {
  DBAbuseEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("DB_SIGNUP_ABUSE_ENABLED")),"true"),
  ConsentKeysEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CONSENT_KEYS_ENABLED")),"true"),
  IdentityLinkingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("IDENTITY_LINKING_ENABLED")),"true"),
+ ModerationEnforcementEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("MODERATION_ENFORCEMENT_ENABLED")),"true"),
  ModerationRuntimeEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("MODERATION_RUNTIME_ENABLED")),"true"),
  AgentTransportEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_LOCAL_TRANSPORT_ENABLED")),"true"),
  AgentOwnershipEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_OWNERSHIP_ENABLED")),"true"),
