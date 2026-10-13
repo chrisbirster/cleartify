@@ -86,6 +86,7 @@ func main() {
   AgentDirectoryDB:db.DB,
   SocialModerationEnabled:cfg.SocialModerationEnabled && cfg.AtprotoOAuthEnabled,
   Moderation:&social.Moderation{DB:db.DB,Tokens:tokens},
+  CreatorPublishingEnabled:cfg.CreatorPublishingEnabled && cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
   CreatorDraftsEnabled:cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
   CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens},
   PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
