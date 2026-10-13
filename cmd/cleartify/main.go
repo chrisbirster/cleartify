@@ -92,6 +92,7 @@ func main() {
   DBAbuseEnabled:cfg.DBAbuseEnabled,
   DBAbuseDB:db.DB,
   DBAbuseSecret:cfg.AppSecret,
+  IdentityRecoveryEnabled:cfg.IdentityRecoveryEnabled && cfg.IdentityLinkingEnabled && cfg.AtprotoOAuthEnabled && cfg.ClearSessionsEnabled,
   IdentityLinkingEnabled:cfg.IdentityLinkingEnabled && cfg.AtprotoOAuthEnabled && cfg.ClearSessionsEnabled,
   IdentityLinks:&api.LinkPersistence{DB:db.DB,Push:db.Push},
   LinkSocial:oauthHandler,
