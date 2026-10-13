@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"regexp"
 	"net/http"
+ "net"
 	"strings"
 	"time"
 
@@ -28,6 +29,9 @@ var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
  DBAbuseEnabled bool
+ DBAbuseProxyEnabled bool
+ DBAbuseCleanupEnabled bool
+ DBAbuseTrustedProxyCIDRs []*net.IPNet
  DBAbuseDB *sql.DB
  DBAbuseSecret string
  IdentityRecoveryEnabled bool
@@ -82,6 +86,9 @@ type Options struct {
 
 type Server struct {
  dbAbuseEnabled bool
+ dbAbuseProxyEnabled bool
+ dbAbuseCleanupEnabled bool
+ dbAbuseTrustedProxyCIDRs []*net.IPNet
  dbAbuseDB *sql.DB
  dbAbuseSecret string
  identityLinks *LinkPersistence
@@ -129,6 +136,9 @@ func New(options Options) http.Handler {
   moderationEnforcement:options.ModerationEnforcementEnabled && options.ModerationRuntimeEnabled && options.ModerationDB!=nil,
   moderationMetrics:&moderationCounters{},
   dbAbuseEnabled: options.DBAbuseEnabled,
+  dbAbuseProxyEnabled:options.DBAbuseProxyEnabled,
+  dbAbuseCleanupEnabled:options.DBAbuseCleanupEnabled,
+  dbAbuseTrustedProxyCIDRs:options.DBAbuseTrustedProxyCIDRs,
   dbAbuseDB: options.DBAbuseDB,
   dbAbuseSecret: options.DBAbuseSecret,
   fakeCheckout:options.FakeCheckout,

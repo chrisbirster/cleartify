@@ -1,0 +1,9 @@
+# M1 local signup abuse protection: trusted peer and counter hygiene
+
+**Default OFF** for each new behavior: `DB_SIGNUP_TRUSTED_PROXY_ENABLED=false`, `DB_SIGNUP_COUNTER_CLEANUP_ENABLED=false`. The existing shared-database signup guard `DB_SIGNUP_ABUSE_ENABLED=false` also remains off by default. No external service, credential, legal text, deployment or public policy language.
+
+When the proxy flag and DB guard are explicitly enabled, `DB_SIGNUP_TRUSTED_PROXY_CIDRS` must contain a nonempty, comma-separated list of valid CIDRs (maximum 32); startup refuses invalid configuration. The server trusts `X-Forwarded-For` **only when** the TCP peer is within one of these networks. It examines the forwarding chain right-to-left (maximum 16 addresses, single header, 1024 bytes) and selects the first untrusted hop. Direct or nontrusted peers' forwarding headers are ignored. Malformed forwarded chains from trusted peers fail closed. Configure only proxies actually controlled by the operator and ensure those proxies overwrite untrusted upstream forwarding headers. **Never include arbitrary client networks or internet-wide CIDRs.** This is a network-boundary trust mechanism, not a cryptographic user identity.
+
+When counter cleanup and DB guard are enabled, a signup attempt transaction deletes 15-minute buckets older than 48 hours before incrementing the current bucket. Cleanup shares the same transaction and fails closed on DB errors. Existing HMAC-derived peer hashes avoid storing raw IPs; the existing 5-per-15-minute DB limit and process-local per-peer limit remain. The cleanup is opportunistic on writes rather than a background scheduler, and is not a substitute for distributed bot detection. No CAPTCHA, third-party bot scoring, WAF, external network or production activation is added.
+
+Tests cover forged XFF chains, untrusted direct peers, malformed proxy configuration/headers, disabled behavior, and stale-bucket cleanup retaining live windows.

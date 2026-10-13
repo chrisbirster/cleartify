@@ -47,7 +47,13 @@ func (l *signupLimiter) allow(remoteAddr string) bool {
 }
 
 func (s *Server) limitSignup(w http.ResponseWriter,r *http.Request) bool {
- if s.signupLimiter.allow(r.RemoteAddr) {return true}
+ remote:=r.RemoteAddr
+ if s.dbAbuseEnabled && s.dbAbuseProxyEnabled {
+  ip,err:=s.signupPeer(r)
+  if err!=nil {writeJSON(w,503,map[string]string{"error":"signup_guard_unavailable"});return false}
+  remote=net.JoinHostPort(ip,"0")
+ }
+ if s.signupLimiter.allow(remote) {return true}
  w.Header().Set("Retry-After","3600")
  writeJSON(w,http.StatusTooManyRequests,map[string]string{"error":"rate_limited"})
  return false
