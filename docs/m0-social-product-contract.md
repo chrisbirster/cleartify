@@ -91,11 +91,19 @@ Recorded verbatim as product-owner answers (not evidence that related features, 
 4. **Official protocols:** "Protocols are official once the person creates them or created by cleartify"
 5. **Retention/deletion direction:** "start small" — **no retention durations, deletion windows, or vendor-specific terms were specified or approved**.
 
-### PROPOSED minimal retention/deletion policy — awaiting owner sign-off
+### ENGINEERING DEFAULTS (Oct 13 2026) — INTERNAL, NOT FINAL POLICY
 
-**Proposal only. Not approved; do not describe this as the live practice or a public privacy promise.** Retain only data needed to provide a requested private Clear or social service, ensure security, or comply with applicable obligations. Keep different categories separate: waitlist and activation contact data; marketing-consent and policy-acceptance audit records; OAuth sessions and security events; private Clear runs and messages; and public social data (which may persist on independently operated AT Protocol services). Avoid collecting unnecessary private inputs and minimize log contents. Offer authenticated account-data deletion requests, revoke sessions and credentials, and delete or anonymize eligible active records where technically and legally appropriate. Define separately how deletion is propagated to replicas, backups, logs, and external providers, including exceptions for lawful retention.
+These are **conservative internal engineering defaults** selected to keep development moving. They are **NOT public promises, not legal advice, and not evidence that the controls have already been implemented or verified**. Owner and counsel must review and sign off **before any of these terms appear in `/privacy` or `/terms`**, or are represented to users as effective retention/deletion policies.
 
-**Owner decisions still required before any public statement or launch:** approve actual retention periods per category; backup and replica expiry/deletion handling; verification and response process for deletion/access requests; vendor terms and roles; legal exceptions; data controller/privacy contact; and treatment of replicated public AT Protocol records. Until those are approved, **no fixed TTL, guaranteed erasure timing, or universal deletion promise is made**.
+- **Account and private Clear data:** Keep while the account is active, subject to applicable legal retention exceptions and the verified deletion workflow.
+- **Authenticated deletion requests:** Target completion within **30 days**, after verifying the requester's authority and accounting for documented legal exceptions.
+- **Sessions:** Expire after **30 days of inactivity**; revoke sessions when an account is deleted.
+- **Social OAuth credentials:** Store tokens only for as long as needed for the connection; delete stored OAuth tokens on disconnect.
+- **Server logs:** Keep for **30 days**, with sensitive values and secrets excluded.
+- **Unactivated waitlist/invite emails:** Delete after **12 months** if the person has not activated.
+- **Backups containing deleted data:** Purge within **90 days** of deletion, with access restrictions during backup retention.
+
+**Not approved or operationally verified:** Engineering must still confirm implementation, deletion propagation across Turso/replicas/backups/providers, retention exceptions, audit evidence, notification semantics and whether public AT Protocol copies can be removed. **Owner and counsel sign-off is required before changing published legal pages or making external commitments.**
 
 ## 12. Next implementation order after M0 approval
 Keep CI/lockfile and M1 waitlist on their existing branch; implement ATProto social identity + human/assistant profile models; publish one safely versioned public protocol; build one private Clear run; validate real creator-led installs; only then introduce BYO-agent execution and agent-to-agent collaboration.
