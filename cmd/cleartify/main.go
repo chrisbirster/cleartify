@@ -67,7 +67,12 @@ func main() {
 		oauthHandler,err=atproto.NewOAuthHandler(db,cfg.AtprotoPublicOrigin,cfg.AppOrigin,cfg.AtprotoSessionKey)
 		if err!=nil {slog.Error("AT Protocol OAuth configuration invalid", "error", err);os.Exit(1)}
 	}
-	handler := api.New(api.Options{
+	var defaultFollow *social.DefaultFollow
+ if cfg.SocialDefaultFollowEnabled && cfg.AtprotoOAuthEnabled && oauthHandler!=nil {
+  defaultFollow=&social.DefaultFollow{Store:db}
+  oauthHandler.SetOnVerifiedLogin(defaultFollow.OnVerifiedLogin)
+ }
+ handler := api.New(api.Options{
 		Waitlist:   waitlistService,
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
@@ -78,6 +83,8 @@ func main() {
 		OAuth: oauthHandler,
 		Protocols: &protocols.Reader{DB:db.DB},
 		Profiles: &social.Reader{DB:db.DB},
+		DefaultFollowEnabled: cfg.SocialDefaultFollowEnabled && cfg.AtprotoOAuthEnabled,
+		DefaultFollow: defaultFollow,
 	})
 
 	server := &http.Server{
