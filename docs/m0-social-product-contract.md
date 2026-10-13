@@ -81,12 +81,21 @@ This is a **proposed alpha acceptance contract**. The approved October 8 roadmap
 
 Hypotheses for later alpha (not current outcomes): recruit 5–10 original creators and 30–50 testers; >50% of onboarded testers start a protocol; >30% return in week four; zero unauthorized public disclosures or unapproved consequential agent actions. Track discovery → install → first successful run → voluntary share, segmented by protocol and creator. Measure execution costs and creator maintenance burden.
 
-## 11. Decisions still requiring product-owner signoff
-1. Does Cleartify Social require ATProto from first signup, or allow temporary Cleartify-only private accounts?
-2. Is the initial launch **social-first** (profiles, discovery, protocols) or **text-first** (waitlist → phone verification → Clear) as the existing M1–M4 documentation prescribes? Recommended: social discovery as public launch narrative, existing waitlist retained, and one runnable Clear protocol as acceptance proof.
-3. Is `/@chris` an opt-in default follow or automatic but removable? Existing `docs/README.md` says opt-in; `docs/profiles-and-marketplace.md` says automatically. Recommend opt-in and removable.
-4. Which protocol authoring rights and validation criteria qualify a workflow as official vs community interpretation?
-5. What exact private-data TTLs, deletion/backups, and message/media vendor terms will be promised? No final retention policy yet.
+## 11. Owner decisions, Oct 13 2026
+
+Recorded verbatim as product-owner answers (not evidence that related features, accounts, protocols, or policies are implemented, verified, endorsed, or approved for public launch):
+
+1. **AT Protocol social login:** "at protocol login required"
+2. **Product direction:** "Social-first"
+3. **Following:** "Following is automatic but removable"
+4. **Official protocols:** "Protocols are official once the person creates them or created by cleartify"
+5. **Retention/deletion direction:** "start small" — **no retention durations, deletion windows, or vendor-specific terms were specified or approved**.
+
+### PROPOSED minimal retention/deletion policy — awaiting owner sign-off
+
+**Proposal only. Not approved; do not describe this as the live practice or a public privacy promise.** Retain only data needed to provide a requested private Clear or social service, ensure security, or comply with applicable obligations. Keep different categories separate: waitlist and activation contact data; marketing-consent and policy-acceptance audit records; OAuth sessions and security events; private Clear runs and messages; and public social data (which may persist on independently operated AT Protocol services). Avoid collecting unnecessary private inputs and minimize log contents. Offer authenticated account-data deletion requests, revoke sessions and credentials, and delete or anonymize eligible active records where technically and legally appropriate. Define separately how deletion is propagated to replicas, backups, logs, and external providers, including exceptions for lawful retention.
+
+**Owner decisions still required before any public statement or launch:** approve actual retention periods per category; backup and replica expiry/deletion handling; verification and response process for deletion/access requests; vendor terms and roles; legal exceptions; data controller/privacy contact; and treatment of replicated public AT Protocol records. Until those are approved, **no fixed TTL, guaranteed erasure timing, or universal deletion promise is made**.
 
 ## 12. Next implementation order after M0 approval
 Keep CI/lockfile and M1 waitlist on their existing branch; implement ATProto social identity + human/assistant profile models; publish one safely versioned public protocol; build one private Clear run; validate real creator-led installs; only then introduce BYO-agent execution and agent-to-agent collaboration.
