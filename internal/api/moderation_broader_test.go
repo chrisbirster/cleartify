@@ -9,7 +9,7 @@ func TestBroaderHoldGateAndReversibleRelease(t *testing.T){
  ctx:=context.Background();db,err:=database.Open(ctx,database.Config{Path:":memory:"});if err!=nil{t.Fatal(err)};defer db.Close()
  if err=db.Migrate(ctx);err!=nil{t.Fatal(err)}
  _,err=db.DB.ExecContext(ctx,`INSERT INTO social_profiles(did,handle,display_name,kind,public_visible,claimed,updated_at) VALUES('did:plc:held','held.test','Held','person',1,1,'now')`);if err!=nil{t.Fatal(err)}
- _,err=db.DB.ExecContext(ctx,`INSERT INTO social_impersonation_holds(subject_did,reason,created_at) VALUES('did:plc:held','possible false positive','now')`);if err!=nil{t.Fatal(err)}
+ _,err=db.DB.ExecContext(ctx,`INSERT INTO social_impersonation_holds(subject_did,reason,created_at) VALUES('did:plc:held','lookalike','now')`);if err!=nil{t.Fatal(err)}
  s:=&Server{moderationDB:db.DB,moderationEnforcement:true,moderationBroader:true,moderationMetrics:&moderationCounters{}}
  req:=httptest.NewRequest("POST","/api/me/protocol-drafts",nil)
  w:=httptest.NewRecorder()
