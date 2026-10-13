@@ -1,0 +1,11 @@
+# M5 opt-in local declarative executor boundary
+
+**OFF by default**, engineering-only. `runner.LocalSandbox{Enabled:true, Limits:runner.DefaultLimits()}` must be explicitly constructed by local tests. No production runtime wiring, external endpoint, code interpreter or hosted sandbox is added.
+
+`Executor.Execute(ctx, Plan)` accepts only the existing `local.set` and `local.assert` declarative steps; arbitrary operation names, shell commands, URLs, filesystem reads, environment variable reads, secrets, process execution and network requests have **no implementation path**. This is a constrained interpreter, **not** an operating-system sandbox. Because untrusted code is never executed, there is no process-level isolation, Linux namespace/seccomp, enforced Go heap limit, or hardware memory isolation. Do not represent these bounds as safe for arbitrary customer code.
+
+`DefaultLimits()`: at most 32 steps, 16 KiB stored key/value state, 1-second context deadline, checked per step. The caller may configure stricter limits, but maximum configured state is 1 MiB and timeout 30 seconds. Strings and plan validation use existing 4096-byte value limits. The deadline is cooperative, not a preemptive kill; only bounded local operations are permitted.
+
+`Scheduler` is opt-in and polled via `Tick`: capacity up to 1024 jobs, cloned plans, idempotent job IDs, at most one due execution per tick, configurable exponential backoff and at most five configured retries. Nonretryable invalid-plan, quota, disabled and cancellation failures fail permanently. The scheduler has **no own goroutine, wall-clock timer, persistent queue or worker network listener**; in-memory jobs disappear on restart. External payment, PDS and deploy are out of scope. Local test: `go test -p 1 ./internal/runner`; existing Go CI runs it automatically. Tests try shell, network, filesystem, env and secret operation names, quota breaches, cancellation, expired deadline, backoff, duplicate jobs and OFF state.
+
+Future production isolation would require an independently reviewed OS/container sandbox, deterministic memory/CPU enforcement, durable queues, metrics and kill guarantees before executing arbitrary code. Nothing here authorizes real untrusted protocol execution.
