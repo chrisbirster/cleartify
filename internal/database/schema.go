@@ -84,6 +84,31 @@ var schemaStatements = []string{
 		FOREIGN KEY(user_id) REFERENCES users(id),
 		UNIQUE(user_id, protocol_key)
 	)`,
+	`CREATE TABLE IF NOT EXISTS atproto_oauth_requests (
+		state TEXT PRIMARY KEY,
+		payload_ciphertext BLOB NOT NULL,
+		browser_nonce_hash TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		expires_at TEXT NOT NULL
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_atproto_oauth_requests_expires ON atproto_oauth_requests(expires_at)`,
+	`CREATE TABLE IF NOT EXISTS atproto_oauth_sessions (
+		account_did TEXT NOT NULL,
+		session_id TEXT NOT NULL,
+		payload_ciphertext BLOB NOT NULL,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL,
+		PRIMARY KEY(account_did,session_id)
+	)`,
+	`CREATE TABLE IF NOT EXISTS atproto_browser_sessions (
+		token_digest TEXT PRIMARY KEY,
+		account_did TEXT NOT NULL,
+		oauth_session_id TEXT NOT NULL,
+		expires_at TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		FOREIGN KEY(account_did,oauth_session_id) REFERENCES atproto_oauth_sessions(account_did,session_id)
+	)`,
+	`CREATE INDEX IF NOT EXISTS idx_atproto_browser_sessions_expiry ON atproto_browser_sessions(expires_at)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
