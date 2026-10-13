@@ -1,0 +1,7 @@
+# M8 local authenticated transport — internal defaults
+
+**DEFAULT (Oct 13 2026), owner can change.** `AGENT_LOCAL_TRANSPORT_ENABLED=false`. The implementation is an in-process Go service, not a network transport or HTTP endpoint. A successful Send persists a *pending* authenticated envelope; it does not deliver messages to processes or external services.
+
+Within a single SQL transaction, Send resolves the active Ed25519 key, active verified owner bindings on both endpoints, verifies the signed envelope and bounded expiry, rechecks the scoped `message.preview` grant and unrevoked recipient consent, then inserts a unique message ID. Replays fail. RevokeConsent verifies the current bound recipient owner **inside the transaction**, and fails closed on wrong owner/already-revoked consent. Revocation race handling depends on transactions on the same DB; cross-database/cluster guarantees require separately validated infrastructure.
+
+No outbound network, agent execution, remote PDS verification or hosted adapter; no public consent or transport APIs. Existing consent creation and grant creation happen in separate services. Authenticated sessions must be established by a future service boundary before calls; caller-supplied owner DIDs must not be accepted as authentication. Remote Turso push failures after local commit are returned as errors, but cannot roll back the local commit. Owner approval and staging testing remain required.
