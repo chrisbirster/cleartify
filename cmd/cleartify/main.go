@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/api"
+	"github.com/chrisbirster/cleartify/internal/agents"
 	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/beta"
@@ -71,6 +72,8 @@ func main() {
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
 		AdminToken: cfg.AdminToken,
+		AgentRegistrationEnabled:cfg.AgentRegistrationEnabled,
+		Agents:&agents.Service{DB:db.DB},
 		Clear: &clear.Service{DB:db.DB},
 		OAuth: oauthHandler,
 		Protocols: &protocols.Reader{DB:db.DB},
