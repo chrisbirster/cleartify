@@ -17,7 +17,7 @@ func(s Service) Request(ctx context.Context,userID,publicationID string)(string,
  err:=s.DB.QueryRowContext(ctx,`SELECT 1 FROM published_protocols WHERE id=? AND status='published'`,publicationID).Scan(&exists)
  if errors.Is(err,sql.ErrNoRows){return "",ErrNotPublished};if err!=nil{return "",err}
  var installed int
- err=s.DB.QueryRowContext(ctx,`SELECT 1 FROM protocol_installations WHERE user_id=? AND enabled=1 LIMIT 1`,userID).Scan(&installed)
+ err=s.DB.QueryRowContext(ctx,`SELECT 1 FROM protocol_installations i JOIN published_protocols p ON p.id=? AND p.status='published' WHERE i.user_id=? AND i.enabled=1 AND i.protocol_key=p.slug AND i.version=p.version LIMIT 1`,publicationID,userID).Scan(&installed)
  if errors.Is(err,sql.ErrNoRows){return "",ErrNotPublished};if err!=nil{return "",err}
  idBytes:=make([]byte,18);if _,err=rand.Read(idBytes);err!=nil{return "",err}
  id:=hex.EncodeToString(idBytes)
