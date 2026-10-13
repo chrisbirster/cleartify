@@ -6,6 +6,8 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS creator_publications (protocol_id TEXT PRIMARY KEY REFERENCES published_protocols(id), visibility TEXT NOT NULL CHECK(visibility IN ('private','unlisted','public')), original_source_id TEXT, provenance_note TEXT NOT NULL, approved_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+ `CREATE TABLE IF NOT EXISTS creator_publication_audit (id TEXT PRIMARY KEY, protocol_id TEXT NOT NULL REFERENCES published_protocols(id), actor_did TEXT NOT NULL, from_visibility TEXT NOT NULL, to_visibility TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
  `CREATE TABLE IF NOT EXISTS social_moderation_cases (id TEXT PRIMARY KEY, subject_did TEXT NOT NULL REFERENCES social_profiles(did), kind TEXT NOT NULL CHECK(kind IN ('review','appeal')), status TEXT NOT NULL CHECK(status IN ('pending','upheld','released','rejected')), rationale TEXT NOT NULL, created_at TEXT NOT NULL, decided_at TEXT, decision_reason TEXT)`,
  `CREATE UNIQUE INDEX IF NOT EXISTS idx_social_moderation_pending ON social_moderation_cases(subject_did,kind) WHERE status='pending'`,
  `CREATE TABLE IF NOT EXISTS social_moderation_audit (id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES social_moderation_cases(id), actor TEXT NOT NULL, action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
