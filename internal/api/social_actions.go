@@ -11,6 +11,7 @@ func(s *Server) authenticatedSocialMutation(w http.ResponseWriter,r *http.Reques
  if s.appOrigin==""||r.Header.Get("Origin")!=s.appOrigin {writeJSON(w,403,map[string]string{"error":"invalid_origin"});return "",false}
  did,ok:=s.socialAuth.SocialSessionDID(r)
  if !ok{writeJSON(w,401,map[string]string{"error":"atproto_login_required"});return "",false}
+ if s.moderationBroader && !s.enforceSubjectHold(w,r,did){return "",false}
  return did,true
 }
 func(s *Server) claimOwnProfile(w http.ResponseWriter,r *http.Request){
