@@ -26,6 +26,7 @@ type Server struct {
 	beta       *beta.Service
 	appOrigin  string
 	adminToken string
+	signupLimiter *signupLimiter
 }
 
 func New(options Options) http.Handler {
@@ -34,6 +35,7 @@ func New(options Options) http.Handler {
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
 		adminToken: options.AdminToken,
+		signupLimiter: newSignupLimiter(),
 	}
 
 	mux := http.NewServeMux()
@@ -55,6 +57,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
+	if !s.limitSignup(w,r) { return }
 	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
 
 	var req struct {
