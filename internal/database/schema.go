@@ -6,6 +6,8 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS agent_owner_challenges (nonce_hash TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, public_key BLOB NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)`,
+ `CREATE TABLE IF NOT EXISTS agent_owner_audit (id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
  `CREATE TABLE IF NOT EXISTS clear_fake_install_runs (id TEXT PRIMARY KEY, install_request_id TEXT NOT NULL UNIQUE REFERENCES protocol_install_requests(id), user_id TEXT NOT NULL REFERENCES users(id), actor_did TEXT NOT NULL, publication_id TEXT NOT NULL REFERENCES published_protocols(id), manifest_sha256 TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('reserved','completed','failed')), result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL, finished_at TEXT)`,
  `CREATE INDEX IF NOT EXISTS idx_clear_fake_install_user ON clear_fake_install_runs(user_id,created_at)`,
  `CREATE TABLE IF NOT EXISTS clear_fake_install_audit (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES clear_fake_install_runs(id), action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
