@@ -24,6 +24,8 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ CreatorDraftsEnabled bool
+ CreatorDrafts *protocols.DraftService
  PrivateAlphaRoutesEnabled bool
  ClearPrincipalResolver ClearPrincipal
  AlphaEligibility alphaEligibility
@@ -50,6 +52,7 @@ type Options struct {
 }
 
 type Server struct {
+ creatorDrafts *protocols.DraftService
  clearPrincipalResolver ClearPrincipal
  alphaEligibility alphaEligibility
  clearSessions *clearsession.Service
@@ -76,6 +79,7 @@ func New(options Options) http.Handler {
 		clearSessions: options.ClearSessions,
   clearPrincipalResolver: options.ClearPrincipalResolver,
   alphaEligibility:options.AlphaEligibility,
+  creatorDrafts:options.CreatorDrafts,
   waitlist:   options.Waitlist,
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
@@ -96,6 +100,7 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.CreatorDraftsEnabled && options.OAuth!=nil && options.CreatorDrafts!=nil {mux.HandleFunc("POST /api/me/protocol-drafts",s.createCreatorDraft)}
  if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.privateAlpha(s.alphaEligibilityStatus))}
  if options.ClearSessionsEnabled && options.ClearSessions != nil {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession);mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
 	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
