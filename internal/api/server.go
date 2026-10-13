@@ -44,6 +44,7 @@ func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		Email        string `json:"email"`
 		Phone        string `json:"phone"`
 		EmailUpdates bool   `json:"emailUpdates"`
+		AcceptPolicies bool `json:"acceptPolicies"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -59,6 +60,7 @@ func (s *Server) joinWaitlist(w http.ResponseWriter, r *http.Request) {
 		Email:        req.Email,
 		Phone:        req.Phone,
 		EmailUpdates: req.EmailUpdates,
+		AcceptPolicies: req.AcceptPolicies,
 		Source:       "landing",
 	})
 	if err != nil {
