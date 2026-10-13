@@ -144,6 +144,19 @@ var schemaStatements = []string{
        revoked_at TEXT
     )`,
     `CREATE INDEX IF NOT EXISTS idx_alpha_memberships_revoked ON alpha_memberships(revoked_at)`,
+	`CREATE TABLE IF NOT EXISTS marketplace_listings (
+        id TEXT PRIMARY KEY,
+        protocol_id TEXT NOT NULL REFERENCES published_protocols(id),
+        creator_did TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('draft','listed','unlisted')) DEFAULT 'draft',
+        title TEXT NOT NULL,
+        currency TEXT NOT NULL CHECK(currency IN ('USD')),
+        price_minor INTEGER NOT NULL CHECK(price_minor >= 0 AND price_minor <= 1000000),
+        pricing_kind TEXT NOT NULL CHECK(pricing_kind IN ('free','one_time')),
+        created_at TEXT NOT NULL,
+        UNIQUE(protocol_id)
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_marketplace_listings_status ON marketplace_listings(status,created_at DESC)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
