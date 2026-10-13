@@ -85,6 +85,10 @@ func main() {
 		Profiles: &social.Reader{DB:db.DB},
 		DefaultFollowEnabled: cfg.SocialDefaultFollowEnabled && cfg.AtprotoOAuthEnabled,
 		DefaultFollow: defaultFollow,
+		SocialAccountRegistrationEnabled: cfg.SocialAccountRegistrationEnabled && cfg.AtprotoOAuthEnabled,
+		SocialAccounts: &social.Accounts{Store:db},
+		SocialProfileActionsEnabled: cfg.SocialProfileActionsEnabled && cfg.AtprotoOAuthEnabled,
+		SocialActions: &social.Actions{Store:db},
 	})
 
 	server := &http.Server{
