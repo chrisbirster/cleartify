@@ -7,6 +7,9 @@ import (
 
 type Config struct {
  DBAbuseEnabled bool
+ DBAbuseProxyEnabled bool
+ DBAbuseCleanupEnabled bool
+ DBAbuseTrustedProxyCIDRs string
  ConsentKeysEnabled bool
  IdentityRecoveryEnabled bool
  IdentityLinkingEnabled bool
@@ -49,6 +52,9 @@ type Config struct {
 func Load() Config {
 	appOrigin := strings.TrimRight(env("APP_ORIGIN", "http://localhost:3000"), "/")
 	return Config{
+ DBAbuseProxyEnabled:strings.EqualFold(strings.TrimSpace(os.Getenv("DB_SIGNUP_TRUSTED_PROXY_ENABLED")),"true"),
+ DBAbuseCleanupEnabled:strings.EqualFold(strings.TrimSpace(os.Getenv("DB_SIGNUP_COUNTER_CLEANUP_ENABLED")),"true"),
+ DBAbuseTrustedProxyCIDRs:strings.TrimSpace(os.Getenv("DB_SIGNUP_TRUSTED_PROXY_CIDRS")),
  DBAbuseEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("DB_SIGNUP_ABUSE_ENABLED")),"true"),
  ConsentKeysEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CONSENT_KEYS_ENABLED")),"true"),
  IdentityRecoveryEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("IDENTITY_RECOVERY_ENABLED")),"true"),
