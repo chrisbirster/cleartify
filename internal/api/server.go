@@ -12,21 +12,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/waitlist"
 )
 
-var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}package api
-
-import (
-	"encoding/json"
-	"errors"
-	"log/slog"
-	"regexp"
-	"net/http"
-	"strings"
-	"time"
-
-	"github.com/chrisbirster/cleartify/internal/waitlist"
-)
-
-)
+var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Server struct {
 	waitlist  *waitlist.Service
