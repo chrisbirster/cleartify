@@ -84,6 +84,10 @@ var schemaStatements = []string{
 		FOREIGN KEY(user_id) REFERENCES users(id),
 		UNIQUE(user_id, protocol_key)
 	)`,
+	`CREATE TABLE IF NOT EXISTS social_profiles (did TEXT PRIMARY KEY, handle TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL, bio TEXT NOT NULL DEFAULT '', avatar_url TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL CHECK(kind IN ('person','agent')), public_visible INTEGER NOT NULL DEFAULT 0 CHECK(public_visible IN (0,1)), claimed INTEGER NOT NULL DEFAULT 0 CHECK(claimed IN (0,1)), updated_at TEXT NOT NULL)`,
+	`CREATE INDEX IF NOT EXISTS idx_social_profiles_visibility ON social_profiles(public_visible,handle)`,
+	`CREATE TABLE IF NOT EXISTS social_follows (follower_did TEXT NOT NULL, subject_did TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(follower_did,subject_did), FOREIGN KEY(follower_did) REFERENCES social_profiles(did), FOREIGN KEY(subject_did) REFERENCES social_profiles(did), CHECK(follower_did <> subject_did))`,
+	`CREATE INDEX IF NOT EXISTS idx_social_follows_subject ON social_follows(subject_did)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
