@@ -36,6 +36,8 @@ export function Home() {
           email: data.get('email'),
           phone: data.get('phone'),
           emailUpdates: data.get('emailUpdates') === 'on',
+          referralCode: new URLSearchParams(window.location.search).get('ref') ?? '',
+          acceptPolicies: data.get('acceptPolicies') === 'on',
         }),
       });
 
@@ -193,6 +195,7 @@ export function Home() {
             <input name="name" required placeholder="Your name" />
             <input name="email" required type="email" placeholder="you@email.com" />
             <input name="phone" required type="tel" placeholder="Mobile number" />
+            <label {...stylex.props(styles.checkbox)}><input name="acceptPolicies" type="checkbox" required /> I agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Notice</a>.</label>
             <label {...stylex.props(styles.checkbox)}><input name="emailUpdates" type="checkbox" checked /> Send me product/newsletter updates.</label>
             {submitError() && <div role="alert" {...stylex.props(styles.formError)}>{submitError()}</div>}
             <button disabled={submitting()} {...stylex.props(styles.primaryButton)}>{submitting() ? 'Joining…' : 'Join the waitlist →'}</button>
