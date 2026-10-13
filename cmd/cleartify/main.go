@@ -77,6 +77,9 @@ func main() {
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
  handler := api.New(api.Options{
+  IdentityLinkingEnabled:cfg.IdentityLinkingEnabled && cfg.AtprotoOAuthEnabled && cfg.ClearSessionsEnabled,
+  IdentityLinks:&api.LinkPersistence{DB:db.DB,Push:db.Push},
+  LinkSocial:oauthHandler,
   AgentDirectoryEnabled:cfg.AgentDirectoryEnabled,
   AgentDirectoryDB:db.DB,
   SocialModerationEnabled:cfg.SocialModerationEnabled && cfg.AtprotoOAuthEnabled,

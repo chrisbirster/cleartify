@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+ IdentityLinkingEnabled bool
  AgentDirectoryEnabled bool
  StrictProtocolPermissionsEnabled bool
  SocialModerationEnabled bool
@@ -34,6 +35,7 @@ type Config struct {
 func Load() Config {
 	appOrigin := strings.TrimRight(env("APP_ORIGIN", "http://localhost:3000"), "/")
 	return Config{
+ IdentityLinkingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("IDENTITY_LINKING_ENABLED")),"true"),
  AgentDirectoryEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_DIRECTORY_ENABLED")),"true"),
  StrictProtocolPermissionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("STRICT_PROTOCOL_PERMISSIONS_ENABLED")),"true"),
  SocialModerationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_MODERATION_ENABLED")),"true"),

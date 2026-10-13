@@ -25,6 +25,9 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ IdentityLinkingEnabled bool
+ IdentityLinks *LinkPersistence
+ LinkSocial SocialDIDVerifier
  AgentDirectoryEnabled bool
  AgentDirectoryDB *sql.DB
  SocialModerationEnabled bool
@@ -57,6 +60,8 @@ type Options struct {
 }
 
 type Server struct {
+ identityLinks *LinkPersistence
+ linkSocial SocialDIDVerifier
  agentDirectoryDB *sql.DB
  moderation *social.Moderation
  creatorDrafts *protocols.DraftService
@@ -83,6 +88,8 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
+  identityLinks: options.IdentityLinks,
+  linkSocial: options.LinkSocial,
 		clearSessions: options.ClearSessions,
   clearPrincipalResolver: options.ClearPrincipalResolver,
   alphaEligibility:options.AlphaEligibility,
@@ -109,6 +116,12 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.IdentityLinkingEnabled && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.LinkSocial!=nil && options.IdentityLinks!=nil && options.IdentityLinks.DB!=nil {
+  mux.HandleFunc("POST /api/me/identity-link/start",s.linkStart)
+  mux.HandleFunc("GET /api/me/identity-link/preview",s.linkPreview)
+  mux.HandleFunc("POST /api/me/identity-link/confirm",s.linkConfirm)
+  mux.HandleFunc("DELETE /api/me/identity-link",s.linkUnlink)
+ }
  if options.AgentDirectoryEnabled && options.AgentDirectoryDB!=nil {mux.HandleFunc("GET /api/agents",s.listAgentDirectory)}
  if options.SocialModerationEnabled && options.OAuth!=nil && options.Moderation!=nil {mux.HandleFunc("PUT /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("DELETE /api/me/blocks/{did}",s.setBlock);mux.HandleFunc("POST /api/me/reports",s.createSocialReport)}
  if options.CreatorDraftsEnabled && options.OAuth!=nil && options.CreatorDrafts!=nil {mux.HandleFunc("POST /api/me/protocol-drafts",s.createCreatorDraft)}
