@@ -23,6 +23,9 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ PrivateAlphaRoutesEnabled bool
+ ClearPrincipalResolver ClearPrincipal
+ AlphaEligibility alphaEligibility
 	Waitlist   *waitlist.Service
 	Beta       *beta.Service
 	AppOrigin  string
@@ -44,6 +47,8 @@ type Options struct {
 }
 
 type Server struct {
+ clearPrincipalResolver ClearPrincipal
+ alphaEligibility alphaEligibility
 	waitlist   *waitlist.Service
 	beta       *beta.Service
 	appOrigin  string
@@ -64,7 +69,9 @@ type Server struct {
 
 func New(options Options) http.Handler {
 	s := &Server{
-		waitlist:   options.Waitlist,
+		clearPrincipalResolver: options.ClearPrincipalResolver,
+  alphaEligibility:options.AlphaEligibility,
+  waitlist:   options.Waitlist,
 		beta:       options.Beta,
 		appOrigin:  strings.TrimRight(options.AppOrigin, "/"),
 		adminToken: options.AdminToken,
@@ -84,6 +91,7 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.privateAlpha(s.alphaEligibilityStatus))}
 	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
 		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
 		mux.HandleFunc("POST /api/me/protocol-install-requests",s.requestProtocolInstall)
