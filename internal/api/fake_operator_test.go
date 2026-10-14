@@ -6,6 +6,9 @@ import (
  "crypto/sha256"
  "encoding/base64"
  "encoding/hex"
+ "encoding/json"
+ "github.com/bluesky-social/indigo/atproto/auth/oauth"
+ "github.com/bluesky-social/indigo/atproto/syntax"
  "net/http"
  "time"
  "github.com/chrisbirster/cleartify/internal/atproto"
@@ -98,14 +101,18 @@ func TestFakeBuyerDisputeUsesOAuthBrowserCookieNotClaimedDID(t *testing.T) {
  } {if _,err=store.DB.ExecContext(ctx,q);err!=nil{t.Fatal(err)}}
  svc:=&marketplace.Service{DB:store.DB,Provider:marketplace.FakeProvider{},Enabled:true}
  accounting:=&marketplace.FakeAccounting{DB:store.DB,Enabled:true,FeeBPS:1000}
- aID,err:=svc.Purchase(ctx,"did:plc:buyerA","l");if err!=nil{t.Fatal(err)}
- bID,err:=svc.Purchase(ctx,"did:plc:buyerB","l");if err!=nil{t.Fatal(err)}
+ aID,err:=svc.Purchase(ctx,"did:web:buyer-a.example","l");if err!=nil{t.Fatal(err)}
+ bID,err:=svc.Purchase(ctx,"did:web:buyer-b.example","l");if err!=nil{t.Fatal(err)}
  // Mirrors the local OAuth browser/session fixtures: a digest-keyed browser
  // cookie joined to an existing OAuth session. No PDS or callback is invoked.
  seed:=func(did,token string,expires time.Time) {
   t.Helper()
   sessionID:="session-"+did
-  _,err:=store.DB.ExecContext(ctx,`INSERT INTO atproto_oauth_sessions(account_did,session_id,payload_ciphertext,created_at,updated_at) VALUES(?,?,?,?,?)`,did,sessionID,[]byte("local-fixture"),"now","now")
+  parsed,parseErr:=syntax.ParseDID(did);if parseErr!=nil{t.Fatal(parseErr)}
+  raw,marshalErr:=json.Marshal(oauth.ClientSessionData{AccountDID:parsed,SessionID:sessionID});if marshalErr!=nil{t.Fatal(marshalErr)}
+  box,boxErr:=atproto.NewSecretBox(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{6},32)));if boxErr!=nil{t.Fatal(boxErr)}
+  ciphertext,sealErr:=box.Seal(raw,"session:"+did+":"+sessionID);if sealErr!=nil{t.Fatal(sealErr)}
+  _,err:=store.DB.ExecContext(ctx,`INSERT INTO atproto_oauth_sessions(account_did,session_id,payload_ciphertext,created_at,updated_at) VALUES(?,?,?,?,?)`,did,sessionID,ciphertext,"now","now")
   if err!=nil{t.Fatal(err)}
   hash:=sha256.Sum256([]byte(token))
   _,err=store.DB.ExecContext(ctx,`INSERT INTO atproto_browser_sessions(token_digest,account_did,oauth_session_id,expires_at,created_at) VALUES(?,?,?,?,?)`,hex.EncodeToString(hash[:]),did,sessionID,expires.UTC().Format(time.RFC3339Nano),"now")
@@ -115,10 +122,10 @@ func TestFakeBuyerDisputeUsesOAuthBrowserCookieNotClaimedDID(t *testing.T) {
  tokenB:=strings.Repeat("b",40)
  tokenExpired:=strings.Repeat("e",40)
  tokenRevoked:=strings.Repeat("r",40)
- seed("did:plc:buyerA",tokenA,time.Now().Add(time.Hour))
- seed("did:plc:buyerB",tokenB,time.Now().Add(time.Hour))
- seed("did:plc:expired",tokenExpired,time.Now().Add(-time.Hour))
- seed("did:plc:revoked",tokenRevoked,time.Now().Add(time.Hour))
+ seed("did:web:buyer-a.example",tokenA,time.Now().Add(time.Hour))
+ seed("did:web:buyer-b.example",tokenB,time.Now().Add(time.Hour))
+ seed("did:web:expired.example",tokenExpired,time.Now().Add(-time.Hour))
+ seed("did:web:revoked.example",tokenRevoked,time.Now().Add(time.Hour))
  revokedDigest:=sha256.Sum256([]byte(tokenRevoked))
  if _,err=store.DB.ExecContext(ctx,`DELETE FROM atproto_browser_sessions WHERE token_digest=?`,hex.EncodeToString(revokedDigest[:]));err!=nil{t.Fatal(err)}
  handler:=New(Options{FakeCheckoutEnabled:true,FakeCheckout:svc,FakeAccounting:accounting,OAuth:oauthHandler,AppOrigin:"https://app.example.test"})
@@ -136,16 +143,16 @@ func TestFakeBuyerDisputeUsesOAuthBrowserCookieNotClaimedDID(t *testing.T) {
  goodBody:=`{"reason":"not_received"}`
  // OAuth cookie A authorizes only A's purchase.
  // B must not be able to open A's still-unclaimed dispute.
- if got:=request(aID,tokenB,"https://app.example.test",goodBody,"did:plc:buyerA");got!=409{t.Fatalf("cross-buyer DID spoof: %d",got)}
- if got:=request(aID,tokenA,"https://app.example.test",goodBody,"did:plc:buyerB");got!=201{t.Fatalf("buyer A request: %d",got)}
+ if got:=request(aID,tokenB,"https://app.example.test",goodBody,"did:web:buyer-a.example");got!=409{t.Fatalf("cross-buyer DID spoof: %d",got)}
+ if got:=request(aID,tokenA,"https://app.example.test",goodBody,"did:web:buyer-b.example");got!=201{t.Fatalf("buyer A request: %d",got)}
  // JSON-supplied buyer identity is forbidden by DisallowUnknownFields.
- if got:=request(bID,tokenB,"https://app.example.test",`{"reason":"other","buyerDid":"did:plc:buyerA"}`,"did:plc:buyerA");got!=400{t.Fatalf("body DID spoof: %d",got)}
- if got:=request(bID,tokenB,"https://evil.example",goodBody,"did:plc:buyerA");got!=403{t.Fatalf("wrong origin: %d",got)}
+ if got:=request(bID,tokenB,"https://app.example.test",`{"reason":"other","buyerDid":"did:web:buyer-a.example"}`,"did:web:buyer-a.example");got!=400{t.Fatalf("body DID spoof: %d",got)}
+ if got:=request(bID,tokenB,"https://evil.example",goodBody,"did:web:buyer-a.example");got!=403{t.Fatalf("wrong origin: %d",got)}
  for name,token:=range map[string]string{"missing":"","expired":tokenExpired,"revoked":tokenRevoked} {
-  if got:=request(bID,token,"https://app.example.test",goodBody,"did:plc:buyerA");got!=401{t.Fatalf("%s session: %d",name,got)}
+  if got:=request(bID,token,"https://app.example.test",goodBody,"did:web:buyer-a.example");got!=401{t.Fatalf("%s session: %d",name,got)}
  }
- if got:=request(bID,tokenB,"https://app.example.test",goodBody,"did:plc:buyerA");got!=201{t.Fatalf("buyer B own dispute: %d",got)}
- if got:=request(bID,tokenB,"https://app.example.test",goodBody,"did:plc:buyerA");got!=409{t.Fatalf("duplicate dispute: %d",got)}
+ if got:=request(bID,tokenB,"https://app.example.test",goodBody,"did:web:buyer-a.example");got!=201{t.Fatalf("buyer B own dispute: %d",got)}
+ if got:=request(bID,tokenB,"https://app.example.test",goodBody,"did:web:buyer-a.example");got!=409{t.Fatalf("duplicate dispute: %d",got)}
  var count int
  if err=store.DB.QueryRowContext(ctx,`SELECT count(*) FROM fake_payment_disputes WHERE entitlement_id IN (?,?)`,aID,bID).Scan(&count);err!=nil||count!=2{t.Fatalf("unexpected dispute count %d %v",count,err)}
 }
