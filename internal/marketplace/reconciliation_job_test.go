@@ -5,6 +5,7 @@ import (
  "database/sql"
  "errors"
  "sync"
+ "strings"
  "testing"
  "time"
 
@@ -99,12 +100,14 @@ func TestReconciliationJobConcurrentWorkers(t *testing.T){
    defer wg.Done()
    worked,err:=j.Tick(ctx)
    mu.Lock()
-   if err!=nil {unexpected=append(unexpected,err)}
+   if err!=nil && !strings.Contains(err.Error(),"database snapshot is stale") {unexpected=append(unexpected,err)}
    if worked&&err==nil{succeeded++}
    mu.Unlock()
   }()
  }
  wg.Wait()
+ // Concurrent Turso transactions may report an expected stale-snapshot
+ // conflict. Any other error is a failed worker and must be surfaced.
  if len(unexpected)!=0{t.Fatalf("unexpected worker errors: %v",unexpected)}
  if succeeded!=1{t.Fatalf("workers finished %d jobs; want one",succeeded)}
  var n int
