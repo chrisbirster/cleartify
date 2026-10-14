@@ -106,6 +106,7 @@ func TestAuthenticatedWorkerLocalDurableDelivery(t *testing.T){
  if _,err=store.DB.ExecContext(ctx,"UPDATE agent_interop_messages SET expires_at=? WHERE message_id='expires'",now.Add(-time.Minute).Format(time.RFC3339));err!=nil{t.Fatal(err)}
  if err=inbox.Deliver(ctx,envelope("expires"));!errors.Is(err,ErrTransportDenied){t.Fatalf("expired envelope inserted: %v",err)}
  if count()!=2{t.Fatal("expired envelope created a durable row")}
+ if _,err=store.DB.ExecContext(ctx,"UPDATE agent_local_outbox SET state='dead' WHERE message_id IN ('owner-stale','expires')");err!=nil{t.Fatal(err)}
  // Simulate lease expiry while the sink runs: the stale worker cannot ack.
  if err=worker.Submit(ctx,caller,envelope("expiry-ack"));err!=nil{t.Fatal(err)}
  advancing:=worker.Outbox
