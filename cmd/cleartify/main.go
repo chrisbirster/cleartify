@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+ "fmt"
+ "log"
+ "strings"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -12,6 +15,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/api"
+ "github.com/chrisbirster/cleartify/internal/operations"
  "github.com/chrisbirster/cleartify/internal/alpha"
 	"github.com/chrisbirster/cleartify/internal/agents"
  "github.com/chrisbirster/cleartify/internal/interop"
@@ -30,7 +34,26 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+ if len(os.Args)==2&&os.Args[1]=="config-preflight"{
+  env:=map[string]string{}
+  for _,entry:=range os.Environ(){
+   parts:=strings.SplitN(entry,"=",2)
+   if len(parts)==2{env[parts[0]]=parts[1]}
+  }
+  failures:=operations.Preflight(env)
+  for _,f:=range failures{fmt.Fprintf(os.Stderr,"config-preflight: %s: %s\n",f.Name,f.Problem)}
+  if len(failures)!=0{os.Exit(1)}
+  fmt.Println("config-preflight: valid")
+  return
+ }
+ cfg := config.Load()
+ hardeningEnabled:=strings.EqualFold(strings.TrimSpace(os.Getenv("OPERATIONS_HARDENING_ENABLED")),"true")
+ if hardeningEnabled {
+  slog.SetDefault(slog.New(operations.RedactingHandler{Next:slog.NewJSONHandler(os.Stdout,nil)}))
+  // Debug sender prints beta secrets: never run it in hardened mode.
+  if cfg.NotificationMode=="debug"{log.Print("NOTIFICATION_MODE: unsafe_debug_mode");os.Exit(1)}
+ }
+
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -152,7 +175,12 @@ func main() {
 		SocialActions: &social.Actions{Store:db},
 	})
 
-	server := &http.Server{
+	var readiness *operations.Readiness
+ if hardeningEnabled{
+  readiness=&operations.Readiness{DB:db.DB}
+  handler=operations.WithReadiness(handler,readiness)
+ }
+ server := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
@@ -176,7 +204,8 @@ func main() {
 		stop()
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	if readiness!=nil{readiness.Drain()}
+ shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		slog.Error("http shutdown", "error", err)
