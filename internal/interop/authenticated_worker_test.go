@@ -49,8 +49,19 @@ func TestAuthenticatedWorkerLocalDurableDelivery(t *testing.T){
  }
  if err=worker.Submit(ctx,caller,envelope("one"));!errors.Is(err,ErrRuntimeDisabled){t.Fatalf("default enabled: %v",err)}
  worker.Enabled=true
+ mismatched:=worker
+ mismatched.Transport=NewLocalTransport(true,nil,store.Push)
+ if e:=mismatched.Submit(ctx,caller,envelope("mismatch"));!errors.Is(e,ErrOutboxUnavailable){t.Fatalf("mismatched transport accepted: %v",e)}
+ var missing int
+ if e:=store.DB.QueryRowContext(ctx,"SELECT count(*) FROM agent_interop_messages WHERE message_id='mismatch'").Scan(&missing);e!=nil||missing!=0{t.Fatalf("mismatch wrote record %d %v",missing,e)}
  if err=worker.Submit(ctx,VerifiedLocalCaller{OwnerDID:caller.OwnerDID,AgentID:caller.AgentID},envelope("one"));!errors.Is(err,ErrRuntimeIdentity){t.Fatalf("unverified caller: %v",err)}
  if err=worker.Submit(ctx,VerifiedLocalCaller{OwnerDID:"did:plc:bob",AgentID:a.ID,Verified:true},envelope("one"));!errors.Is(err,ErrRuntimeIdentity){t.Fatalf("wrong owner: %v",err)}
+ // Failure after the message insert must roll back both writes.
+ _,err=store.DB.ExecContext(ctx,"CREATE TRIGGER fail_outbox BEFORE INSERT ON agent_local_outbox WHEN NEW.message_id='one' BEGIN SELECT RAISE(ABORT,'injected'); END")
+ if err!=nil{t.Fatal(err)}
+ if e:=worker.Submit(ctx,caller,envelope("one"));e==nil{t.Fatal("injected failure succeeded")}
+ if e:=store.DB.QueryRowContext(ctx,"SELECT count(*) FROM agent_interop_messages WHERE message_id='one'").Scan(&missing);e!=nil||missing!=0{t.Fatalf("stranded message %d %v",missing,e)}
+ if _,err=store.DB.ExecContext(ctx,"DROP TRIGGER fail_outbox");err!=nil{t.Fatal(err)}
  if err=worker.Submit(ctx,caller,envelope("one"));err!=nil{t.Fatal(err)}
  if err=worker.Submit(ctx,caller,envelope("one"));!errors.Is(err,ErrReplay){t.Fatal("replay",err)}
  var wg sync.WaitGroup
