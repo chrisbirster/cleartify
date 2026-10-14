@@ -6,6 +6,18 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS fake_reconciliation_jobs (
+ id TEXT PRIMARY KEY,
+ state TEXT NOT NULL CHECK(state IN ('pending','leased','done','dead')),
+ attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts>=0),
+ available_at TEXT NOT NULL,
+ lease_token TEXT,
+ lease_until TEXT,
+ last_error_key TEXT,
+ last_inserted INTEGER NOT NULL DEFAULT 0 CHECK(last_inserted>=0),
+ updated_at TEXT NOT NULL
+ )`,
+ `CREATE INDEX IF NOT EXISTS idx_fake_reconciliation_jobs_due ON fake_reconciliation_jobs(state,available_at,lease_until)`,
  `CREATE TABLE IF NOT EXISTS fake_sale_snapshots (
  entitlement_id TEXT PRIMARY KEY REFERENCES marketplace_entitlements(id),
  seller_did TEXT NOT NULL,
