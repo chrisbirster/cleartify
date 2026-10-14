@@ -16,7 +16,7 @@ import (
 var ErrInstallUnavailable=errors.New("published protocol or valid permission manifest unavailable")
 var ErrManifestChanged=errors.New("permission manifest digest mismatch")
 var ErrInstallDecision=errors.New("install request is not pending or publication changed")
-type InstallService struct {Store *database.Store; StrictPermissions bool;PaidEnforcement bool}
+type InstallService struct {Store *database.Store; StrictPermissions bool;PaidEnforcement bool;PermissionDiffEnabled bool}
 type Manifest struct {
  PublicationID string `json:"publicationId"`
  Title string `json:"title"`
@@ -24,6 +24,7 @@ type Manifest struct {
  Permissions []string `json:"permissions"`
  SpecSHA256 string `json:"specSha256"`
  ManifestSHA256 string `json:"manifestSha256"`
+ PermissionChanges *PermissionDiff `json:"permissionChanges,omitempty"`
 }
 type installSnapshot struct{ID string;Manifest Manifest;Raw string}
 func sha(raw []byte)string{digest:=sha256.Sum256(raw);return hex.EncodeToString(digest[:])}
@@ -34,6 +35,7 @@ func(s InstallService) manifest(ctx context.Context,id string)(installSnapshot,e
  err:=s.Store.DB.QueryRowContext(ctx,`SELECT title,slug,version,spec_json FROM published_protocols WHERE id=? AND status='published'`,id).Scan(&title,&slug,&version,&spec)
  if errors.Is(err,sql.ErrNoRows){return x,ErrInstallUnavailable};if err!=nil{return x,err}
  if len(spec)>65536||version<=0||strings.TrimSpace(slug)==""{return x,ErrInstallUnavailable}
+ if s.PermissionDiffEnabled && AnalyzeManifest([]byte(spec))!=nil{return x,ErrInstallUnavailable}
  if s.StrictPermissions && ValidatePreviewPermissions([]byte(spec))!=nil {return x,ErrInstallUnavailable}
  var raw struct{Permissions []string `json:"permissions"`}
  if err=json.Unmarshal([]byte(spec),&raw);err!=nil||raw.Permissions==nil||len(raw.Permissions)>32{return x,ErrInstallUnavailable}
@@ -44,6 +46,17 @@ func(s InstallService) manifest(ctx context.Context,id string)(installSnapshot,e
  // Canonical snapshot: fixed struct field order, including immutable spec digest.
  stable,err:=json.Marshal(struct{PublicationID string `json:"publicationId"`;Version int `json:"version"`;Permissions []string `json:"permissions"`;SpecSHA256 string `json:"specSha256"`}{id,version,raw.Permissions,x.Manifest.SpecSHA256});if err!=nil{return x,err}
  x.Manifest.ManifestSHA256=sha(stable)
+ if s.PermissionDiffEnabled {
+  var previous string
+  prevErr:=s.Store.DB.QueryRowContext(ctx,`SELECT spec_json FROM published_protocols WHERE creator_did=(SELECT creator_did FROM published_protocols WHERE id=?) AND slug=? AND version<? ORDER BY version DESC LIMIT 1`,id,slug,version).Scan(&previous)
+  if prevErr!=nil && !errors.Is(prevErr,sql.ErrNoRows){return x,prevErr}
+  if prevErr==nil{
+   var old struct{Permissions []string `json:"permissions"`}
+   if json.Unmarshal([]byte(previous),&old)!=nil||old.Permissions==nil{return x,ErrInstallUnavailable}
+   diff:=DiffPermissions(old.Permissions,raw.Permissions)
+   x.Manifest.PermissionChanges=&diff
+  }
+ }
  permissions,err:=json.Marshal(raw.Permissions);if err!=nil{return x,err}
  x.Raw=string(permissions)
  return x,nil
