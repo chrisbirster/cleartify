@@ -4,11 +4,14 @@ import(
  "context"
  "database/sql"
  "errors"
+ "fmt"
  "time"
 )
 
 // FakeAccounting operates only over the existing fake-provider entitlement
 // records. No payment provider, transfers, network or credentials.
+var ErrMissingSaleSnapshot = errors.New("fake entitlement missing immutable sale snapshot")
+
 type FakeAccounting struct{
  DB *sql.DB
  Enabled bool
@@ -27,6 +30,10 @@ func(a FakeAccounting)fee(gross int64)(int64,error){
 func(a FakeAccounting)Reconcile(ctx context.Context)(int,error){
  if e:=a.check();e!=nil{return 0,e}
  tx,e:=a.DB.BeginTx(ctx,nil);if e!=nil{return 0,e};defer tx.Rollback()
+ var missing int
+ e=tx.QueryRowContext(ctx,`SELECT COUNT(*) FROM marketplace_entitlements e LEFT JOIN fake_sale_snapshots s ON s.entitlement_id=e.id WHERE e.provider='fake' AND s.entitlement_id IS NULL`).Scan(&missing)
+ if e!=nil{return 0,e}
+ if missing!=0{return 0,fmt.Errorf("%w: %d",ErrMissingSaleSnapshot,missing)}
  rows,e:=tx.QueryContext(ctx,`SELECT e.id,s.seller_did,s.price_minor,s.currency,e.status FROM marketplace_entitlements e JOIN fake_sale_snapshots s ON s.entitlement_id=e.id WHERE e.provider='fake' ORDER BY e.id`)
  if e!=nil{return 0,e}
  type item struct{id,seller,currency,status string;gross int64}
@@ -45,7 +52,12 @@ func(a FakeAccounting)Reconcile(ctx context.Context)(int,error){
   if x.status=="refunded"{
    if e=tx.QueryRowContext(ctx,`SELECT COUNT(*) FROM marketplace_payment_audit WHERE entitlement_id=? AND event='fake_refund'`,x.id).Scan(&count);e!=nil{return 0,e}
    if count!=1{return 0,ErrDenied}
-   res,e=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'reversal',?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,x.seller,-x.gross,-fee,-(x.gross-fee),x.currency,now)
+   var saleSeller,saleCurrency string
+   var saleGross,saleFee,saleNet int64
+   e=tx.QueryRowContext(ctx,`SELECT seller_did,gross_minor,fee_minor,net_minor,currency FROM fake_seller_ledger WHERE entitlement_id=? AND entry_kind='sale'`,x.id).Scan(&saleSeller,&saleGross,&saleFee,&saleNet,&saleCurrency)
+   if e!=nil{return 0,e}
+   if saleSeller!=x.seller||saleCurrency!=x.currency||saleGross!=x.gross||saleGross-saleFee!=saleNet{return 0,ErrDenied}
+   res,e=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'reversal',?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,saleSeller,-saleGross,-saleFee,-saleNet,saleCurrency,now)
    if e!=nil{return 0,e};n,e=res.RowsAffected();if e!=nil{return 0,e};inserted+=int(n)
   }
  }
