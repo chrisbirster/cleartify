@@ -82,7 +82,7 @@ func TestAuthenticatedWorkerLocalDurableDelivery(t *testing.T){
  // reclaims an expired lease and observes the same inbox row (no duplicate).
  if err=worker.Submit(ctx,caller,envelope("crash"));err!=nil{t.Fatal(err)}
  if err=inbox.Deliver(ctx,envelope("crash"));err!=nil{t.Fatal(err)}
- _,err=store.DB.ExecContext(ctx,`UPDATE agent_local_outbox SET state='leased',lease_token='stale',lease_until=? WHERE message_id='crash'`,now.Add(-time.Second).Format(time.RFC3339Nano))
+ _,err=store.DB.ExecContext(ctx,`UPDATE agent_local_outbox SET state='leased',lease_token='stale',lease_until=? WHERE message_id='crash'`,outboxStamp(now.Add(-time.Second)))
  if err!=nil{t.Fatal(err)}
  if done,e:=worker.Tick(ctx);!done||e!=nil{t.Fatalf("restart %v %v",done,e)}
  if count()!=2{t.Fatalf("non-idempotent crash recovery %d",count())}
