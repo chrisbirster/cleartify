@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+ ManifestPermissionDiffEnabled bool
  FakeAccountingEnabled bool
  FakeSellerFeeBPS int64
  DBAbuseEnabled bool
@@ -55,6 +56,7 @@ type Config struct {
 func Load() Config {
 	appOrigin := strings.TrimRight(env("APP_ORIGIN", "http://localhost:3000"), "/")
 	return Config{
+ ManifestPermissionDiffEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("MANIFEST_PERMISSION_DIFF_ENABLED")),"true"),
  FakeAccountingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("FAKE_ACCOUNTING_ENABLED")),"true"),
  FakeSellerFeeBPS: fakeSellerFeeBPS(),
  DBAbuseProxyEnabled:strings.EqualFold(strings.TrimSpace(os.Getenv("DB_SIGNUP_TRUSTED_PROXY_ENABLED")),"true"),
