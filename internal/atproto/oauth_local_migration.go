@@ -4,7 +4,6 @@ import (
  "bytes"
  "context"
  "database/sql"
- "encoding/base64"
  "encoding/binary"
  "errors"
  "fmt"
@@ -52,18 +51,26 @@ func (r OAuthKeyring) Open(ciphertext []byte,associatedID string)([]byte,error){
   if r.Legacy==nil{return nil,ErrUnknownOAuthCipherVersion}
   return r.Legacy.Open(ciphertext,associatedID)
  }
- return r.Versions[id].Open(ciphertext[len(oauthCipherMagic)+4:],associatedID)
+ return r.Versions[id].Open(ciphertext[len(oauthCipherMagic)+4:],versionAD(ciphertext[:len(oauthCipherMagic)+4],associatedID))
 }
 func (r OAuthKeyring) SealVersion(plaintext []byte,associatedID string,id uint32)([]byte,error){
  box:=r.Versions[id]
  if id==0{box=r.Legacy}
  if box==nil{return nil,ErrUnknownOAuthCipherVersion}
- raw,err:=box.Seal(plaintext,associatedID);if err!=nil{return nil,err}
- if id==0{return raw,nil}
- out:=make([]byte,len(oauthCipherMagic)+4,len(oauthCipherMagic)+4+len(raw))
- copy(out,oauthCipherMagic)
- binary.BigEndian.PutUint32(out[len(oauthCipherMagic):],id)
- return append(out,raw...),nil
+ if id==0{return box.Seal(plaintext,associatedID)}
+ header:=make([]byte,len(oauthCipherMagic)+4)
+ copy(header,oauthCipherMagic)
+ binary.BigEndian.PutUint32(header[len(oauthCipherMagic):],id)
+ raw,err:=box.Seal(plaintext,versionAD(header,associatedID));if err!=nil{return nil,err}
+ return append(header,raw...),nil
+}
+
+// Authenticate both the complete binary header and original record identity;
+// length-prefixing prevents boundary ambiguity even when keys are aliases.
+func versionAD(header []byte, associatedID string)string{
+ var size [8]byte
+ binary.BigEndian.PutUint64(size[:],uint64(len(header)))
+ return string(size[:])+string(header)+associatedID
 }
 
 type OAuthLocalMigrator struct{
@@ -121,8 +128,4 @@ func(m OAuthLocalMigrator) Migrate(ctx context.Context,from,to uint32)(int,error
  }
  if err=tx.Commit();err!=nil{return 0,err}
  return total,nil
-}
-func SyntheticLocalKey(value byte)string{
- // Convenience only for tests: never call this in production config.
- return base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{value},32))
 }
