@@ -184,7 +184,6 @@ func New(options Options) http.Handler {
 	mux.HandleFunc("GET /healthz", s.health)
  if s.moderationEnforcement {mux.HandleFunc("GET /api/admin/moderation/local-metrics",s.localModerationMetrics)}
  if options.FakeCheckoutEnabled && options.FakeCheckout!=nil && options.FakeAccounting!=nil && options.FakeAccounting.Enabled {
-  mux.HandleFunc("POST /api/admin/fake-payments/{id}/disputes",s.fakeOperatorDispute)
   mux.HandleFunc("POST /api/admin/fake-payments/{id}/resolve",s.fakeOperatorResolve)
   mux.HandleFunc("POST /api/admin/fake-payments/{id}/refund",s.fakeOperatorRefund)
  }
@@ -192,6 +191,7 @@ func New(options Options) http.Handler {
   mux.HandleFunc("POST /api/me/fake-checkout",s.fakeCheckoutPurchase)
   mux.HandleFunc("GET /api/me/marketplace-listings/{id}/access",s.fakeCheckoutAccess)
   mux.HandleFunc("POST /api/me/fake-entitlements/{id}/refund",s.fakeCheckoutRefund)
+  if options.FakeAccounting!=nil && options.FakeAccounting.Enabled {mux.HandleFunc("POST /api/me/fake-entitlements/{id}/dispute",s.fakeBuyerDispute)}
  }
  if options.AgentOwnershipEnabled && options.AgentOwnership!=nil && options.OAuth!=nil {
   mux.HandleFunc("POST /api/me/agents/{id}/ownership/start",s.agentOwnershipStart)
