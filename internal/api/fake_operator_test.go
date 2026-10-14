@@ -135,9 +135,9 @@ func TestFakeBuyerDisputeUsesOAuthBrowserCookieNotClaimedDID(t *testing.T) {
  }
  goodBody:=`{"reason":"not_received"}`
  // OAuth cookie A authorizes only A's purchase.
- if got:=request(aID,tokenA,"https://app.example.test",goodBody,"did:plc:buyerB");got!=201{t.Fatalf("buyer A request: %d",got)}
- // B must never open A's dispute even when query/header attempt to impersonate A.
+ // B must not be able to open A's still-unclaimed dispute.
  if got:=request(aID,tokenB,"https://app.example.test",goodBody,"did:plc:buyerA");got!=409{t.Fatalf("cross-buyer DID spoof: %d",got)}
+ if got:=request(aID,tokenA,"https://app.example.test",goodBody,"did:plc:buyerB");got!=201{t.Fatalf("buyer A request: %d",got)}
  // JSON-supplied buyer identity is forbidden by DisallowUnknownFields.
  if got:=request(bID,tokenB,"https://app.example.test",`{"reason":"other","buyerDid":"did:plc:buyerA"}`,"did:plc:buyerA");got!=400{t.Fatalf("body DID spoof: %d",got)}
  if got:=request(bID,tokenB,"https://evil.example",goodBody,"did:plc:buyerA");got!=403{t.Fatalf("wrong origin: %d",got)}
