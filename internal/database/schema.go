@@ -6,6 +6,15 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS agent_local_inbox (
+ message_id TEXT PRIMARY KEY REFERENCES agent_interop_messages(message_id),
+ sender_agent_id TEXT NOT NULL,
+ recipient_agent_id TEXT NOT NULL,
+ payload_digest TEXT NOT NULL,
+ received_at TEXT NOT NULL
+ )`,
+ `CREATE TRIGGER IF NOT EXISTS agent_local_inbox_immutable_update BEFORE UPDATE ON agent_local_inbox BEGIN SELECT RAISE(ABORT,'immutable inbox'); END`,
+ `CREATE TRIGGER IF NOT EXISTS agent_local_inbox_immutable_delete BEFORE DELETE ON agent_local_inbox BEGIN SELECT RAISE(ABORT,'immutable inbox'); END`,
  `CREATE TABLE IF NOT EXISTS fake_reconciliation_jobs (
  id TEXT PRIMARY KEY,
  state TEXT NOT NULL CHECK(state IN ('pending','leased','done','dead')),
