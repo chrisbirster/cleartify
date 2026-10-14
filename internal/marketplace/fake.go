@@ -47,6 +47,10 @@ func(s Service)Purchase(ctx context.Context,actorBuyerDID,listingID string)(stri
  var amount int64;var currency string
  err=tx.QueryRowContext(ctx,`SELECT price_minor,currency FROM marketplace_listings WHERE id=? AND status='listed' AND pricing_kind='one_time'`,listingID).Scan(&amount,&currency)
  if errors.Is(err,sql.ErrNoRows){return "",ErrDenied};if err!=nil{return "",err}
+ if amount<=0||amount>1000000||currency!="USD"{return "",ErrPayment}
+ var seller,owner string
+ err=tx.QueryRowContext(ctx,`SELECT l.creator_did,p.creator_did FROM marketplace_listings l JOIN published_protocols p ON p.id=l.protocol_id WHERE l.id=?`,listingID).Scan(&seller,&owner)
+ if err!=nil{return "",err};if seller!=owner{return "",ErrDenied}
  var existing,status string
  err=tx.QueryRowContext(ctx,`SELECT id,status FROM marketplace_entitlements WHERE buyer_did=? AND listing_id=?`,actorBuyerDID,listingID).Scan(&existing,&status)
  if err==nil {if status=="active"{return existing,nil};return "",ErrDenied}
@@ -57,6 +61,7 @@ func(s Service)Purchase(ctx context.Context,actorBuyerDID,listingID string)(stri
  now:=s.clock()
  _,err=tx.ExecContext(ctx,`INSERT INTO marketplace_entitlements(id,listing_id,buyer_did,provider,provider_receipt,status,created_at) VALUES(?,?,?,'fake',?,'active',?)`,id,listingID,actorBuyerDID,receipt.ID,now)
  if err!=nil{return "",fmt.Errorf("entitlement insert: %w",err)}
+ if _,err=tx.ExecContext(ctx,`INSERT INTO fake_sale_snapshots(entitlement_id,seller_did,price_minor,currency,captured_at) VALUES(?,?,?,?,?)`,id,seller,amount,currency,now);err!=nil{return "",err}
  auditID,err:=randomID();if err!=nil{return "",err}
  if _,err=tx.ExecContext(ctx,`INSERT INTO marketplace_payment_audit(id,entitlement_id,event,actor_did,recorded_at) VALUES(?,?,'fake_purchase',?,?)`,auditID,id,actorBuyerDID,now);err!=nil{return "",err}
  return id,tx.Commit()

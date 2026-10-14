@@ -6,6 +6,15 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS fake_sale_snapshots (
+ entitlement_id TEXT PRIMARY KEY REFERENCES marketplace_entitlements(id),
+ seller_did TEXT NOT NULL,
+ price_minor INTEGER NOT NULL CHECK(price_minor>0 AND price_minor<=1000000),
+ currency TEXT NOT NULL CHECK(currency='USD'),
+ captured_at TEXT NOT NULL
+ )`,
+ `CREATE TRIGGER IF NOT EXISTS fake_sale_snapshot_no_update BEFORE UPDATE ON fake_sale_snapshots BEGIN SELECT RAISE(ABORT,'immutable sale snapshot'); END`,
+ `CREATE TRIGGER IF NOT EXISTS fake_sale_snapshot_no_delete BEFORE DELETE ON fake_sale_snapshots BEGIN SELECT RAISE(ABORT,'immutable sale snapshot'); END`,
  `CREATE TABLE IF NOT EXISTS fake_payment_idempotency (
     actor_did TEXT NOT NULL,
     request_key TEXT NOT NULL,
