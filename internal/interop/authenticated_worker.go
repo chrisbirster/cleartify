@@ -30,7 +30,7 @@ func(s DurableInbox) Deliver(ctx context.Context,e Envelope)error{
  _,err=tx.ExecContext(ctx,`INSERT INTO agent_local_inbox(message_id,sender_agent_id,recipient_agent_id,payload_digest,received_at)
  SELECT m.message_id,m.sender_agent_id,m.recipient_agent_id,m.payload_digest,?
  FROM agent_interop_messages m WHERE m.message_id=? AND m.sender_agent_id=? AND m.recipient_agent_id=? AND m.payload_digest=? AND m.status='pending' AND EXISTS (SELECT 1 FROM agent_interop_keys k JOIN agent_owner_bindings sb ON sb.agent_id=k.agent_id AND sb.revoked_at IS NULL JOIN agent_registrations sa ON sa.id=sb.agent_id AND sa.status='verified' JOIN agent_owner_bindings rb ON rb.agent_id=m.recipient_agent_id AND rb.revoked_at IS NULL JOIN agent_registrations ra ON ra.id=rb.agent_id AND ra.status='verified' JOIN agent_scoped_grants g ON g.agent_id=m.sender_agent_id AND g.grantee_agent_id=m.recipient_agent_id AND g.scope='message.preview' AND g.revoked_at IS NULL AND julianday(g.expires_at)>julianday(?) JOIN agent_message_consents c ON c.sender_agent_id=m.sender_agent_id AND c.recipient_agent_id=m.recipient_agent_id AND c.recipient_owner_did=rb.owner_did AND c.revoked_at IS NULL AND julianday(c.expires_at)>julianday(?) WHERE k.key_id=m.key_id AND k.agent_id=m.sender_agent_id AND k.revoked_at IS NULL)
- ON CONFLICT(message_id) DO NOTHING`,now,now,now,e.MessageID,e.SenderAgentID,e.RecipientAgentID,e.PayloadDigest)
+ ON CONFLICT(message_id) DO NOTHING`,now,e.MessageID,e.SenderAgentID,e.RecipientAgentID,e.PayloadDigest,now,now)
  if err!=nil{return err}
  var id,sender,recipient,digest string
  err=tx.QueryRowContext(ctx,`SELECT message_id,sender_agent_id,recipient_agent_id,payload_digest FROM agent_local_inbox WHERE message_id=?`,e.MessageID).Scan(&id,&sender,&recipient,&digest)
@@ -68,6 +68,7 @@ func(w AuthenticatedWorker) Submit(ctx context.Context,caller VerifiedLocalCalle
  // Record and enqueue atomically. Unlike Send followed by Enqueue, a failed
  // transaction leaves no committed message stranded or replay-blocked.
  if err=w.Outbox.config();err!=nil{return err}
+ if err=w.Outbox.validateTimeRows(ctx);err!=nil{return err}
  now:=w.Transport.now().UTC()
  tx,err:=w.DB.BeginTx(ctx,nil);if err!=nil{return err};defer tx.Rollback()
  var pub []byte
