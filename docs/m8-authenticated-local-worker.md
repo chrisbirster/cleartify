@@ -7,3 +7,11 @@
 `DurableInbox` is a local SQL-only idempotent sink: a single append-only row keyed by message ID, matching the previously recorded envelope identity and digest. A delivery is the **database insert**, not external side effects or arbitrary execution. After an inbox commit but before an outbox acknowledgement, a retried lease observes the same row and cannot duplicate delivery. Existing random lease tokens fence stale acknowledgements; concurrency remains at-least-once invocation but with idempotent sink effects. The inbox does not assert receipt by any real remote agent.
 
 Tests use one local database, synthetic keys and registered agents for authorized and unauthorized callers, concurrent delivery, crash-after-sink-before-ack, stale lease and consent revocation. No real DID/PDS verification, cross-instance network transport, webhook, payment provider or deployed test is claimed. No legal/owner release approval is implied.
+
+## Review hardening
+
+The transport, outbox, inbox and worker must reference the same `*sql.DB`; mismatches fail before writes. Signed envelope recording and outbox enqueue now commit atomically, so interrupted enqueue cannot strand a replay-blocked message. The existing transport push callback occurs after commit and remains a local persistence boundary; no remote delivery is implied.
+
+The outbox uses fixed-width UTC nanosecond job timestamps for due time, expiry and acknowledgment; mixed legacy job rows fail closed and require a reviewed migration. An expired lease already at its attempt ceiling becomes dead without invoking the sink. Leases must remain unexpired at claim validation and acknowledgment. Grant and consent expiry uses SQLite date-aware comparison rather than variable-width string ordering.
+
+For this local SQL sink, a fresh authorization/grant/consent check is performed within the same transaction that writes the durable inbox row. General `Outbox` sinks still have a potential revocation race between its authorization check and their side effect, and must not be treated as transactionally authorized external delivery. A lease can also expire while the sink is executing; the unique inbox key prevents duplicate durable insertions, but does not guarantee exactly-once invocation.
