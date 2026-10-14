@@ -15,6 +15,9 @@ import (
  "github.com/chrisbirster/cleartify/internal/database"
 )
 
+type clockAdvanceSink struct{advance func()}
+func(s clockAdvanceSink)Deliver(context.Context,Envelope)error{s.advance();return nil}
+
 func TestAuthenticatedWorkerLocalDurableDelivery(t *testing.T){
  ctx:=context.Background()
  store,err:=database.Open(ctx,database.Config{Path:t.TempDir()+"/interop.db"})
@@ -103,6 +106,14 @@ func TestAuthenticatedWorkerLocalDurableDelivery(t *testing.T){
  if _,err=store.DB.ExecContext(ctx,"UPDATE agent_interop_messages SET expires_at=? WHERE message_id='expires'",now.Add(-time.Minute).Format(time.RFC3339));err!=nil{t.Fatal(err)}
  if err=inbox.Deliver(ctx,envelope("expires"));!errors.Is(err,ErrTransportDenied){t.Fatalf("expired envelope inserted: %v",err)}
  if count()!=2{t.Fatal("expired envelope created a durable row")}
+ // Simulate lease expiry while the sink runs: the stale worker cannot ack.
+ if err=worker.Submit(ctx,caller,envelope("expiry-ack"));err!=nil{t.Fatal(err)}
+ advancing:=worker.Outbox
+ advancing.Sink=clockAdvanceSink{advance:func(){now=now.Add(advancing.Lease+time.Second)}}
+ if worked,e:=advancing.Tick(ctx);!worked||!errors.Is(e,ErrOutboxUnavailable){t.Fatalf("expired acknowledgement %v %v",worked,e)}
+ var leaseState string
+ if e:=store.DB.QueryRowContext(ctx,"SELECT state FROM agent_local_outbox WHERE message_id='expiry-ack'").Scan(&leaseState);e!=nil||leaseState!="leased"{t.Fatalf("expired ack changed state: %s %v",leaseState,e)}
+ now=now.Add(-advancing.Lease-time.Second)
  // Revocation after enqueue but before delivery prevents side effects.
  if err=worker.Submit(ctx,caller,envelope("revoked"));err!=nil{t.Fatal(err)}
  if err=local.RevokeConsent(ctx,"did:plc:bob",b.ID,a.ID);err!=nil{t.Fatal(err)}
