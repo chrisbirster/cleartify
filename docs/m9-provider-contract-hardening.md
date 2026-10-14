@@ -1,0 +1,12 @@
+# M9 Round 4 — payment boundary contract (fake only)
+
+**Internal engineering implementation. OFF by default.** No provider SDK, real provider call, payment credentials, money movement, payout instructions, tax collection or public legal text is included.
+
+- `PaymentAdapter` specifies charge and refund behavior; `FakeProvider` is the *only* implementation permitted by existing runtime `Service.provider()`. Contract tests exercise fake receipts, repeated charge behavior, rejection of invalid currency/amount, and refund validation.
+- `SignatureVerifier` defines a raw-payload signature verification boundary; `FakeWebhookSigner` uses a caller-provided **synthetic test-only HMAC key**, fake domain separation, event ID binding, payload size limits and constant-time comparison. Tests reject payload, identifier and signature tampering. **No webhook HTTP handler is registered, no replay registry or timestamp window is wired, and no real provider signing specification is claimed.**
+- `KeyedOperations` is an **opt-in fake-only wrapper** for purchase and refund. Keys are scoped by actor, operation and target. The database table records reservations and outcomes; a second request with a completed key returns the original fake result, while cross-operation/target reuse is rejected. Existing buyer/listing uniqueness and entitlement state transitions prevent duplicate committed fake charge/refund audits. An incomplete reservation is deliberately fail-closed rather than replaying a possible side effect.
+- The additive `fake_seller_compliance_placeholders` table includes only status keys for payout and tax-data readiness, not banking or tax identifiers. It has no behavioral wiring and creates no obligations or payment capability.
+
+**Remaining limitations:** A future real-provider integration must provide atomic cross-process idempotency recovery, authoritative event replay protection and timestamps, trusted handler authentication, asynchronous webhook state reconciliation, separately reviewed key rotation, immutable charge-price snapshots, refunds/disputes, verified payout setup and security/financial compliance. This PR does **not** authorize any of that integration. The keyed wrapper is intentionally not mounted into checkout HTTP paths and does not replace the existing fake checkout handler's own authorization and idempotency logic.
+
+Run locally: `go test -p 1 ./internal/marketplace ./internal/database`. All tests are also exercised by the existing Go CI without changing workflows.
