@@ -8,7 +8,7 @@ func redact(a slog.Attr)slog.Attr{
   if strings.Contains(k,w){return slog.String(a.Key,"[REDACTED]")}
  }
  if a.Value.Kind()==slog.KindGroup{
-  attrs:=a.Value.Group();for i:=range attrs{attrs[i]=redact(attrs[i]}
+  attrs:=a.Value.Group();for i:=range attrs{attrs[i]=redact(attrs[i])}
   return slog.Group(a.Key,attrsToArgs(attrs)...)
  }
  // Disallow arbitrary error/text fields: structured logs should contain
