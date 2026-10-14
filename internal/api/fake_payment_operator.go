@@ -20,15 +20,19 @@ func(s *Server) fakeOperatorAuthorized(w http.ResponseWriter,r *http.Request) bo
  }
  return true
 }
-func(s *Server) fakeOperatorDispute(w http.ResponseWriter,r *http.Request){
- if !s.fakeOperatorAuthorized(w,r){return}
+func(s *Server) fakeBuyerDispute(w http.ResponseWriter,r *http.Request){
+ did,ok:=s.fakeCheckoutActor(w,r);if !ok{return}
+ if s.fakeAccounting==nil||!s.fakeAccounting.Enabled {writeJSON(w,503,map[string]string{"error":"fake_dispute_unavailable"});return}
+ if s.appOrigin==""||r.Header.Get("Origin")!=s.appOrigin{writeJSON(w,403,map[string]string{"error":"invalid_origin"});return}
  id:=r.PathValue("id");if id==""||len(id)>128{writeJSON(w,400,map[string]string{"error":"invalid_entitlement"});return}
  r.Body=http.MaxBytesReader(w,r.Body,4096)
- var req struct {BuyerDID string `json:"buyerDid"`;Reason string `json:"reason"`}
+ var req struct {Reason string `json:"reason"`}
  if !decodeJSON(w,r,&req){return}
- // A bearer-token operator cannot impersonate a buyer to open a dispute.
- // Buyer-owned dispute initiation needs an independently verified OAuth session.
- writeJSON(w,403,map[string]string{"error":"buyer_session_required"})
+ if err:=s.fakeAccounting.OpenDispute(r.Context(),did,id,req.Reason);err!=nil{
+  writeJSON(w,409,map[string]string{"error":"dispute_denied"});return
+ }
+ w.Header().Set("Cache-Control","no-store")
+ writeJSON(w,201,map[string]string{"status":"open","provider":"fake"})
 }
 func(s *Server) fakeOperatorResolve(w http.ResponseWriter,r *http.Request){
  if !s.fakeOperatorAuthorized(w,r){return}
