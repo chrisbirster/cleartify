@@ -166,7 +166,7 @@ func main() {
 		Protocols: &protocols.Reader{DB:db.DB,HoldVisibility:cfg.ModerationBroaderEnabled && cfg.ModerationRuntimeEnabled,PaidEnforcement:cfg.PaidEntitlementEnforcementEnabled && cfg.FakeCheckoutEnabled},
 		Profiles: &social.Reader{DB:db.DB},
 		ProtocolInstallFlowEnabled: cfg.ProtocolInstallFlowEnabled && cfg.AtprotoOAuthEnabled,
-		InstallFlow: &protocols.InstallService{Store:db,StrictPermissions:cfg.StrictProtocolPermissionsEnabled,PaidEnforcement:cfg.PaidEntitlementEnforcementEnabled && cfg.FakeCheckoutEnabled},
+		InstallFlow: &protocols.InstallService{Store:db,StrictPermissions:cfg.StrictProtocolPermissionsEnabled,PermissionDiffEnabled:cfg.ManifestPermissionDiffEnabled,PaidEnforcement:cfg.PaidEntitlementEnforcementEnabled && cfg.FakeCheckoutEnabled},
 		DefaultFollowEnabled: cfg.SocialDefaultFollowEnabled && cfg.AtprotoOAuthEnabled,
 		DefaultFollow: defaultFollow,
 		SocialAccountRegistrationEnabled: cfg.SocialAccountRegistrationEnabled && cfg.AtprotoOAuthEnabled,
