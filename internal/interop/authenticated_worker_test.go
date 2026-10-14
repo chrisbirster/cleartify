@@ -88,6 +88,21 @@ func TestAuthenticatedWorkerLocalDurableDelivery(t *testing.T){
  if count()!=2{t.Fatalf("non-idempotent crash recovery %d",count())}
  res,err:=store.DB.ExecContext(ctx,`UPDATE agent_local_outbox SET state='delivered' WHERE message_id='crash' AND state='leased' AND lease_token='stale'`)
  if err!=nil{t.Fatal(err)};n,err:=res.RowsAffected();if err!=nil||n!=0{t.Fatal("stale ack accepted",n,err)}
+ // Fresh insert must reject a grant that no longer belongs to the sender owner.
+ if err=worker.Submit(ctx,caller,envelope("owner-stale"));err!=nil{t.Fatal(err)}
+ if _,err=store.DB.ExecContext(ctx,"UPDATE agent_scoped_grants SET owner_did='did:plc:former-owner' WHERE agent_id=?",a.ID);err!=nil{t.Fatal(err)}
+ if err=inbox.Deliver(ctx,envelope("owner-stale"));!errors.Is(err,ErrTransportDenied){t.Fatalf("stale grant reached inbox: %v",err)}
+ if err=worker.Outbox.authorized(ctx,envelope("owner-stale"),now);!errors.Is(err,ErrTransportDenied){t.Fatalf("outbox allowed stale grant: %v",err)}
+ if count()!=2{t.Fatal("stale grant created a durable row")}
+ // Previously committed idempotent row remains acknowledged, not re-inserted.
+ if err=inbox.Deliver(ctx,envelope("one"));err!=nil{t.Fatalf("idempotent ack unexpectedly failed: %v",err)}
+ if count()!=2{t.Fatal("idempotent ack duplicated row")}
+ if _,err=store.DB.ExecContext(ctx,"UPDATE agent_scoped_grants SET owner_did='did:plc:alice' WHERE agent_id=?",a.ID);err!=nil{t.Fatal(err)}
+ // Verify envelope expiry is enforced at the sink even if message was queued.
+ if err=worker.Submit(ctx,caller,envelope("expires"));err!=nil{t.Fatal(err)}
+ if _,err=store.DB.ExecContext(ctx,"UPDATE agent_interop_messages SET expires_at=? WHERE message_id='expires'",now.Add(-time.Minute).Format(time.RFC3339));err!=nil{t.Fatal(err)}
+ if err=inbox.Deliver(ctx,envelope("expires"));!errors.Is(err,ErrTransportDenied){t.Fatalf("expired envelope inserted: %v",err)}
+ if count()!=2{t.Fatal("expired envelope created a durable row")}
  // Revocation after enqueue but before delivery prevents side effects.
  if err=worker.Submit(ctx,caller,envelope("revoked"));err!=nil{t.Fatal(err)}
  if err=local.RevokeConsent(ctx,"did:plc:bob",b.ID,a.ID);err!=nil{t.Fatal(err)}
