@@ -20,7 +20,8 @@ func(k KeyedOperations)read(ctx context.Context,actor,key,op,target string)(stri
  if errors.Is(e,sql.ErrNoRows){return "",false,nil}
  if e!=nil{return "",false,e}
  if oldOp!=op||oldTarget!=target{return "",true,ErrIdempotencyConflict}
- if result==""{return "",true,ErrDenied} // reserved/in-flight: fail closed\n return result,true,nil
+ if result==""{return "",true,ErrDenied} // reserved/in-flight: fail closed
+ return result,true,nil
 }
 func(k KeyedOperations)reserve(ctx context.Context,actor,key,op,target string)error{
  _,e:=k.DB.ExecContext(ctx,`INSERT INTO fake_payment_idempotency(actor_did,request_key,operation,target_id,result_id,created_at) VALUES(?,?,?,?,'',?) ON CONFLICT(actor_did,request_key) DO NOTHING`,actor,key,op,target,time.Now().UTC().Format(time.RFC3339Nano))
@@ -37,7 +38,7 @@ func(k KeyedOperations)release(ctx context.Context,actor,key string){
  _,_=k.DB.ExecContext(ctx,`DELETE FROM fake_payment_idempotency WHERE actor_did=? AND request_key=? AND result_id=''`,actor,key)
 }
 func(k KeyedOperations)save(ctx context.Context,actor,key,op,target,result string)error{
- _,e:=k.DB.ExecContext(ctx,`UPDATE fake_payment_idempotency SET result_id=? WHERE actor_did=? AND request_key=? AND operation=? AND target_id=? AND result_id=''`,actor,key,op,target,result,time.Now().UTC().Format(time.RFC3339Nano))
+ _,e:=k.DB.ExecContext(ctx,`UPDATE fake_payment_idempotency SET result_id=? WHERE actor_did=? AND request_key=? AND operation=? AND target_id=? AND result_id=''`,result,actor,key,op,target)
  if e!=nil{return e}
  existing,_,e:=k.read(ctx,actor,key,op,target)
  if e!=nil{return e};if existing!=result{return ErrIdempotencyConflict}
@@ -48,6 +49,7 @@ func(k KeyedOperations)save(ctx context.Context,actor,key,op,target,result strin
 func(k KeyedOperations)Purchase(ctx context.Context,actor,key,listing string)(string,error){
  if e:=k.check(actor,key,listing);e!=nil{return "",e}
  if existing,found,e:=k.read(ctx,actor,key,"purchase",listing);found||e!=nil{return existing,e}
+ if e:=k.reserve(ctx,actor,key,"purchase",listing);e!=nil{return "",e}
  svc:=Service{DB:k.DB,Provider:FakeProvider{},Enabled:true}
  id,e:=svc.Purchase(ctx,actor,listing);if e!=nil{k.release(ctx,actor,key);return "",e}
  if e=k.save(ctx,actor,key,"purchase",listing,id);e!=nil{return "",e}
@@ -58,6 +60,7 @@ func(k KeyedOperations)Purchase(ctx context.Context,actor,key,listing string)(st
 func(k KeyedOperations)Refund(ctx context.Context,actor,key,entitlement string)error{
  if e:=k.check(actor,key,entitlement);e!=nil{return e}
  if _,found,e:=k.read(ctx,actor,key,"refund",entitlement);found||e!=nil{return e}
+ if e:=k.reserve(ctx,actor,key,"refund",entitlement);e!=nil{return e}
  svc:=Service{DB:k.DB,Provider:FakeProvider{},Enabled:true}
  if e:=svc.Refund(ctx,actor,entitlement);e!=nil{k.release(ctx,actor,key);return e}
  return k.save(ctx,actor,key,"refund",entitlement,entitlement)
