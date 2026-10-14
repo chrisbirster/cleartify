@@ -43,7 +43,7 @@ func TestOutboxConcurrentClaimLeaseAndFencing(t *testing.T){
  a,b:=makeWorker(),makeWorker()
  if e=a.Enqueue(ctx,"m1");e!=nil{t.Fatal(e)}
  // Lease held by another worker is never claimable until expiration.
- _,e=db.DB.ExecContext(ctx,`UPDATE agent_local_outbox SET state='leased',lease_token='older',lease_until=? WHERE message_id='m1'`,now.Add(time.Second).Format(time.RFC3339Nano));if e!=nil{t.Fatal(e)}
+ _,e=db.DB.ExecContext(ctx,`UPDATE agent_local_outbox SET state='leased',lease_token='older',lease_until=? WHERE message_id='m1'`,outboxStamp(now.Add(time.Second)));if e!=nil{t.Fatal(e)}
  if claimed,e:=b.Tick(ctx);claimed||e!=nil{t.Fatalf("claimed live lease %v %v",claimed,e)}
  now=now.Add(2*time.Second)
  if claimed,e:=b.Tick(ctx);!claimed||!errors.Is(e,ErrTransportDenied){t.Fatalf("lease takeover %v %v",claimed,e)}
