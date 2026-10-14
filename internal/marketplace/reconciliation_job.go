@@ -11,6 +11,7 @@ import (
 var ErrReconciliationJobDisabled = errors.New("fake reconciliation job disabled")
 var ErrReconciliationLeaseLost = errors.New("fake reconciliation lease lost")
 var ErrReconciliationJobConfig = errors.New("invalid fake reconciliation job configuration")
+var ErrReconciliationLegacyTime = errors.New("legacy fake reconciliation timestamp requires migration")
 
 // ReconciliationJob is an explicitly invoked, fake-only worker. Nothing is
 // scheduled in the application runtime; callers must opt in and call Tick.
@@ -34,7 +35,18 @@ func(j ReconciliationJob) check()error{
  return nil
 }
 func(j ReconciliationJob) db()*sql.DB{return j.Accounting.DB}
-func stamp(t time.Time)string{return t.UTC().Format(time.RFC3339Nano)}
+const jobTimeLayout = "2006-01-02T15:04:05.000000000Z"
+func stamp(t time.Time)string{return t.UTC().Format(jobTimeLayout)}
+// Fail closed on legacy variable-width RFC3339Nano rows. Never mix lexical formats.
+func(j ReconciliationJob) validateTimes(ctx context.Context)error{
+ var bad int
+ err:=j.db().QueryRowContext(ctx,`SELECT COUNT(*) FROM fake_reconciliation_jobs WHERE
+ length(available_at)!=30 OR substr(available_at,20,1)!='.' OR substr(available_at,30,1)!='Z'
+ OR (lease_until IS NOT NULL AND (length(lease_until)!=30 OR substr(lease_until,20,1)!='.' OR substr(lease_until,30,1)!='Z'))`).Scan(&bad)
+ if err!=nil{return err}
+ if bad!=0{return fmt.Errorf("%w: %d rows",ErrReconciliationLegacyTime,bad)}
+ return nil
+}
 
 // Enqueue schedules a single named local reconciliation request. Repeated
 // enqueue is a no-op, including after success: callers use a fresh ID for a
@@ -42,6 +54,7 @@ func stamp(t time.Time)string{return t.UTC().Format(time.RFC3339Nano)}
 func(j ReconciliationJob) Enqueue(ctx context.Context,id string)error{
  if err:=j.check();err!=nil{return err}
  if id==""||len(id)>128{return ErrReconciliationJobConfig}
+ if err:=j.validateTimes(ctx);err!=nil{return err}
  now:=stamp(j.now())
  _,err:=j.db().ExecContext(ctx,`INSERT INTO fake_reconciliation_jobs(id,state,attempts,available_at,updated_at)
  VALUES(?,'pending',0,?,?) ON CONFLICT(id) DO NOTHING`,id,now,now)
@@ -54,19 +67,30 @@ func(j ReconciliationJob) Enqueue(ctx context.Context,id string)error{
 // between ledger commit and job acknowledgement.
 func(j ReconciliationJob) Tick(ctx context.Context)(bool,error){
  if err:=j.check();err!=nil{return false,err}
+ if err:=j.validateTimes(ctx);err!=nil{return false,err}
  now:=j.now()
  token,err:=randomID();if err!=nil{return false,err}
  tx,err:=j.db().BeginTx(ctx,nil);if err!=nil{return false,err}
  defer tx.Rollback()
  var id string
- err=tx.QueryRowContext(ctx,`SELECT id FROM fake_reconciliation_jobs
+ var priorAttempts int
+ err=tx.QueryRowContext(ctx,`SELECT id,attempts FROM fake_reconciliation_jobs
  WHERE (state='pending' AND available_at<=?) OR (state='leased' AND lease_until<=?)
- ORDER BY available_at,id LIMIT 1`,stamp(now),stamp(now)).Scan(&id)
+ ORDER BY available_at,id LIMIT 1`,stamp(now),stamp(now)).Scan(&id,&priorAttempts)
  if errors.Is(err,sql.ErrNoRows){return false,nil}
  if err!=nil{return false,err}
+ if priorAttempts>=j.MaxAttempts {
+  res,err:=tx.ExecContext(ctx,`UPDATE fake_reconciliation_jobs SET state='dead',lease_token=NULL,lease_until=NULL,last_error_key='attempts_exhausted',updated_at=?
+ WHERE id=? AND attempts>=? AND ((state='pending' AND available_at<=?) OR (state='leased' AND lease_until<=?))`,stamp(now),id,j.MaxAttempts,stamp(now),stamp(now))
+  if err!=nil{return false,err}
+  n,err:=res.RowsAffected();if err!=nil{return false,err}
+  if n!=1{return false,nil}
+  if err=tx.Commit();err!=nil{return false,err}
+  return true,nil
+ }
  res,err:=tx.ExecContext(ctx,`UPDATE fake_reconciliation_jobs SET state='leased',lease_token=?,lease_until=?,attempts=attempts+1,updated_at=?
- WHERE id=? AND ((state='pending' AND available_at<=?) OR (state='leased' AND lease_until<=?))`,
- token,stamp(now.Add(j.Lease)),stamp(now),id,stamp(now),stamp(now))
+ WHERE id=? AND attempts<? AND ((state='pending' AND available_at<=?) OR (state='leased' AND lease_until<=?))`,
+ token,stamp(now.Add(j.Lease)),stamp(now),id,j.MaxAttempts,stamp(now),stamp(now))
  if err!=nil{return false,err}
  n,err:=res.RowsAffected();if err!=nil{return false,err}
  if n!=1{return false,nil}
