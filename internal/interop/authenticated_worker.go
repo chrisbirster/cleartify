@@ -6,7 +6,6 @@ import (
  "errors"
  "crypto/ed25519"
  "time"
- "time"
 )
 
 var ErrRuntimeDisabled = errors.New("authenticated local agent worker disabled")
@@ -26,16 +25,18 @@ type VerifiedLocalCaller struct {
 type DurableInbox struct{DB *sql.DB}
 func(s DurableInbox) Deliver(ctx context.Context,e Envelope)error{
  if s.DB==nil{return ErrOutboxUnavailable}
- _,err:=s.DB.ExecContext(ctx,`INSERT INTO agent_local_inbox(message_id,sender_agent_id,recipient_agent_id,payload_digest,received_at)
+ tx,err:=s.DB.BeginTx(ctx,nil);if err!=nil{return err};defer tx.Rollback()
+ now:=time.Now().UTC().Format(time.RFC3339Nano)
+ _,err=tx.ExecContext(ctx,`INSERT INTO agent_local_inbox(message_id,sender_agent_id,recipient_agent_id,payload_digest,received_at)
  SELECT m.message_id,m.sender_agent_id,m.recipient_agent_id,m.payload_digest,?
- FROM agent_interop_messages m WHERE m.message_id=? AND m.sender_agent_id=? AND m.recipient_agent_id=? AND m.payload_digest=? AND m.status='pending'
- ON CONFLICT(message_id) DO NOTHING`,time.Now().UTC().Format(time.RFC3339Nano),e.MessageID,e.SenderAgentID,e.RecipientAgentID,e.PayloadDigest)
+ FROM agent_interop_messages m WHERE m.message_id=? AND m.sender_agent_id=? AND m.recipient_agent_id=? AND m.payload_digest=? AND m.status='pending' AND EXISTS (SELECT 1 FROM agent_interop_keys k JOIN agent_owner_bindings sb ON sb.agent_id=k.agent_id AND sb.revoked_at IS NULL JOIN agent_registrations sa ON sa.id=sb.agent_id AND sa.status='verified' JOIN agent_owner_bindings rb ON rb.agent_id=m.recipient_agent_id AND rb.revoked_at IS NULL JOIN agent_registrations ra ON ra.id=rb.agent_id AND ra.status='verified' JOIN agent_scoped_grants g ON g.agent_id=m.sender_agent_id AND g.grantee_agent_id=m.recipient_agent_id AND g.scope='message.preview' AND g.revoked_at IS NULL AND julianday(g.expires_at)>julianday(?) JOIN agent_message_consents c ON c.sender_agent_id=m.sender_agent_id AND c.recipient_agent_id=m.recipient_agent_id AND c.recipient_owner_did=rb.owner_did AND c.revoked_at IS NULL AND julianday(c.expires_at)>julianday(?) WHERE k.key_id=m.key_id AND k.agent_id=m.sender_agent_id AND k.revoked_at IS NULL)
+ ON CONFLICT(message_id) DO NOTHING`,now,now,now,e.MessageID,e.SenderAgentID,e.RecipientAgentID,e.PayloadDigest)
  if err!=nil{return err}
  var id,sender,recipient,digest string
- err=s.DB.QueryRowContext(ctx,`SELECT message_id,sender_agent_id,recipient_agent_id,payload_digest FROM agent_local_inbox WHERE message_id=?`,e.MessageID).Scan(&id,&sender,&recipient,&digest)
+ err=tx.QueryRowContext(ctx,`SELECT message_id,sender_agent_id,recipient_agent_id,payload_digest FROM agent_local_inbox WHERE message_id=?`,e.MessageID).Scan(&id,&sender,&recipient,&digest)
  if err!=nil{return ErrOutboxUnavailable}
  if sender!=e.SenderAgentID||recipient!=e.RecipientAgentID||digest!=e.PayloadDigest{return ErrTransportDenied}
- return nil
+ return tx.Commit()
 }
 
 // AuthenticatedWorker is an explicitly invoked local-only entrypoint. All
