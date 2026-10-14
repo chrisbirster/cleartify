@@ -51,6 +51,7 @@ type Options struct {
  PaidEntitlementEnforcementEnabled bool
  FakeCheckoutEnabled bool
  FakeCheckout *marketplace.Service
+ FakeAccounting *marketplace.FakeAccounting
  FakeInstallRunEnabled bool
  FakeInstallRunDB *sql.DB
  FakeInstallRunPush func(context.Context)error
@@ -103,6 +104,7 @@ type Server struct {
  moderation *social.Moderation
  paidEnforcement bool
  fakeCheckout *marketplace.Service
+ fakeAccounting *marketplace.FakeAccounting
  fakeInstallRunDB *sql.DB
  fakeInstallRunPush func(context.Context)error
  creatorTakedowns *protocols.Takedowns
@@ -142,6 +144,7 @@ func New(options Options) http.Handler {
   dbAbuseDB: options.DBAbuseDB,
   dbAbuseSecret: options.DBAbuseSecret,
   fakeCheckout:options.FakeCheckout,
+  fakeAccounting:options.FakeAccounting,
   paidEnforcement:options.PaidEntitlementEnforcementEnabled && options.FakeCheckout!=nil,
   agentOwnership: options.AgentOwnership,
   fakeInstallRunDB:options.FakeInstallRunDB,
@@ -180,6 +183,11 @@ func New(options Options) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
  if s.moderationEnforcement {mux.HandleFunc("GET /api/admin/moderation/local-metrics",s.localModerationMetrics)}
+ if options.FakeCheckoutEnabled && options.FakeCheckout!=nil && options.FakeAccounting!=nil && options.FakeAccounting.Enabled {
+  mux.HandleFunc("POST /api/admin/fake-payments/{id}/disputes",s.fakeOperatorDispute)
+  mux.HandleFunc("POST /api/admin/fake-payments/{id}/resolve",s.fakeOperatorResolve)
+  mux.HandleFunc("POST /api/admin/fake-payments/{id}/refund",s.fakeOperatorRefund)
+ }
  if options.FakeCheckoutEnabled && options.OAuth!=nil && options.FakeCheckout!=nil {
   mux.HandleFunc("POST /api/me/fake-checkout",s.fakeCheckoutPurchase)
   mux.HandleFunc("GET /api/me/marketplace-listings/{id}/access",s.fakeCheckoutAccess)

@@ -27,7 +27,7 @@ func(a FakeAccounting)fee(gross int64)(int64,error){
 func(a FakeAccounting)Reconcile(ctx context.Context)(int,error){
  if e:=a.check();e!=nil{return 0,e}
  tx,e:=a.DB.BeginTx(ctx,nil);if e!=nil{return 0,e};defer tx.Rollback()
- rows,e:=tx.QueryContext(ctx,`SELECT e.id,l.creator_did,l.price_minor,l.currency,e.status FROM marketplace_entitlements e JOIN marketplace_listings l ON l.id=e.listing_id JOIN published_protocols p ON p.id=l.protocol_id WHERE e.provider='fake' AND l.creator_did=p.creator_did ORDER BY e.id`)
+ rows,e:=tx.QueryContext(ctx,`SELECT e.id,s.seller_did,s.price_minor,s.currency,e.status FROM marketplace_entitlements e JOIN fake_sale_snapshots s ON s.entitlement_id=e.id WHERE e.provider='fake' ORDER BY e.id`)
  if e!=nil{return 0,e}
  type item struct{id,seller,currency,status string;gross int64}
  items:=[]item{}
@@ -37,7 +37,7 @@ func(a FakeAccounting)Reconcile(ctx context.Context)(int,error){
  for _,x:=range items{
   var count int
   if e=tx.QueryRowContext(ctx,`SELECT COUNT(*) FROM marketplace_payment_audit WHERE entitlement_id=? AND event='fake_purchase'`,x.id).Scan(&count);e!=nil{return 0,e}
-  if count!=1{return 0,ErrDenied}
+  if count!=1||x.gross<=0||x.currency!="USD"{return 0,ErrDenied}
   fee,e:=a.fee(x.gross);if e!=nil{return 0,e}
   now:=a.time()
   res,e:=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'sale',?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,x.seller,x.gross,fee,x.gross-fee,x.currency,now)
