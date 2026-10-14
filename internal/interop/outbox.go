@@ -131,9 +131,9 @@ func(o Outbox)authorized(ctx context.Context,e Envelope,now time.Time)error{
  JOIN agent_registrations sa ON sa.id=sb.agent_id AND sa.status='verified'
  JOIN agent_owner_bindings rb ON rb.agent_id=?
  JOIN agent_registrations ra ON ra.id=rb.agent_id AND ra.status='verified'
- JOIN agent_scoped_grants g ON g.agent_id=k.agent_id AND g.grantee_agent_id=rb.agent_id AND g.scope='message.preview' AND g.revoked_at IS NULL AND julianday(g.expires_at)>julianday(?)
+ JOIN agent_scoped_grants g ON g.agent_id=k.agent_id AND g.owner_did=sb.owner_did AND g.grantee_agent_id=rb.agent_id AND g.scope='message.preview' AND g.revoked_at IS NULL AND julianday(g.expires_at)>julianday(?)
  JOIN agent_message_consents c ON c.sender_agent_id=k.agent_id AND c.recipient_agent_id=rb.agent_id AND c.revoked_at IS NULL AND julianday(c.expires_at)>julianday(?)
- WHERE k.key_id=? AND k.agent_id=? AND k.revoked_at IS NULL AND rb.revoked_at IS NULL AND c.recipient_owner_did=rb.owner_did`,
+ WHERE k.key_id=? AND k.agent_id=? AND k.algorithm='Ed25519' AND k.revoked_at IS NULL AND rb.revoked_at IS NULL AND c.recipient_owner_did=rb.owner_did`,
  e.RecipientAgentID,now.Format(time.RFC3339Nano),now.Format(time.RFC3339Nano),e.KeyID,e.SenderAgentID).Scan(&n)
  if err!=nil{return err};if n!=1{return ErrTransportDenied}
  return nil
