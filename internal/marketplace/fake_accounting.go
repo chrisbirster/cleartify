@@ -49,6 +49,13 @@ func(a FakeAccounting)Reconcile(ctx context.Context)(int,error){
   now:=a.time()
   res,e:=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'sale',?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,x.seller,x.gross,fee,x.gross-fee,x.currency,now)
   if e!=nil{return 0,e};n,e:=res.RowsAffected();if e!=nil{return 0,e};inserted+=int(n)
+  // Existing rows are not trusted simply because ON CONFLICT ignored an
+  // insert. Validate immutable sale identity and arithmetic on every pass,
+  // including non-refunded entitlements. Historical fee BPS can differ.
+  var recordedSeller,recordedCurrency string
+  var recordedGross,recordedFee,recordedNet int64
+  if e=tx.QueryRowContext(ctx,`SELECT seller_did,currency,gross_minor,fee_minor,net_minor FROM fake_seller_ledger WHERE entitlement_id=? AND entry_kind='sale'`,x.id).Scan(&recordedSeller,&recordedCurrency,&recordedGross,&recordedFee,&recordedNet);e!=nil{return 0,e}
+  if recordedSeller!=x.seller||recordedCurrency!=x.currency||recordedGross!=x.gross||recordedFee<0||recordedFee>recordedGross||recordedNet!=recordedGross-recordedFee{return 0,ErrDenied}
   if x.status=="refunded"{
    if e=tx.QueryRowContext(ctx,`SELECT COUNT(*) FROM marketplace_payment_audit WHERE entitlement_id=? AND event='fake_refund'`,x.id).Scan(&count);e!=nil{return 0,e}
    if count!=1{return 0,ErrDenied}
@@ -59,6 +66,11 @@ func(a FakeAccounting)Reconcile(ctx context.Context)(int,error){
    if saleSeller!=x.seller||saleCurrency!=x.currency||saleGross!=x.gross||saleGross-saleFee!=saleNet{return 0,ErrDenied}
    res,e=tx.ExecContext(ctx,`INSERT INTO fake_seller_ledger(entitlement_id,entry_kind,seller_did,gross_minor,fee_minor,net_minor,currency,recorded_at) VALUES(?,'reversal',?,?,?,?,?,?) ON CONFLICT(entitlement_id,entry_kind) DO NOTHING`,x.id,saleSeller,-saleGross,-saleFee,-saleNet,saleCurrency,now)
    if e!=nil{return 0,e};n,e=res.RowsAffected();if e!=nil{return 0,e};inserted+=int(n)
+   // A pre-existing reversal must still exactly negate the original sale.
+   var reverseSeller,reverseCurrency string
+   var reverseGross,reverseFee,reverseNet int64
+   if e=tx.QueryRowContext(ctx,`SELECT seller_did,currency,gross_minor,fee_minor,net_minor FROM fake_seller_ledger WHERE entitlement_id=? AND entry_kind='reversal'`,x.id).Scan(&reverseSeller,&reverseCurrency,&reverseGross,&reverseFee,&reverseNet);e!=nil{return 0,e}
+   if reverseSeller!=recordedSeller||reverseCurrency!=recordedCurrency||reverseGross!=-recordedGross||reverseFee!=-recordedFee||reverseNet!=-recordedNet{return 0,ErrDenied}
   }
  }
  if e=tx.Commit();e!=nil{return 0,e}
