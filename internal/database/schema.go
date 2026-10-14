@@ -6,6 +6,22 @@ import (
 )
 
 var schemaStatements = []string{
+ `CREATE TABLE IF NOT EXISTS fake_payment_idempotency (
+    actor_did TEXT NOT NULL,
+    request_key TEXT NOT NULL,
+    operation TEXT NOT NULL CHECK(operation IN ('purchase','refund')),
+    target_id TEXT NOT NULL,
+    result_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY(actor_did,request_key)
+ )`,
+ `CREATE TABLE IF NOT EXISTS fake_seller_compliance_placeholders (
+    seller_did TEXT PRIMARY KEY,
+    payout_state TEXT NOT NULL DEFAULT 'unconfigured' CHECK(payout_state IN ('unconfigured','pending_review','blocked')),
+    tax_data_state TEXT NOT NULL DEFAULT 'not_collected' CHECK(tax_data_state IN ('not_collected','pending_review','blocked')),
+    updated_at TEXT NOT NULL
+ )`,
+
  `CREATE TABLE IF NOT EXISTS agent_local_outbox (
   message_id TEXT PRIMARY KEY REFERENCES agent_interop_messages(message_id),
   state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','leased','delivered','dead')),
