@@ -1,0 +1,80 @@
+# Config template only: adding this file does not deploy the app.
+# Before any separately approved deploy, replace the app/origin placeholders,
+# set APP_SECRET (at least 32 random characters) in Fly secrets, and provision
+# one cleartify_data volume in iad. No remote database is configured here.
+# Use one Machine/writer only; fly.toml does not enforce a maximum count.
+# Deploy with --ha=false for the initial single-Machine deployment.
+# No deploy workflow, OAuth enablement, or production cutover is included.
+app = "replace-with-cleartify-app"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+kill_timeout = 15
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  APP_ORIGIN = "https://app.example.invalid"
+  APP_URL = "https://app.example.invalid"
+  DATABASE_PATH = "/data/cleartify.db"
+  NOTIFICATION_MODE = "disabled"
+  TURSO_REMOTE_URL = ""
+  TURSO_AUTH_TOKEN = ""
+
+  # Keep all optional runtime capabilities off. Existing Fly secrets can
+  # override [env]; review the target app's secrets before a future deploy.
+  AGENT_DIRECTORY_ENABLED = "false"
+  AGENT_LOCAL_TRANSPORT_ENABLED = "false"
+  AGENT_OWNERSHIP_ENABLED = "false"
+  AGENT_REGISTRATION_ENABLED = "false"
+  ATPROTO_OAUTH_ENABLED = "false"
+  CLEAR_SESSIONS_ENABLED = "false"
+  CONSENT_KEYS_ENABLED = "false"
+  CREATOR_DRAFTS_ENABLED = "false"
+  CREATOR_PUBLISHING_ENABLED = "false"
+  CREATOR_TAKEDOWNS_ENABLED = "false"
+  DB_SIGNUP_ABUSE_ENABLED = "false"
+  DB_SIGNUP_COUNTER_CLEANUP_ENABLED = "false"
+  DB_SIGNUP_TRUSTED_PROXY_ENABLED = "false"
+  FAKE_ACCOUNTING_ENABLED = "false"
+  FAKE_CHECKOUT_ENABLED = "false"
+  FAKE_INSTALL_RUN_ENABLED = "false"
+  FAKE_PAID_ACCESS_ENFORCEMENT_ENABLED = "false"
+  FAKE_RUN_RECOVERY_ENABLED = "false"
+  IDENTITY_LINKING_ENABLED = "false"
+  IDENTITY_RECOVERY_ENABLED = "false"
+  MANIFEST_PERMISSION_DIFF_ENABLED = "false"
+  MODERATION_BROADER_ENABLED = "false"
+  MODERATION_ENFORCEMENT_ENABLED = "false"
+  MODERATION_RUNTIME_ENABLED = "false"
+  PRIVATE_ALPHA_ROUTES_ENABLED = "false"
+  PROTOCOL_INSTALL_FLOW_ENABLED = "false"
+  SOCIAL_ACCOUNT_REGISTRATION_ENABLED = "false"
+  SOCIAL_DEFAULT_FOLLOW_ENABLED = "false"
+  SOCIAL_MODERATION_ENABLED = "false"
+  SOCIAL_PROFILE_ACTIONS_ENABLED = "false"
+  STRICT_PROTOCOL_PERMISSIONS_ENABLED = "false"
+  OPERATIONS_HARDENING_ENABLED = "false"
+
+[mounts]
+  source = "cleartify_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
