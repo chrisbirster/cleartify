@@ -39,7 +39,10 @@ func TestLoginCookieJarPrivateRoutes(t *testing.T){
  call:=func(path string,payload any)*http.Response{
   t.Helper()
   body,err:=json.Marshal(payload);if err!=nil{t.Fatal(err)}
-  resp,err:=client.Post(server.URL+path,"application/json",bytes.NewReader(body));if err!=nil{t.Fatal(err)}
+  req,err:=http.NewRequest("POST",server.URL+path,bytes.NewReader(body));if err!=nil{t.Fatal(err)}
+  req.Header.Set("Content-Type","application/json")
+  req.Header.Set("Origin","http://localhost:3000")
+  resp,err:=client.Do(req);if err!=nil{t.Fatal(err)}
   return resp
  }
  r:=call("/api/login/start",map[string]string{"phone":"+15550000123"});r.Body.Close()
