@@ -67,6 +67,12 @@ func(l *Login) throttle(ctx context.Context,phone,user string,send bool)error{
   if e!=nil{return ErrLoginThrottled}
   if now.Before(until){return ErrLoginThrottled}
  }
+ if user!="" {
+  var userFails,userSends int
+  err=tx.QueryRowContext(ctx,`SELECT COALESCE(SUM(failed_attempts),0),COALESCE(SUM(send_count),0) FROM clear_login_throttles WHERE user_id=? AND window_start>?`,user,now.Add(-throttleWindow).Format(time.RFC3339Nano)).Scan(&userFails,&userSends)
+  if err!=nil{return err}
+  if userFails>=maxAttempts||userSends>=maxSends{return ErrLoginThrottled}
+ }
  if fails>=maxAttempts||sends>=maxSends {return ErrLoginThrottled}
  if send && sent.Valid {
   prev,e:=time.Parse(time.RFC3339Nano,sent.String)
