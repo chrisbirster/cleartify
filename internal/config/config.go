@@ -32,6 +32,7 @@ type Config struct {
  CreatorTakedownsEnabled bool
  CreatorPublishingEnabled bool
  CreatorDraftsEnabled bool
+ GuideStepsEnabled bool
  PrivateAlphaRoutesEnabled bool
  ClearSessionsEnabled bool
 	Port             string
@@ -80,6 +81,7 @@ func Load() Config {
  FakeInstallRunEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("FAKE_INSTALL_RUN_ENABLED")),"true"),
  CreatorTakedownsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_TAKEDOWNS_ENABLED")),"true"),
  CreatorPublishingEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_PUBLISHING_ENABLED")),"true"),
+ GuideStepsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("GUIDE_STEPS_ENABLED")),"true"),
  CreatorDraftsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_DRAFTS_ENABLED")),"true"),
  PrivateAlphaRoutesEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("PRIVATE_ALPHA_ROUTES_ENABLED")),"true"),
  ClearSessionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CLEAR_SESSIONS_ENABLED")),"true"),
