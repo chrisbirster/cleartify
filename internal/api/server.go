@@ -65,6 +65,8 @@ type Options struct {
  AlphaEligibility alphaEligibility
  ClearSessionsEnabled bool
  ClearSessions *clearsession.Service
+ ReturningLoginEnabled bool
+ ReturningLogin *clearsession.Login
 	Waitlist   *waitlist.Service
 	Beta       *beta.Service
 	AppOrigin  string
@@ -114,6 +116,7 @@ type Server struct {
  alphaEligibility alphaEligibility
  privateAlphaEnabled bool
  clearSessions *clearsession.Service
+ returningLogin *clearsession.Login
 	waitlist   *waitlist.Service
 	beta       *beta.Service
 	appOrigin  string
@@ -154,6 +157,7 @@ func New(options Options) http.Handler {
   identityLinks: options.IdentityLinks,
   linkSocial: options.LinkSocial,
 		clearSessions: options.ClearSessions,
+  returningLogin: options.ReturningLogin,
   clearPrincipalResolver: options.ClearPrincipalResolver,
   alphaEligibility:options.AlphaEligibility,
   privateAlphaEnabled:options.PrivateAlphaRoutesEnabled,
@@ -182,6 +186,7 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.ReturningLoginEnabled && options.ReturningLogin!=nil && options.ClearSessionsEnabled {mux.HandleFunc("POST /api/login/start",s.startReturningLogin);mux.HandleFunc("POST /api/login/verify",s.verifyReturningLogin)}
  if s.moderationEnforcement {mux.HandleFunc("GET /api/admin/moderation/local-metrics",s.localModerationMetrics)}
  if options.FakeCheckoutEnabled && options.FakeCheckout!=nil && options.FakeAccounting!=nil && options.FakeAccounting.Enabled {
   mux.HandleFunc("POST /api/admin/fake-payments/{id}/resolve",s.fakeOperatorResolve)

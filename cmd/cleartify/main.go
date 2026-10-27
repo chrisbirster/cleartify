@@ -90,6 +90,7 @@ func main() {
 
 	var sender notifications.Sender = notifications.DisabledSender{}
 	if cfg.NotificationMode == "debug" {
+  if !(strings.HasPrefix(cfg.AppOrigin,"http://localhost:")||strings.HasPrefix(cfg.AppOrigin,"http://127.0.0.1:")) {slog.Error("debug notifications require loopback local app origin");os.Exit(1)}
 		slog.Warn("notification debug mode enabled; beta secrets will be printed to logs")
 		sender = notifications.DebugSender{}
 	}
@@ -110,6 +111,8 @@ func main() {
  }
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
+ var returningLogin *clearsession.Login
+ if cfg.ReturningLoginEnabled && clearSessions!=nil {returningLogin=&clearsession.Login{Sessions:clearSessions,Sender:sender};if err=returningLogin.Ready(ctx);err!=nil{slog.Error("returning login storage failed", "error",err);os.Exit(1)}}
  // Local transport has no HTTP listener, outbound network, or production delivery.
  _ = interop.NewLocalTransport(cfg.AgentTransportEnabled, db.DB, db.Push)
  var trustedProxyNetworks []*net.IPNet
@@ -155,6 +158,8 @@ func main() {
   ClearPrincipalResolver:api.ClearSessionPrincipal(clearSessions),
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
   ClearSessions:clearSessions,
+  ReturningLoginEnabled:cfg.ReturningLoginEnabled,
+  ReturningLogin:returningLogin,
 		Waitlist:   waitlistService,
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
@@ -181,7 +186,7 @@ func main() {
   handler=operations.WithReadiness(handler,readiness)
  }
  server := &http.Server{
-		Addr:              ":" + cfg.Port,
+		Addr:              func()string{if cfg.NotificationMode=="debug"{return "127.0.0.1:"+cfg.Port};return ":"+cfg.Port}(),
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
