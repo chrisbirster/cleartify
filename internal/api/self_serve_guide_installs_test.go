@@ -35,7 +35,13 @@ func TestSelfServeGuideInstallOnlyVisiblePublicAndOwnerScoped(t *testing.T){
  flow:=&protocols.InstallService{Store:db}
  origin:="http://localhost:3000"
  off:=New(Options{ClearSessionsEnabled:true,ClearSessions:sessions,InstallFlow:flow,AppOrigin:origin})
- on:=New(Options{ClearSessionsEnabled:true,ClearSessions:sessions,InstallFlow:flow,AppOrigin:origin,SelfServeGuideInstallsEnabled:true})
+ on:=New(Options{ClearSessionsEnabled:true,ClearSessions:sessions,InstallFlow:flow,AppOrigin:origin,SelfServeGuideInstallsEnabled:true,Protocols:&protocols.Reader{DB:db.DB}})
+ listing:=httptest.NewRecorder()
+ on.ServeHTTP(listing,httptest.NewRequest("GET","/api/protocols",nil))
+ if listing.Code!=200{t.Fatalf("discovery %d",listing.Code)}
+ for _,secret:=range []string{`"id":"draft"`,`"id":"hidden"`} {
+  if bytes.Contains(listing.Body.Bytes(),[]byte(secret)){t.Fatalf("nonpublic recipe discoverable: %s",secret)}
+ }
  post:=func(h http.Handler,id,digest string,auth bool)int{
   t.Helper()
   payload,_:=json.Marshal(map[string]string{"publicationId":id,"acknowledgedManifestSha256":digest})
