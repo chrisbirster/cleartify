@@ -3,6 +3,7 @@ package api
 import (
  "bytes"
  "crypto/rand"
+ "crypto/sha256"
  "database/sql"
  "encoding/hex"
  "encoding/json"
@@ -34,6 +35,8 @@ func(s *Server) selfServeGuideInstall(w http.ResponseWriter,r *http.Request){
  AND NOT EXISTS (SELECT 1 FROM creator_takedown_requests t WHERE t.protocol_id=p.id AND t.status='hidden')`,req.PublicationID).Scan(&slug,&version,&spec)
  if errors.Is(err,sql.ErrNoRows){writeJSON(w,404,map[string]string{"error":"publication_unavailable"});return}
  if err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
+ digest:=sha256.Sum256([]byte(spec))
+ if hex.EncodeToString(digest[:])!=manifest.SpecSHA256 || version!=manifest.Version || strings.TrimSpace(slug)=="" {writeJSON(w,409,map[string]string{"error":"manifest_changed"});return}
  // Only allow text-only, permissionless guide steps, not any executable operation.
  var body struct{Steps []json.RawMessage `json:"steps"`;Permissions []string `json:"permissions"`;RemixOf string `json:"remixOf"`;Attribution string `json:"attribution"`}
  dec:=json.NewDecoder(bytes.NewReader([]byte(spec)));dec.DisallowUnknownFields()
