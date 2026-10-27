@@ -13,6 +13,11 @@ var attributionID=regexp.MustCompile(`^[a-zA-Z0-9_-][a-zA-Z0-9._:-]{0,127}$`)
 // ValidateDraftSpec is local draft validation, NOT permission to publish or
 // execute arbitrary steps. Unknown executable fields are rejected.
 func ValidateDraftSpec(raw []byte, license string) error {
+ return validateDraftSpec(raw,license,false)
+}
+// ValidateDraftSpecWithGuides permits inert readable steps while keeping the legacy path strict.
+func ValidateDraftSpecWithGuides(raw []byte,license string)error{return validateDraftSpec(raw,license,true)}
+func validateDraftSpec(raw []byte,license string,allowGuides bool)error{
  var body struct {
   Steps []json.RawMessage `json:"steps"`
   Permissions []string `json:"permissions"`
@@ -30,10 +35,14 @@ func ValidateDraftSpec(raw []byte, license string) error {
   seen[p]=true
  }
  for _,rawStep:=range body.Steps {
-  var step struct{Operation string `json:"operation"`;Key string `json:"key"`;Value string `json:"value"`}
+  var step struct{Operation string `json:"operation"`;Key string `json:"key"`;Value string `json:"value"`;Text string `json:"text"`}
   d:=json.NewDecoder(bytes.NewReader(rawStep));d.DisallowUnknownFields()
   if err:=d.Decode(&step);err!=nil{return ErrDraftSpec}
-  if step.Operation!="local.set"&&step.Operation!="local.assert"{return ErrDraftSpec}
+  if step.Operation=="guide" && allowGuides {
+   if step.Key!=""||step.Value!=""||len(step.Text)<1||len(step.Text)>4096||strings.TrimSpace(step.Text)==""{return ErrDraftSpec}
+   continue
+  }
+  if step.Text!=""||step.Operation!="local.set"&&step.Operation!="local.assert"{return ErrDraftSpec}
   if len(step.Key)==0||len(step.Key)>64||len(step.Value)>4096{return ErrDraftSpec}
   for _,c:=range step.Key {if !(c>='a'&&c<='z'||c>='A'&&c<='Z'||c>='0'&&c<='9'||c=='_'||c=='-'){return ErrDraftSpec}}
  }
