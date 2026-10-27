@@ -23,6 +23,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/beta"
  "github.com/chrisbirster/cleartify/internal/clearsession"
+ "github.com/chrisbirster/cleartify/internal/followups"
 	"github.com/chrisbirster/cleartify/internal/config"
 	"github.com/chrisbirster/cleartify/internal/database"
 	"github.com/chrisbirster/cleartify/internal/notifications"
@@ -111,6 +112,8 @@ func main() {
  }
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
+ var followupService *followups.Service
+ if cfg.ClearConversationEnabled && clearSessions!=nil {followupService=&followups.Service{DB:db.DB,Sender:sender};if err=followupService.Ready(ctx);err!=nil{slog.Error("followups storage unavailable","error",err);os.Exit(1)}}
  var returningLogin *clearsession.Login
  if cfg.ReturningLoginEnabled && clearSessions!=nil {returningLogin=&clearsession.Login{Sessions:clearSessions,Sender:sender};if err=returningLogin.Ready(ctx);err!=nil{slog.Error("returning login storage failed", "error",err);os.Exit(1)}}
  // Local transport has no HTTP listener, outbound network, or production delivery.
@@ -160,6 +163,8 @@ func main() {
   ClearSessions:clearSessions,
   ReturningLoginEnabled:cfg.ReturningLoginEnabled,
   ReturningLogin:returningLogin,
+  ClearConversationEnabled:cfg.ClearConversationEnabled,
+  Followups:followupService,
 		Waitlist:   waitlistService,
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
