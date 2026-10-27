@@ -64,4 +64,8 @@ func TestSelfServeGuideInstallOnlyVisiblePublicAndOwnerScoped(t *testing.T){
  if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM protocol_installations WHERE user_id='b' AND protocol_key='pub'").Scan(&bCount);err!=nil{t.Fatal(err)}
  if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM protocol_installations WHERE user_id='a'").Scan(&aCount);err!=nil{t.Fatal(err)}
  if bCount!=1||aCount!=0{t.Fatalf("leak or duplicate: B=%d A=%d",bCount,aCount)}
+ var audit int
+ if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM guide_install_audit WHERE user_id='b' AND publication_id='pub' AND action='installed'").Scan(&audit);err!=nil||audit!=1{t.Fatalf("audit %d %v",audit,err)}
+ _,err=db.DB.ExecContext(ctx,`INSERT INTO protocol_installations(id,user_id,protocol_key,version,source,enabled,created_at) VALUES('dup','b','pub',1,'self_serve_guide',1,'now')`)
+ if err==nil{t.Fatal("duplicate database insert bypassed unique constraint")}
 }
