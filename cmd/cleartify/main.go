@@ -186,7 +186,7 @@ func main() {
   handler=operations.WithReadiness(handler,readiness)
  }
  server := &http.Server{
-		Addr:              ":" + cfg.Port,
+		Addr:              func()string{if cfg.NotificationMode=="debug"{return "127.0.0.1:"+cfg.Port};return ":"+cfg.Port}(),
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
