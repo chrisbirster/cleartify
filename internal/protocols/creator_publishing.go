@@ -24,7 +24,9 @@ func (s DraftService) PublishDraft(ctx context.Context,actor,id,target,provenanc
  if errors.Is(err,sql.ErrNoRows){return ErrPublishingConflict};if err!=nil{return err}
  if owner!=actor{return ErrPublishingConflict}
  // Existing draft validation is repeated against immutable data at publication time.
- if ValidateDraftSpec([]byte(spec),license)!=nil{return ErrPublishingInvalid}
+ var validationErr error
+ if s.GuideStepsEnabled {validationErr=ValidateDraftSpecWithGuides([]byte(spec),license)} else {validationErr=ValidateDraftSpec([]byte(spec),license)}
+ if validationErr!=nil{return ErrPublishingInvalid}
  if license!="CC0-1.0"&&license!="CC-BY-4.0"&&license!="MIT"&&license!="Apache-2.0"{return ErrPublishingInvalid}
  var input struct{RemixOf string `json:"remixOf"`;Attribution string `json:"attribution"`}
  if err=json.Unmarshal([]byte(spec),&input);err!=nil{return ErrPublishingInvalid}
