@@ -90,6 +90,7 @@ func main() {
 
 	var sender notifications.Sender = notifications.DisabledSender{}
 	if cfg.NotificationMode == "debug" {
+  if !(strings.HasPrefix(cfg.AppOrigin,"http://localhost:")||strings.HasPrefix(cfg.AppOrigin,"http://127.0.0.1:")) {slog.Error("debug notifications require loopback local app origin");os.Exit(1)}
 		slog.Warn("notification debug mode enabled; beta secrets will be printed to logs")
 		sender = notifications.DebugSender{}
 	}
