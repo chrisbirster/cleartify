@@ -149,7 +149,7 @@ func main() {
   CreatorTakedowns:&protocols.Takedowns{DB:db.DB},
   CreatorPublishingEnabled:cfg.CreatorPublishingEnabled && cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
   CreatorDraftsEnabled:cfg.CreatorDraftsEnabled && cfg.AtprotoOAuthEnabled,
-  CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens},
+  CreatorDrafts:&protocols.DraftService{DB:db.DB,Tokens:tokens,GuideStepsEnabled:cfg.GuideStepsEnabled},
   PrivateAlphaRoutesEnabled:cfg.PrivateAlphaRoutesEnabled,
   AlphaEligibility:alpha.Gate{DB:db.DB},
   ClearPrincipalResolver:api.ClearSessionPrincipal(clearSessions),
