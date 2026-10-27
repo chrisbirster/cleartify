@@ -78,6 +78,7 @@ type Options struct {
 	Protocols *protocols.Reader
 	Profiles *social.Reader
 	ProtocolInstallFlowEnabled bool
+ SelfServeGuideInstallsEnabled bool
 	InstallFlow *protocols.InstallService
 	SocialAccountRegistrationEnabled bool
 	SocialAccounts *social.Accounts
@@ -239,7 +240,10 @@ func New(options Options) http.Handler {
  }
  if options.PrivateAlphaRoutesEnabled && options.ClearSessionsEnabled {mux.HandleFunc("GET /api/me/alpha-eligibility",s.alphaPrivateRoute(s.alphaEligibilityStatus))}
  if options.ClearSessionsEnabled && options.ClearSessions != nil {if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/clear-session",s.alphaPrivateRoute(s.meClearSession))} else {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession)};mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
-	if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
+	if options.SelfServeGuideInstallsEnabled && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.InstallFlow!=nil {
+  mux.HandleFunc("POST /api/me/self-serve-guide-installs",s.alphaPrivateRoute(s.selfServeGuideInstall))
+ }
+ if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
 		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
 		mux.HandleFunc("POST /api/me/protocol-install-requests",s.requestProtocolInstall)
 		mux.HandleFunc("POST /api/admin/protocol-install-requests/{id}/decision",s.decideProtocolInstall)
