@@ -22,6 +22,10 @@ func(s *Server) selfServeGuideInstall(w http.ResponseWriter,r *http.Request){
  var req struct{PublicationID string `json:"publicationId"`;AcknowledgedManifestSHA256 string `json:"acknowledgedManifestSha256"`}
  if !decodeJSON(w,r,&req){return}
  if len(req.PublicationID)<1||len(req.PublicationID)>128||len(req.AcknowledgedManifestSHA256)!=64{writeJSON(w,400,map[string]string{"error":"invalid_request"});return}
+ var available int
+ err:=s.installFlow.Store.DB.QueryRowContext(r.Context(),`SELECT COUNT(*) FROM published_protocols p WHERE p.id=? AND p.status='published' AND EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=p.id AND c.visibility='public') AND NOT EXISTS (SELECT 1 FROM creator_takedown_requests t WHERE t.protocol_id=p.id AND t.status='hidden')`,req.PublicationID).Scan(&available)
+ if err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
+ if available!=1{writeJSON(w,404,map[string]string{"error":"publication_unavailable"});return}
  manifest,err:=s.installFlow.Preview(r.Context(),req.PublicationID)
  if err!=nil{if errors.Is(err,protocols.ErrInstallUnavailable){writeJSON(w,404,map[string]string{"error":"publication_unavailable"});return};writeJSON(w,503,map[string]string{"error":"unavailable"});return}
  if req.AcknowledgedManifestSHA256!=manifest.ManifestSHA256 {writeJSON(w,409,map[string]string{"error":"manifest_changed"});return}
