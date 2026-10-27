@@ -22,9 +22,13 @@ func TestSelfServeGuideInstallOnlyVisiblePublicAndOwnerScoped(t *testing.T){
   if _,err=db.DB.ExecContext(ctx,`INSERT INTO users(id,display_name,primary_email,status,created_at,updated_at) VALUES(?,?,?,'active',?,?)`,user,user,user+"@test.invalid",now,now);err!=nil{t.Fatal(err)}
  }
  spec:=`{"steps":[{"operation":"guide","text":"First step"}],"permissions":[]}`
- for _,p:=range []struct{id,status,spec string}{{"pub","published",spec},{"draft","draft",spec},{"hidden","hidden",spec},{"exec","published",`{"steps":[{"operation":"local.set","key":"a","value":"b"}],"permissions":[]}`}}{
+ for _,p:=range []struct{id,status,spec string}{{"pub","published",spec},{"draft","draft",spec},{"hidden","published",spec},{"exec","published",`{"steps":[{"operation":"local.set","key":"a","value":"b"}],"permissions":[]}`}}{
   _,err=db.DB.ExecContext(ctx,`INSERT INTO published_protocols(id,creator_did,slug,version,title,summary,license,spec_json,status,created_at) VALUES(?,'did:plc:aaaaaaaaaaaaaaaaaaaaaaaa',?,1,'Recipe','summary','MIT',?,?,?)`,p.id,p.id,p.spec,p.status,now);if err!=nil{t.Fatal(err)}
  }
+ for _,id:=range []string{"pub","hidden","exec"}{
+  _,err=db.DB.ExecContext(ctx,`INSERT INTO creator_publications(protocol_id,visibility,original_source_id,provenance_note,approved_at,updated_at) VALUES(?,'public','','reviewed',?,?)`,id,now,now);if err!=nil{t.Fatal(err)}
+ }
+ _,err=db.DB.ExecContext(ctx,`INSERT INTO creator_takedown_requests(id,protocol_id,requester_did,reason_key,status,created_at) VALUES('hide1','hidden','did:plc:aaaaaaaaaaaaaaaaaaaaaaaa','rights_review','hidden',?)`,now);if err!=nil{t.Fatal(err)}
  tok,err:=security.NewTokens(strings.Repeat("x",32));if err!=nil{t.Fatal(err)}
  sessions:=&clearsession.Service{Store:db,Tokens:tok}
  b,err:=sessions.Issue(ctx,"b");if err!=nil{t.Fatal(err)}
