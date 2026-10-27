@@ -102,7 +102,7 @@ func(l *Login) Start(ctx context.Context,rawPhone string) error{
   return err
  }
  if user==""{return nil}
- if l.Sender==nil{return notifications.ErrUnavailable}
+ if l.Sender==nil{return nil}
  code,err:=l.Sessions.Tokens.FiveDigitCode();if err!=nil{return err}
  now:=l.clock()
  _,err=l.Sessions.Store.DB.ExecContext(ctx,`INSERT INTO clear_login_challenges(user_id,code_digest,expires_at,attempts,created_at,consumed_at)
@@ -111,7 +111,10 @@ func(l *Login) Start(ctx context.Context,rawPhone string) error{
  user,l.Sessions.Tokens.Digest(code),now.Add(challengeLifetime).Format(time.RFC3339Nano),now.Format(time.RFC3339Nano))
  if err!=nil{return err}
  if err=l.Sessions.Store.Push(ctx);err!=nil{return err}
- return l.Sender.SendSMS(ctx,notifications.SMS{To:phone,Text:"Your Cleartify sign-in code is "+code+". It expires in 10 minutes."})
+ // Keep public start responses indistinguishable for known and unknown phones,
+ // including when local notification delivery is disabled or fails.
+ _=l.Sender.SendSMS(ctx,notifications.SMS{To:phone,Text:"Your Cleartify sign-in code is "+code+". It expires in 10 minutes."})
+ return nil
 }
 func(l *Login) Verify(ctx context.Context,rawPhone,code string)(string,error){
  phone,err:=NormalizePhone(rawPhone);if err!=nil{return "",ErrChallenge}
