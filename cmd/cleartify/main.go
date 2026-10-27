@@ -110,6 +110,8 @@ func main() {
  }
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
+ var returningLogin *clearsession.Login
+ if cfg.ReturningLoginEnabled && clearSessions!=nil {returningLogin=&clearsession.Login{Sessions:clearSessions,Sender:sender};if err=returningLogin.Ready(ctx);err!=nil{slog.Error("returning login storage failed", "error",err);os.Exit(1)}}
  // Local transport has no HTTP listener, outbound network, or production delivery.
  _ = interop.NewLocalTransport(cfg.AgentTransportEnabled, db.DB, db.Push)
  var trustedProxyNetworks []*net.IPNet
@@ -155,6 +157,8 @@ func main() {
   ClearPrincipalResolver:api.ClearSessionPrincipal(clearSessions),
   ClearSessionsEnabled:cfg.ClearSessionsEnabled,
   ClearSessions:clearSessions,
+  ReturningLoginEnabled:cfg.ReturningLoginEnabled,
+  ReturningLogin:returningLogin,
 		Waitlist:   waitlistService,
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
