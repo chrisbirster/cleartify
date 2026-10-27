@@ -15,6 +15,8 @@ import (
  "github.com/chrisbirster/cleartify/internal/notifications"
  "github.com/chrisbirster/cleartify/internal/security"
 )
+type loginSocialDID struct{}
+func(loginSocialDID)SocialSessionDID(*http.Request)(string,bool){return "did:plc:aaaaaaaaaaaaaaaaaaaaaaaa",true}
 type loginCapture struct {codes []string}
 func(s *loginCapture)SendEmail(context.Context,notifications.Email)error{return nil}
 func(s *loginCapture)SendSMS(_ context.Context,m notifications.SMS)error{s.codes=append(s.codes,strings.TrimSuffix(strings.Split(m.Text," ")[5],"."));return nil}
@@ -30,7 +32,7 @@ func TestLoginCookieJarPrivateRoutes(t *testing.T){
  sender:=&loginCapture{}
  login:=&clearsession.Login{Sessions:sess,Sender:sender}
  if err=login.Ready(ctx);err!=nil{t.Fatal(err)}
- handler:=New(Options{ReturningLoginEnabled:true,ReturningLogin:login,ClearSessionsEnabled:true,ClearSessions:sess,AppOrigin:"http://localhost:3000"})
+ handler:=New(Options{ReturningLoginEnabled:true,ReturningLogin:login,ClearSessionsEnabled:true,ClearSessions:sess,AppOrigin:"http://localhost:3000",IdentityLinkingEnabled:true,LinkSocial:loginSocialDID{},IdentityLinks:&LinkPersistence{DB:db.DB,Push:db.Push}})
  server:=httptest.NewServer(handler);defer server.Close()
  jar,err:=cookiejar.New(nil);if err!=nil{t.Fatal(err)}
  client:=&http.Client{Jar:jar}
@@ -46,6 +48,10 @@ func TestLoginCookieJarPrivateRoutes(t *testing.T){
  if r.StatusCode!=200{t.Fatalf("verify %d",r.StatusCode)}
  res,err:=client.Get(server.URL+"/api/me/clear-session");if err!=nil{t.Fatal(err)};res.Body.Close()
  if res.StatusCode!=200{t.Fatalf("private cookie not sent: %d",res.StatusCode)}
+ link:=call("/api/me/identity-link/start",map[string]any{});link.Body.Close()
+ if link.StatusCode!=201{t.Fatalf("identity link did not accept freshly issued Clear cookie: %d",link.StatusCode)}
+ preview,err:=client.Get(server.URL+"/api/me/identity-link/preview");if err!=nil{t.Fatal(err)};preview.Body.Close()
+ if preview.StatusCode!=200{t.Fatalf("identity-link preview %d",preview.StatusCode)}
  // Cookie should reach both /api/me/identity-link and /api/me/protocol-install-requests paths,
  // not /api/login. Those features require separately configured OAuth/services.
  req,err:=http.NewRequest("POST",server.URL+"/api/me/identity-link/start",nil);if err!=nil{t.Fatal(err)}
