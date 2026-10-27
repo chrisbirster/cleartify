@@ -46,6 +46,7 @@ type Config struct {
 	SocialDefaultFollowEnabled bool
 	SocialAccountRegistrationEnabled bool
 	ProtocolInstallFlowEnabled bool
+ SelfServeGuideInstallsEnabled bool
 	SocialProfileActionsEnabled bool
 	AgentRegistrationEnabled bool
 	AtprotoOAuthEnabled bool
@@ -94,7 +95,8 @@ func Load() Config {
 		TursoAuthToken:   strings.TrimSpace(os.Getenv("TURSO_AUTH_TOKEN")),
 		SocialDefaultFollowEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_DEFAULT_FOLLOW_ENABLED")),"true"),
 		SocialAccountRegistrationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_ACCOUNT_REGISTRATION_ENABLED")),"true"),
-		ProtocolInstallFlowEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("PROTOCOL_INSTALL_FLOW_ENABLED")),"true"),
+		SelfServeGuideInstallsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SELF_SERVE_GUIDE_INSTALLS_ENABLED")),"true"),
+ ProtocolInstallFlowEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("PROTOCOL_INSTALL_FLOW_ENABLED")),"true"),
 		SocialProfileActionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("SOCIAL_PROFILE_ACTIONS_ENABLED")),"true"),
 		AgentRegistrationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("AGENT_REGISTRATION_ENABLED")),"true"),
 		AtprotoOAuthEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("ATPROTO_OAUTH_ENABLED")),"true"),
