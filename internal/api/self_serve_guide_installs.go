@@ -30,6 +30,7 @@ func(s *Server) selfServeGuideInstall(w http.ResponseWriter,r *http.Request){
  var version int
  err=tx.QueryRowContext(r.Context(),`SELECT slug,version,spec_json FROM published_protocols p
  WHERE p.id=? AND p.status='published'
+ AND EXISTS (SELECT 1 FROM creator_publications c WHERE c.protocol_id=p.id AND c.visibility='public')
  AND NOT EXISTS (SELECT 1 FROM creator_takedown_requests t WHERE t.protocol_id=p.id AND t.status='hidden')`,req.PublicationID).Scan(&slug,&version,&spec)
  if errors.Is(err,sql.ErrNoRows){writeJSON(w,404,map[string]string{"error":"publication_unavailable"});return}
  if err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
