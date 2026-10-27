@@ -30,7 +30,7 @@ func TestReturningLoginReplayExpiryIsolationRestart(t *testing.T){
  if err=login.Ready(ctx);err!=nil{t.Fatal(err)}
  if err=login.Start(ctx,"+15550000001");err!=nil{t.Fatal(err)}
  if len(sender.sms)!=1{t.Fatal("missing notification")}
- code:=strings.Split(sender.sms[0].Text," ")[5];if len(code)!=5{t.Fatalf("bad code: %q",code)}
+ code:=strings.TrimSuffix(strings.Split(sender.sms[0].Text," ")[5],".");if len(code)!=5{t.Fatalf("bad code: %q",code)}
  if _,err=login.Verify(ctx,"+15550000002",code);!errors.Is(err,ErrChallenge){t.Fatal("cross-account accepted",err)}
  if _,err=login.Verify(ctx,"+15550000001","00000");!errors.Is(err,ErrChallenge){t.Fatal("wrong code accepted",err)}
  if err=db.Close();err!=nil{t.Fatal(err)}
@@ -41,7 +41,7 @@ func TestReturningLoginReplayExpiryIsolationRestart(t *testing.T){
  if _,err=login.Verify(ctx,"+15550000001",code);!errors.Is(err,ErrChallenge){t.Fatal("replay accepted",err)}
  now=now.Add(time.Minute*11)
  if err=login.Start(ctx,"+15550000002");err!=nil{t.Fatal(err)}
- code2:=strings.Split(sender.sms[len(sender.sms)-1].Text," ")[5]
+ code2:=strings.TrimSuffix(strings.Split(sender.sms[len(sender.sms)-1].Text," ")[5],".")
  now=now.Add(time.Minute*11)
  if _,err=login.Verify(ctx,"+15550000002",code2);!errors.Is(err,ErrChallenge){t.Fatal("expired accepted",err)}
 }
