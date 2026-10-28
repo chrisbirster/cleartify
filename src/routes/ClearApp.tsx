@@ -126,7 +126,7 @@ export function ClearApp() {
   async function openManifest(item: Recipe) {
     setSelected(item); setManifest(null); setRecipeStatus('');
     try {
-      const result = await request('/api/protocols/' + encodeURIComponent(item.id) + '/install-manifest');
+      const result = await request('/api/public/guide-manifests/' + encodeURIComponent(item.id));
       const parsed = toManifest(result);
       if (!parsed) throw new Error('The server did not return a valid install manifest digest. Installation is disabled.');
       setManifest(parsed);
