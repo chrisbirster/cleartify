@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, Show } from 'solid-js';
+import { createEffect, createSignal, Show } from 'solid-js';
 import { useParams } from '@solidjs/router';
 import * as stylex from '@stylexjs/stylex';
 
@@ -14,12 +14,12 @@ export function ProfilePreview() {
  const [message,setMessage]=createSignal('');
  const apiBase=(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/,'');
 
- createEffect(() => params.handle, (handle) => {
+ createEffect(() => params.profileHandle?.slice(1), (handle) => {
   const controller=new AbortController();
   setLoading(true);setProfile(null);setMessage('');
   void (async ()=>{
    try {
-    const res=await fetch(`${apiBase}/api/profiles/${encodeURIComponent(handle ?? '')}`,{signal:controller.signal});
+    const res=await fetch(`${apiBase}/api/profiles/${encodeURIComponent(handle ?? '')}`,{signal:controller.signal,credentials:'include'});
     if(res.status===404){setMessage('This profile is not public or does not exist.');return}
     if(!res.ok){setMessage('Could not load this profile.');return}
     const data=await res.json() as Profile;
@@ -30,7 +30,7 @@ export function ProfilePreview() {
     if(!controller.signal.aborted){setLoading(false)}
    }
   })();
-  onCleanup(()=>controller.abort());
+  return ()=>controller.abort();
  });
 
  return <main {...stylex.props(styles.page)}>

@@ -35,8 +35,12 @@ func TestTransactionalLocalTransport(t *testing.T){
  if err=transport.Send(ctx,env("m1"));!errors.Is(err,ErrTransportDenied){t.Fatal("missing consent",err)}
  svc:=LocalService{Store:store,Now:func()time.Time{return now}}
  if err=svc.Consent(ctx,"did:plc:bob",b.ID,a.ID,time.Hour);err!=nil{t.Fatal(err)}
+ if _,err=grant.Grant(ctx,"did:plc:alice",a.ID,b.ID,"message.preview",time.Hour);err!=nil{t.Fatal(err)}
  if err=transport.Send(ctx,env("m1"));err!=nil{t.Fatal(err)}
  if err=transport.Send(ctx,env("m1"));!errors.Is(err,ErrReplay){t.Fatal("replay",err)}
+ if _,err=store.DB.ExecContext(ctx,`INSERT INTO social_blocks(actor_did,subject_did,created_at) VALUES('did:plc:bob','did:plc:alice','now')`);err!=nil{t.Fatal(err)}
+ if err=transport.Send(ctx,env("blocked-message"));!errors.Is(err,ErrTransportDenied){t.Fatal("owner block bypassed",err)}
+ if _,err=store.DB.ExecContext(ctx,`DELETE FROM social_blocks`);err!=nil{t.Fatal(err)}
  if err=transport.RevokeConsent(ctx,"did:plc:alice",b.ID,a.ID);!errors.Is(err,ErrTransportDenied){t.Fatal("wrong owner revoked",err)}
  if err=transport.RevokeConsent(ctx,"did:plc:bob",b.ID,a.ID);err!=nil{t.Fatal(err)}
  if err=transport.Send(ctx,env("m2"));!errors.Is(err,ErrTransportDenied){t.Fatal("revoked consent bypass",err)}

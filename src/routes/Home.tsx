@@ -30,6 +30,7 @@ export function Home() {
     try {
       const response = await fetch(`${apiBase}/api/waitlist`, {
         method: 'POST',
+      credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           name: data.get('name'),
@@ -61,7 +62,8 @@ export function Home() {
         <div {...stylex.props(styles.navLinks)}>
           <a href="#how">How it works</a>
           <a href="#protocols">Protocols</a>
-          <a href="/@chris">Profiles</a>
+          <a href="/settings/profile">Your profile</a>
+            <a href="/@chris">Profiles</a>
           <a href="#privacy">Privacy</a>
         </div>
         <a href="#waitlist" {...stylex.props(styles.navCta)}>Join the waitlist →</a>

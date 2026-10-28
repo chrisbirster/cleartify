@@ -10,6 +10,7 @@ import (
  "testing"
  "time"
  "github.com/chrisbirster/cleartify/internal/clearsession"
+ "github.com/chrisbirster/cleartify/internal/clear"
  "github.com/chrisbirster/cleartify/internal/database"
  "github.com/chrisbirster/cleartify/internal/protocols"
  "github.com/chrisbirster/cleartify/internal/security"
@@ -63,5 +64,6 @@ func TestSelfServeGuideInstallOnlyVisiblePublicAndOwnerScoped(t *testing.T){
  var bCount,aCount int
  if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM protocol_installations WHERE user_id='b' AND protocol_key='pub'").Scan(&bCount);err!=nil{t.Fatal(err)}
  if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM protocol_installations WHERE user_id='a'").Scan(&aCount);err!=nil{t.Fatal(err)}
+ if _,err= (clear.Service{DB:db.DB}).Request(ctx,"b","pub");err!=nil{t.Fatal("guide installation cannot authorize its publication",err)}
  if bCount!=1||aCount!=0{t.Fatalf("leak or duplicate: B=%d A=%d",bCount,aCount)}
 }

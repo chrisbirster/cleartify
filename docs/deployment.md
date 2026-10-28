@@ -78,7 +78,9 @@ Build-time configuration:
 VITE_API_BASE_URL=https://api.cleartify.com
 ```
 
-The SPA calls the API directly over HTTPS. The Go API allows the configured `APP_ORIGIN` through CORS.
+The SPA calls the API directly over HTTPS with browser credentials included. Set `APP_ORIGIN` to the exact SPA origin, for example `https://cleartify.com`; the API allows credentialed CORS only for that origin, including PUT/DELETE preflights.
+
+Keep the SPA and API same-site (for example `https://cleartify.com` and `https://api.cleartify.com`). Session cookies use `SameSite=Strict`, and protected mutations reject cross-site requests. Separate origins on unrelated domains are not a supported authenticated deployment. A shared origin with an `/api/*` proxy also works. Locally, keep both services on `localhost` or both on `127.0.0.1` and use the corresponding exact `APP_ORIGIN`.
 
 A future Cloudflare Worker may proxy `/api/*` to the API so the browser can use a single origin, but M1 does not require that indirection.
 
@@ -140,3 +142,8 @@ A deployment is healthy only when:
 ## Future Cloudflare Container option
 
 The Docker boundary lets us evaluate Cloudflare Containers later. Do not move the backend merely to make the diagram look simpler; compare cost, cold-start behavior, persistent/background-work needs, and operational simplicity after M2/M3 are running.
+
+
+## Audit-repair database upgrades
+
+Startup records schema migrations and rejects databases containing declared foreign-key violations; it does not delete or repair historical rows automatically. Back up the database before upgrade. New publication/digest fields deliberately leave legacy slug-only installations unbound until explicit reinstall/acknowledgment, and old unpinned Clear requests cannot be approved. Pending beta invitations issued before identity snapshots must be reissued. See [audit upgrade requirements](audit/remaining-findings-repairs.md#upgrade-and-behavior-requirements) before rolling out these local changes.

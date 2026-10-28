@@ -127,7 +127,7 @@ func (h *OAuthHandler) Callback(w http.ResponseWriter,r *http.Request){
  }
  h.cookie(w,sessionCookieName,token,int(sessionTTL.Seconds()))
  w.Header().Set("Cache-Control","no-store")
- http.Redirect(w,r,h.appOrigin+"/?atproto=connected",http.StatusSeeOther)
+ http.Redirect(w,r,h.appOrigin+"/settings/profile?atproto=connected",http.StatusSeeOther)
 }
 func(h *OAuthHandler) Logout(w http.ResponseWriter,r *http.Request){
  if !h.checkOrigin(r){http.Error(w,"invalid origin",http.StatusForbidden);return}

@@ -12,8 +12,9 @@ import (
 )
 
 type Store struct {
-	DB     *sql.DB
-	syncDB *turso.TursoSyncDb
+	DB       *sql.DB
+	syncDB   *turso.TursoSyncDb
+	sourceDB *sql.DB
 }
 
 type Config struct {
@@ -65,7 +66,13 @@ func Open(ctx context.Context, cfg Config) (*Store, error) {
 			db.Close()
 			return nil, fmt.Errorf("pull Turso database: %w", err)
 		}
-		return &Store{DB: db, syncDB: syncDB}, nil
+		checked := enforceConnections(db)
+		if err := checked.PingContext(ctx); err != nil {
+			checked.Close()
+			db.Close()
+			return nil, err
+		}
+		return &Store{DB: checked, sourceDB: db, syncDB: syncDB}, nil
 	}
 
 	db, err := sql.Open("turso", cfg.Path)
@@ -77,14 +84,24 @@ func Open(ctx context.Context, cfg Config) (*Store, error) {
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
-	return &Store{DB: db}, nil
+	checked := enforceConnections(db)
+	if err := checked.PingContext(ctx); err != nil {
+		checked.Close()
+		db.Close()
+		return nil, err
+	}
+	return &Store{DB: checked, sourceDB: db}, nil
 }
 
 func (s *Store) Close() error {
 	if s == nil || s.DB == nil {
 		return nil
 	}
-	return s.DB.Close()
+	err := s.DB.Close()
+	if s.sourceDB != nil {
+		return errors.Join(err, s.sourceDB.Close())
+	}
+	return err
 }
 
 func (s *Store) Push(ctx context.Context) error {

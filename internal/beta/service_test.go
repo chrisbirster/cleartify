@@ -139,7 +139,7 @@ func TestInviteStartVerifyCreatesPhoneFirstAccount(t *testing.T) {
 	}
 }
 
-func TestInviteLinkCanOnlyStartOnce(t *testing.T) {
+func TestInviteLinkResumesExistingChallenge(t *testing.T) {
 	ctx := context.Background()
 	store, err := database.Open(ctx, database.Config{Path: ":memory:"})
 	if err != nil {
@@ -166,8 +166,15 @@ func TestInviteLinkCanOnlyStartOnce(t *testing.T) {
 	if _, err := service.Start(ctx, token); err != nil {
 		t.Fatalf("first start: %v", err)
 	}
-	if _, err := service.Start(ctx, token); err != ErrInviteUsed {
-		t.Fatalf("second start error = %v, want ErrInviteUsed", err)
+	resumed, err := service.Start(ctx, token)
+	if err != nil || resumed.ActivationToken == "" {
+		t.Fatalf("resume: %+v %v", resumed, err)
+	}
+	if len(sender.sms) != 1 {
+		t.Fatal("resume sent another code")
+	}
+	if _, err = service.Verify(ctx, resumed.ActivationToken, extractCode(t, sender.sms[0].Text)); err != nil {
+		t.Fatal(err)
 	}
 }
 

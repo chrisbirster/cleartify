@@ -39,12 +39,12 @@ func TestCreatorPublishingLifecycle(t *testing.T){
  takedown:=Takedowns{DB:db.DB}
  if _,err=takedown.Request(ctx,"did:plc:other",base,"rights_review");!errors.Is(err,ErrTakedownDenied){t.Fatalf("cross-user request %v",err)}
  req,err:=takedown.Request(ctx,"did:plc:author",base,"rights_review");if err!=nil{t.Fatal(err)}
- if _,err=takedown.Request(ctx,"did:plc:author",base,"rights_review");!errors.Is(err,ErrTakedownDenied){t.Fatalf("duplicate %v",err)}
+ if again,e:=takedown.Request(ctx,"did:plc:author",base,"rights_review");e!=nil||again!=req{t.Fatalf("retry %s %v",again,e)}
  if err=takedown.Decide(ctx,req,"hidden");err!=nil{t.Fatal(err)}
  hidden,err:=(Reader{DB:db.DB}).Discover(ctx,20);if err!=nil||len(hidden)!=1{t.Fatalf("hidden discovery %d %v",len(hidden),err)}
  if err=takedown.Decide(ctx,req,"restored");err!=nil{t.Fatal(err)}
  visible,err:=(Reader{DB:db.DB}).Discover(ctx,20);if err!=nil||len(visible)!=2{t.Fatalf("restored discovery %d %v",len(visible),err)}
- if err=takedown.Decide(ctx,req,"restored");!errors.Is(err,ErrTakedownDenied){t.Fatalf("duplicate restoration %v",err)}
+ if err=takedown.Decide(ctx,req,"restored");err!=nil{t.Fatalf("restoration retry %v",err)}
  var events int
  if err=db.DB.QueryRowContext(ctx,"SELECT count(*) FROM creator_takedown_audit WHERE request_id=?",req).Scan(&events);err!=nil||events!=3{t.Fatalf("audit %d %v",events,err)}
 }

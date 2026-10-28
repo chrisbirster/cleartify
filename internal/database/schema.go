@@ -6,16 +6,16 @@ import (
 )
 
 var schemaStatements = []string{
- `CREATE TABLE IF NOT EXISTS agent_local_inbox (
+	`CREATE TABLE IF NOT EXISTS agent_local_inbox (
  message_id TEXT PRIMARY KEY REFERENCES agent_interop_messages(message_id),
  sender_agent_id TEXT NOT NULL,
  recipient_agent_id TEXT NOT NULL,
  payload_digest TEXT NOT NULL,
  received_at TEXT NOT NULL
  )`,
- `CREATE TRIGGER IF NOT EXISTS agent_local_inbox_immutable_update BEFORE UPDATE ON agent_local_inbox BEGIN SELECT RAISE(ABORT,'immutable inbox'); END`,
- `CREATE TRIGGER IF NOT EXISTS agent_local_inbox_immutable_delete BEFORE DELETE ON agent_local_inbox BEGIN SELECT RAISE(ABORT,'immutable inbox'); END`,
- `CREATE TABLE IF NOT EXISTS fake_reconciliation_jobs (
+	`CREATE TRIGGER IF NOT EXISTS agent_local_inbox_immutable_update BEFORE UPDATE ON agent_local_inbox BEGIN SELECT RAISE(ABORT,'immutable inbox'); END`,
+	`CREATE TRIGGER IF NOT EXISTS agent_local_inbox_immutable_delete BEFORE DELETE ON agent_local_inbox BEGIN SELECT RAISE(ABORT,'immutable inbox'); END`,
+	`CREATE TABLE IF NOT EXISTS fake_reconciliation_jobs (
  id TEXT PRIMARY KEY,
  state TEXT NOT NULL CHECK(state IN ('pending','leased','done','dead')),
  attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts>=0),
@@ -26,17 +26,17 @@ var schemaStatements = []string{
  last_inserted INTEGER NOT NULL DEFAULT 0 CHECK(last_inserted>=0),
  updated_at TEXT NOT NULL
  )`,
- `CREATE INDEX IF NOT EXISTS idx_fake_reconciliation_jobs_due ON fake_reconciliation_jobs(state,available_at,lease_until)`,
- `CREATE TABLE IF NOT EXISTS fake_sale_snapshots (
+	`CREATE INDEX IF NOT EXISTS idx_fake_reconciliation_jobs_due ON fake_reconciliation_jobs(state,available_at,lease_until)`,
+	`CREATE TABLE IF NOT EXISTS fake_sale_snapshots (
  entitlement_id TEXT PRIMARY KEY REFERENCES marketplace_entitlements(id),
  seller_did TEXT NOT NULL,
  price_minor INTEGER NOT NULL CHECK(price_minor>0 AND price_minor<=1000000),
  currency TEXT NOT NULL CHECK(currency='USD'),
  captured_at TEXT NOT NULL
  )`,
- `CREATE TRIGGER IF NOT EXISTS fake_sale_snapshot_no_update BEFORE UPDATE ON fake_sale_snapshots BEGIN SELECT RAISE(ABORT,'immutable sale snapshot'); END`,
- `CREATE TRIGGER IF NOT EXISTS fake_sale_snapshot_no_delete BEFORE DELETE ON fake_sale_snapshots BEGIN SELECT RAISE(ABORT,'immutable sale snapshot'); END`,
- `CREATE TABLE IF NOT EXISTS fake_payment_idempotency (
+	`CREATE TRIGGER IF NOT EXISTS fake_sale_snapshot_no_update BEFORE UPDATE ON fake_sale_snapshots BEGIN SELECT RAISE(ABORT,'immutable sale snapshot'); END`,
+	`CREATE TRIGGER IF NOT EXISTS fake_sale_snapshot_no_delete BEFORE DELETE ON fake_sale_snapshots BEGIN SELECT RAISE(ABORT,'immutable sale snapshot'); END`,
+	`CREATE TABLE IF NOT EXISTS fake_payment_idempotency (
     actor_did TEXT NOT NULL,
     request_key TEXT NOT NULL,
     operation TEXT NOT NULL CHECK(operation IN ('purchase','refund')),
@@ -45,14 +45,14 @@ var schemaStatements = []string{
     created_at TEXT NOT NULL,
     PRIMARY KEY(actor_did,request_key)
  )`,
- `CREATE TABLE IF NOT EXISTS fake_seller_compliance_placeholders (
+	`CREATE TABLE IF NOT EXISTS fake_seller_compliance_placeholders (
     seller_did TEXT PRIMARY KEY,
     payout_state TEXT NOT NULL DEFAULT 'unconfigured' CHECK(payout_state IN ('unconfigured','pending_review','blocked')),
     tax_data_state TEXT NOT NULL DEFAULT 'not_collected' CHECK(tax_data_state IN ('not_collected','pending_review','blocked')),
     updated_at TEXT NOT NULL
  )`,
 
- `CREATE TABLE IF NOT EXISTS agent_local_outbox (
+	`CREATE TABLE IF NOT EXISTS agent_local_outbox (
   message_id TEXT PRIMARY KEY REFERENCES agent_interop_messages(message_id),
   state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','leased','delivered','dead')),
   attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts>=0),
@@ -62,35 +62,35 @@ var schemaStatements = []string{
   last_error_key TEXT,
   updated_at TEXT NOT NULL
  )`,
- `CREATE INDEX IF NOT EXISTS idx_agent_local_outbox_due ON agent_local_outbox(state,available_at,lease_until)`,
+	`CREATE INDEX IF NOT EXISTS idx_agent_local_outbox_due ON agent_local_outbox(state,available_at,lease_until)`,
 
- `CREATE TABLE IF NOT EXISTS fake_seller_ledger (entitlement_id TEXT NOT NULL REFERENCES marketplace_entitlements(id), entry_kind TEXT NOT NULL CHECK(entry_kind IN ('sale','reversal')), seller_did TEXT NOT NULL, gross_minor INTEGER NOT NULL, fee_minor INTEGER NOT NULL, net_minor INTEGER NOT NULL, currency TEXT NOT NULL CHECK(currency='USD'), recorded_at TEXT NOT NULL, PRIMARY KEY(entitlement_id,entry_kind))`,
- `CREATE TABLE IF NOT EXISTS fake_payment_disputes (entitlement_id TEXT PRIMARY KEY REFERENCES marketplace_entitlements(id), requester_did TEXT NOT NULL, reason_key TEXT NOT NULL CHECK(reason_key IN ('not_received','not_as_described','other')), status TEXT NOT NULL CHECK(status IN ('open','resolved_refund','resolved_no_refund')), opened_at TEXT NOT NULL, decided_at TEXT)`,
- `CREATE TABLE IF NOT EXISTS fake_payment_dispute_audit (entitlement_id TEXT NOT NULL REFERENCES fake_payment_disputes(entitlement_id), event TEXT NOT NULL CHECK(event IN ('opened','resolved_refund','resolved_no_refund')), actor_did TEXT NOT NULL, recorded_at TEXT NOT NULL, PRIMARY KEY(entitlement_id,event))`,
- `CREATE TABLE IF NOT EXISTS creator_takedown_requests (id TEXT PRIMARY KEY, protocol_id TEXT NOT NULL REFERENCES published_protocols(id), requester_did TEXT NOT NULL, reason_key TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('pending','hidden','rejected','restored')), created_at TEXT NOT NULL, decided_at TEXT)`,
- `CREATE UNIQUE INDEX IF NOT EXISTS idx_creator_takedown_open ON creator_takedown_requests(protocol_id) WHERE status IN ('pending','hidden')`,
- `CREATE TABLE IF NOT EXISTS creator_takedown_audit (id TEXT PRIMARY KEY, request_id TEXT NOT NULL REFERENCES creator_takedown_requests(id), action TEXT NOT NULL, actor_did TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
- `CREATE TABLE IF NOT EXISTS creator_remix_lineage (protocol_id TEXT PRIMARY KEY REFERENCES published_protocols(id), parent_protocol_id TEXT NOT NULL REFERENCES published_protocols(id), attribution TEXT NOT NULL, recorded_at TEXT NOT NULL, CHECK(protocol_id<>parent_protocol_id))`,
- `CREATE TABLE IF NOT EXISTS signup_abuse_windows (identity_hash TEXT NOT NULL, bucket INTEGER NOT NULL, attempts INTEGER NOT NULL CHECK(attempts>=0), PRIMARY KEY(identity_hash,bucket))`,
- `CREATE TABLE IF NOT EXISTS signup_consent_keys (waitlist_entry_id TEXT NOT NULL REFERENCES waitlist_entries(id), consent_key TEXT NOT NULL, consent_version_key TEXT NOT NULL, accepted INTEGER NOT NULL CHECK(accepted IN (0,1)), recorded_at TEXT NOT NULL, PRIMARY KEY(waitlist_entry_id,consent_key,recorded_at))`,
- `CREATE TABLE IF NOT EXISTS agent_owner_challenges (nonce_hash TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, public_key BLOB NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)`,
- `CREATE TABLE IF NOT EXISTS agent_owner_audit (id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
- `CREATE TABLE IF NOT EXISTS clear_fake_install_runs (id TEXT PRIMARY KEY, install_request_id TEXT NOT NULL UNIQUE REFERENCES protocol_install_requests(id), user_id TEXT NOT NULL REFERENCES users(id), actor_did TEXT NOT NULL, publication_id TEXT NOT NULL REFERENCES published_protocols(id), manifest_sha256 TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('reserved','completed','failed')), result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL, finished_at TEXT)`,
- `CREATE INDEX IF NOT EXISTS idx_clear_fake_install_user ON clear_fake_install_runs(user_id,created_at)`,
- `CREATE TABLE IF NOT EXISTS clear_fake_install_audit (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES clear_fake_install_runs(id), action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
- `CREATE TABLE IF NOT EXISTS creator_publications (protocol_id TEXT PRIMARY KEY REFERENCES published_protocols(id), visibility TEXT NOT NULL CHECK(visibility IN ('private','unlisted','public')), original_source_id TEXT, provenance_note TEXT NOT NULL, approved_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
- `CREATE TABLE IF NOT EXISTS creator_publication_audit (id TEXT PRIMARY KEY, protocol_id TEXT NOT NULL REFERENCES published_protocols(id), actor_did TEXT NOT NULL, from_visibility TEXT NOT NULL, to_visibility TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
- `CREATE TABLE IF NOT EXISTS social_moderation_cases (id TEXT PRIMARY KEY, subject_did TEXT NOT NULL REFERENCES social_profiles(did), kind TEXT NOT NULL CHECK(kind IN ('review','appeal')), status TEXT NOT NULL CHECK(status IN ('pending','upheld','released','rejected')), rationale TEXT NOT NULL, created_at TEXT NOT NULL, decided_at TEXT, decision_reason TEXT)`,
- `CREATE UNIQUE INDEX IF NOT EXISTS idx_social_moderation_pending ON social_moderation_cases(subject_did,kind) WHERE status='pending'`,
- `CREATE TABLE IF NOT EXISTS social_moderation_audit (id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES social_moderation_cases(id), actor TEXT NOT NULL, action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
- `CREATE TABLE IF NOT EXISTS social_impersonation_holds (
+	`CREATE TABLE IF NOT EXISTS fake_seller_ledger (entitlement_id TEXT NOT NULL REFERENCES marketplace_entitlements(id), entry_kind TEXT NOT NULL CHECK(entry_kind IN ('sale','reversal')), seller_did TEXT NOT NULL, gross_minor INTEGER NOT NULL, fee_minor INTEGER NOT NULL, net_minor INTEGER NOT NULL, currency TEXT NOT NULL CHECK(currency='USD'), recorded_at TEXT NOT NULL, PRIMARY KEY(entitlement_id,entry_kind))`,
+	`CREATE TABLE IF NOT EXISTS fake_payment_disputes (entitlement_id TEXT PRIMARY KEY REFERENCES marketplace_entitlements(id), requester_did TEXT NOT NULL, reason_key TEXT NOT NULL CHECK(reason_key IN ('not_received','not_as_described','other')), status TEXT NOT NULL CHECK(status IN ('open','resolved_refund','resolved_no_refund')), opened_at TEXT NOT NULL, decided_at TEXT)`,
+	`CREATE TABLE IF NOT EXISTS fake_payment_dispute_audit (entitlement_id TEXT NOT NULL REFERENCES fake_payment_disputes(entitlement_id), event TEXT NOT NULL CHECK(event IN ('opened','resolved_refund','resolved_no_refund')), actor_did TEXT NOT NULL, recorded_at TEXT NOT NULL, PRIMARY KEY(entitlement_id,event))`,
+	`CREATE TABLE IF NOT EXISTS creator_takedown_requests (id TEXT PRIMARY KEY, protocol_id TEXT NOT NULL REFERENCES published_protocols(id), requester_did TEXT NOT NULL, reason_key TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('pending','hidden','rejected','restored')), created_at TEXT NOT NULL, decided_at TEXT)`,
+	`CREATE UNIQUE INDEX IF NOT EXISTS idx_creator_takedown_open ON creator_takedown_requests(protocol_id) WHERE status IN ('pending','hidden')`,
+	`CREATE TABLE IF NOT EXISTS creator_takedown_audit (id TEXT PRIMARY KEY, request_id TEXT NOT NULL REFERENCES creator_takedown_requests(id), action TEXT NOT NULL, actor_did TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
+	`CREATE TABLE IF NOT EXISTS creator_remix_lineage (protocol_id TEXT PRIMARY KEY REFERENCES published_protocols(id), parent_protocol_id TEXT NOT NULL REFERENCES published_protocols(id), attribution TEXT NOT NULL, recorded_at TEXT NOT NULL, CHECK(protocol_id<>parent_protocol_id))`,
+	`CREATE TABLE IF NOT EXISTS signup_abuse_windows (identity_hash TEXT NOT NULL, bucket INTEGER NOT NULL, attempts INTEGER NOT NULL CHECK(attempts>=0), PRIMARY KEY(identity_hash,bucket))`,
+	`CREATE TABLE IF NOT EXISTS signup_consent_keys (waitlist_entry_id TEXT NOT NULL REFERENCES waitlist_entries(id), consent_key TEXT NOT NULL, consent_version_key TEXT NOT NULL, accepted INTEGER NOT NULL CHECK(accepted IN (0,1)), recorded_at TEXT NOT NULL, PRIMARY KEY(waitlist_entry_id,consent_key,recorded_at))`,
+	`CREATE TABLE IF NOT EXISTS agent_owner_challenges (nonce_hash TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, public_key BLOB NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)`,
+	`CREATE TABLE IF NOT EXISTS agent_owner_audit (id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agent_registrations(id), owner_did TEXT NOT NULL, action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
+	`CREATE TABLE IF NOT EXISTS clear_fake_install_runs (id TEXT PRIMARY KEY, install_request_id TEXT NOT NULL UNIQUE REFERENCES protocol_install_requests(id), user_id TEXT NOT NULL REFERENCES users(id), actor_did TEXT NOT NULL, publication_id TEXT NOT NULL REFERENCES published_protocols(id), manifest_sha256 TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('reserved','completed','failed')), result_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL, finished_at TEXT)`,
+	`CREATE INDEX IF NOT EXISTS idx_clear_fake_install_user ON clear_fake_install_runs(user_id,created_at)`,
+	`CREATE TABLE IF NOT EXISTS clear_fake_install_audit (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES clear_fake_install_runs(id), action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
+	`CREATE TABLE IF NOT EXISTS creator_publications (protocol_id TEXT PRIMARY KEY REFERENCES published_protocols(id), visibility TEXT NOT NULL CHECK(visibility IN ('private','unlisted','public')), original_source_id TEXT, provenance_note TEXT NOT NULL, approved_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+	`CREATE TABLE IF NOT EXISTS creator_publication_audit (id TEXT PRIMARY KEY, protocol_id TEXT NOT NULL REFERENCES published_protocols(id), actor_did TEXT NOT NULL, from_visibility TEXT NOT NULL, to_visibility TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
+	`CREATE TABLE IF NOT EXISTS social_moderation_cases (id TEXT PRIMARY KEY, subject_did TEXT NOT NULL REFERENCES social_profiles(did), kind TEXT NOT NULL CHECK(kind IN ('review','appeal')), status TEXT NOT NULL CHECK(status IN ('pending','upheld','released','rejected')), rationale TEXT NOT NULL, created_at TEXT NOT NULL, decided_at TEXT, decision_reason TEXT)`,
+	`CREATE UNIQUE INDEX IF NOT EXISTS idx_social_moderation_pending ON social_moderation_cases(subject_did,kind) WHERE status='pending'`,
+	`CREATE TABLE IF NOT EXISTS social_moderation_audit (id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES social_moderation_cases(id), actor TEXT NOT NULL, action TEXT NOT NULL, recorded_at TEXT NOT NULL)`,
+	`CREATE TABLE IF NOT EXISTS social_impersonation_holds (
  subject_did TEXT PRIMARY KEY REFERENCES social_profiles(did),
  reason TEXT NOT NULL CHECK(reason IN ('reserved','lookalike','reports')),
  created_at TEXT NOT NULL,
  released_at TEXT
  )`,
 
- `CREATE TABLE IF NOT EXISTS marketplace_entitlements (
+	`CREATE TABLE IF NOT EXISTS marketplace_entitlements (
  id TEXT PRIMARY KEY,
  listing_id TEXT NOT NULL REFERENCES marketplace_listings(id),
  buyer_did TEXT NOT NULL,
@@ -101,7 +101,7 @@ var schemaStatements = []string{
  refunded_at TEXT,
  UNIQUE(listing_id,buyer_did)
  )`,
- `CREATE TABLE IF NOT EXISTS marketplace_payment_audit (
+	`CREATE TABLE IF NOT EXISTS marketplace_payment_audit (
  id TEXT PRIMARY KEY,
  entitlement_id TEXT NOT NULL REFERENCES marketplace_entitlements(id),
  event TEXT NOT NULL CHECK(event IN ('fake_purchase','fake_refund')),
@@ -109,7 +109,7 @@ var schemaStatements = []string{
  recorded_at TEXT NOT NULL
  )`,
 
- `CREATE TABLE IF NOT EXISTS agent_message_consents (
+	`CREATE TABLE IF NOT EXISTS agent_message_consents (
  sender_agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
  recipient_agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
  recipient_owner_did TEXT NOT NULL,
@@ -119,7 +119,7 @@ var schemaStatements = []string{
  PRIMARY KEY(sender_agent_id,recipient_agent_id)
  )`,
 
- `CREATE TABLE IF NOT EXISTS agent_owner_bindings (
+	`CREATE TABLE IF NOT EXISTS agent_owner_bindings (
  agent_id TEXT PRIMARY KEY REFERENCES agent_registrations(id),
  owner_did TEXT NOT NULL,
  agent_public_key BLOB NOT NULL,
@@ -127,7 +127,7 @@ var schemaStatements = []string{
  verified_at TEXT NOT NULL,
  revoked_at TEXT
  )`,
- `CREATE TABLE IF NOT EXISTS agent_scoped_grants (
+	`CREATE TABLE IF NOT EXISTS agent_scoped_grants (
  id TEXT PRIMARY KEY,
  owner_did TEXT NOT NULL,
  agent_id TEXT NOT NULL REFERENCES agent_registrations(id),
@@ -138,17 +138,17 @@ var schemaStatements = []string{
  revoked_at TEXT,
  CHECK(agent_id<>grantee_agent_id)
  )`,
- `CREATE INDEX IF NOT EXISTS idx_agent_grants_active ON agent_scoped_grants(agent_id,grantee_agent_id,scope,expires_at,revoked_at)`,
+	`CREATE INDEX IF NOT EXISTS idx_agent_grants_active ON agent_scoped_grants(agent_id,grantee_agent_id,scope,expires_at,revoked_at)`,
 
- `CREATE TABLE IF NOT EXISTS social_blocks (
+	`CREATE TABLE IF NOT EXISTS social_blocks (
   actor_did TEXT NOT NULL,
   subject_did TEXT NOT NULL,
   created_at TEXT NOT NULL,
   PRIMARY KEY(actor_did,subject_did),
   CHECK(actor_did<>subject_did)
  )`,
- `CREATE INDEX IF NOT EXISTS idx_social_blocks_subject ON social_blocks(subject_did)`,
- `CREATE TABLE IF NOT EXISTS social_reports (
+	`CREATE INDEX IF NOT EXISTS idx_social_blocks_subject ON social_blocks(subject_did)`,
+	`CREATE TABLE IF NOT EXISTS social_reports (
   id TEXT PRIMARY KEY,
   reporter_did TEXT NOT NULL,
   subject_did TEXT NOT NULL,
@@ -157,8 +157,8 @@ var schemaStatements = []string{
   created_at TEXT NOT NULL,
   CHECK(reporter_did<>subject_did)
  )`,
- `CREATE INDEX IF NOT EXISTS idx_social_reports_subject ON social_reports(subject_did,status)`,
- `CREATE TABLE IF NOT EXISTS clear_user_sessions (
+	`CREATE INDEX IF NOT EXISTS idx_social_reports_subject ON social_reports(subject_did,status)`,
+	`CREATE TABLE IF NOT EXISTS clear_user_sessions (
    token_digest TEXT PRIMARY KEY,
    user_id TEXT NOT NULL REFERENCES users(id),
    created_at TEXT NOT NULL,
@@ -166,9 +166,9 @@ var schemaStatements = []string{
    expires_at TEXT NOT NULL,
    revoked_at TEXT
  )`,
- `CREATE INDEX IF NOT EXISTS idx_clear_user_sessions_user ON clear_user_sessions(user_id, revoked_at)`,
+	`CREATE INDEX IF NOT EXISTS idx_clear_user_sessions_user ON clear_user_sessions(user_id, revoked_at)`,
 
- `CREATE TABLE IF NOT EXISTS identity_links (
+	`CREATE TABLE IF NOT EXISTS identity_links (
   id TEXT PRIMARY KEY,
   clear_user_id TEXT NOT NULL REFERENCES users(id),
   social_did TEXT NOT NULL,
@@ -180,9 +180,9 @@ var schemaStatements = []string{
   linked_at TEXT NOT NULL,
   revoked_at TEXT
  )`,
- `CREATE UNIQUE INDEX IF NOT EXISTS idx_identity_links_active_user ON identity_links(clear_user_id) WHERE status='active'`,
- `CREATE UNIQUE INDEX IF NOT EXISTS idx_identity_links_active_did ON identity_links(social_did) WHERE status='active'`,
- `CREATE TABLE IF NOT EXISTS identity_link_challenges (
+	`CREATE UNIQUE INDEX IF NOT EXISTS idx_identity_links_active_user ON identity_links(clear_user_id) WHERE status='active'`,
+	`CREATE UNIQUE INDEX IF NOT EXISTS idx_identity_links_active_did ON identity_links(social_did) WHERE status='active'`,
+	`CREATE TABLE IF NOT EXISTS identity_link_challenges (
   nonce_hash TEXT PRIMARY KEY,
   clear_user_id TEXT NOT NULL REFERENCES users(id),
   social_did TEXT NOT NULL,
@@ -192,8 +192,8 @@ var schemaStatements = []string{
   attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts BETWEEN 0 AND 5),
   consumed_at TEXT
  )`,
- `CREATE INDEX IF NOT EXISTS idx_identity_link_challenges_expires ON identity_link_challenges(expires_at)`,
- `CREATE TABLE IF NOT EXISTS identity_link_events (
+	`CREATE INDEX IF NOT EXISTS idx_identity_link_challenges_expires ON identity_link_challenges(expires_at)`,
+	`CREATE TABLE IF NOT EXISTS identity_link_events (
   id TEXT PRIMARY KEY,
   clear_user_id TEXT NOT NULL,
   social_did TEXT NOT NULL,
@@ -201,7 +201,7 @@ var schemaStatements = []string{
   recorded_at TEXT NOT NULL
  )`,
 
- `CREATE TABLE IF NOT EXISTS clear_user_sessions (
+	`CREATE TABLE IF NOT EXISTS clear_user_sessions (
    token_digest TEXT PRIMARY KEY,
    user_id TEXT NOT NULL REFERENCES users(id),
    created_at TEXT NOT NULL,
@@ -209,7 +209,7 @@ var schemaStatements = []string{
    expires_at TEXT NOT NULL,
    revoked_at TEXT
  )`,
- `CREATE INDEX IF NOT EXISTS idx_clear_user_sessions_user ON clear_user_sessions(user_id, revoked_at)`,
+	`CREATE INDEX IF NOT EXISTS idx_clear_user_sessions_user ON clear_user_sessions(user_id, revoked_at)`,
 	`CREATE TABLE IF NOT EXISTS waitlist_entries (
 		id TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
@@ -342,14 +342,14 @@ var schemaStatements = []string{
         decided_at TEXT,
         UNIQUE(id,user_id)
     )`,
-    `CREATE INDEX IF NOT EXISTS idx_clear_run_requests_user ON clear_run_requests(user_id,status)`,
+	`CREATE INDEX IF NOT EXISTS idx_clear_run_requests_user ON clear_run_requests(user_id,status)`,
 	`CREATE TABLE IF NOT EXISTS alpha_memberships (
        user_id TEXT PRIMARY KEY REFERENCES users(id),
        admitted_by TEXT NOT NULL,
        admitted_at TEXT NOT NULL,
        revoked_at TEXT
     )`,
-    `CREATE INDEX IF NOT EXISTS idx_alpha_memberships_revoked ON alpha_memberships(revoked_at)`,
+	`CREATE INDEX IF NOT EXISTS idx_alpha_memberships_revoked ON alpha_memberships(revoked_at)`,
 	`CREATE TABLE IF NOT EXISTS agent_registrations (
         id TEXT PRIMARY KEY,
         owner_did TEXT NOT NULL REFERENCES social_profiles(did),
@@ -359,7 +359,7 @@ var schemaStatements = []string{
         created_at TEXT NOT NULL,
         UNIQUE(owner_did,display_name)
     )`,
-    `CREATE INDEX IF NOT EXISTS idx_agent_registrations_owner ON agent_registrations(owner_did,status)`,
+	`CREATE INDEX IF NOT EXISTS idx_agent_registrations_owner ON agent_registrations(owner_did,status)`,
 	`CREATE TABLE IF NOT EXISTS agent_interop_keys (
        key_id TEXT PRIMARY KEY,
        agent_id TEXT NOT NULL,
@@ -368,8 +368,8 @@ var schemaStatements = []string{
        created_at TEXT NOT NULL,
        revoked_at TEXT
     )`,
-    `CREATE INDEX IF NOT EXISTS idx_agent_interop_keys_agent ON agent_interop_keys(agent_id,revoked_at)`,
-    `CREATE TABLE IF NOT EXISTS agent_interop_messages (
+	`CREATE INDEX IF NOT EXISTS idx_agent_interop_keys_agent ON agent_interop_keys(agent_id,revoked_at)`,
+	`CREATE TABLE IF NOT EXISTS agent_interop_messages (
        message_id TEXT PRIMARY KEY,
        sender_agent_id TEXT NOT NULL,
        recipient_agent_id TEXT NOT NULL,
@@ -392,7 +392,7 @@ var schemaStatements = []string{
         created_at TEXT NOT NULL,
         UNIQUE(protocol_id)
     )`,
-    `CREATE INDEX IF NOT EXISTS idx_marketplace_listings_status ON marketplace_listings(status,created_at DESC)`,
+	`CREATE INDEX IF NOT EXISTS idx_marketplace_listings_status ON marketplace_listings(status,created_at DESC)`,
 	`CREATE TABLE IF NOT EXISTS social_default_follow_optouts (follower_did TEXT NOT NULL, subject_did TEXT NOT NULL, opted_out_at TEXT NOT NULL, PRIMARY KEY(follower_did, subject_did))`,
 	`CREATE TABLE IF NOT EXISTS protocol_install_requests (
         id TEXT PRIMARY KEY,
@@ -407,7 +407,7 @@ var schemaStatements = []string{
         requested_at TEXT NOT NULL,
         decided_at TEXT
     )`,
-    `CREATE INDEX IF NOT EXISTS idx_protocol_install_requests_actor ON protocol_install_requests(actor_did,status)`,
+	`CREATE INDEX IF NOT EXISTS idx_protocol_install_requests_actor ON protocol_install_requests(actor_did,status)`,
 	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
@@ -417,6 +417,12 @@ func (s *Store) Migrate(ctx context.Context) error {
 		if _, err := s.DB.ExecContext(ctx, stmt); err != nil {
 			return fmt.Errorf("apply schema statement %d: %w", i+1, err)
 		}
+	}
+	if err := s.migrateVersions(ctx); err != nil {
+		return err
+	}
+	if err := s.CheckForeignKeys(ctx); err != nil {
+		return err
 	}
 	return s.Push(ctx)
 }

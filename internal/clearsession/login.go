@@ -104,10 +104,13 @@ func(l *Login) Start(ctx context.Context,rawPhone string) error{
  if user==""{return nil}
  if l.Sender==nil{return nil}
  code,err:=l.Sessions.Tokens.FiveDigitCode();if err!=nil{return err}
+ // The persistent phone/user throttle retains the shared attempt budget across
+ // resends. A fresh challenge gets its own counter so an old exhausted challenge
+ // cannot keep the account locked after that throttle has expired.
  now:=l.clock()
  _,err=l.Sessions.Store.DB.ExecContext(ctx,`INSERT INTO clear_login_challenges(user_id,code_digest,expires_at,attempts,created_at,consumed_at)
  VALUES(?,?,?,0,?,NULL) ON CONFLICT(user_id) DO UPDATE SET code_digest=excluded.code_digest,
- expires_at=excluded.expires_at,attempts=clear_login_challenges.attempts,created_at=excluded.created_at,consumed_at=NULL`,
+ expires_at=excluded.expires_at,attempts=0,created_at=excluded.created_at,consumed_at=NULL`,
  user,l.Sessions.Tokens.Digest(code),now.Add(challengeLifetime).Format(time.RFC3339Nano),now.Format(time.RFC3339Nano))
  if err!=nil{return err}
  if err=l.Sessions.Store.Push(ctx);err!=nil{return err}

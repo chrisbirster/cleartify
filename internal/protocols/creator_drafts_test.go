@@ -16,7 +16,10 @@ func TestPrivateCreatorDrafts(t *testing.T){
  svc:=DraftService{DB:db.DB,Tokens:tok}
  in:=DraftInput{Slug:"original-protocol",Version:1,Title:"Original",Summary:"Private draft",License:"all-rights-reserved",Spec:json.RawMessage(`{"steps":[]}`)}
  if _,err=svc.Create(ctx,"did:plc:alice",in);err!=nil{t.Fatal(err)}
- if _,err=svc.Create(ctx,"did:plc:alice",in);!errors.Is(err,ErrDraftConflict){t.Fatalf("duplicate revision: %v",err)}
+ if _,err=svc.Create(ctx,"did:plc:alice",in);err!=nil{t.Fatalf("identical retry: %v",err)}
+ in.Title="Conflicting title"
+ if _,err=svc.Create(ctx,"did:plc:alice",in);!errors.Is(err,ErrDraftConflict){t.Fatalf("conflicting revision: %v",err)}
+ in.Title="Original"
  if _,err=svc.Create(ctx,"did:plc:bob",in);err!=nil{t.Fatal(err)}
  in.Version=2
  if _,err=svc.Create(ctx,"did:plc:alice",in);err!=nil{t.Fatal(err)}

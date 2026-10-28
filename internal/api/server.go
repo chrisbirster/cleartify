@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/chrisbirster/cleartify/internal/beta"
+ "github.com/chrisbirster/cleartify/internal/interop"
  "github.com/chrisbirster/cleartify/internal/clearsession"
 	"github.com/chrisbirster/cleartify/internal/agents"
 	"github.com/chrisbirster/cleartify/internal/clear"
@@ -28,6 +29,8 @@ import (
 var referralCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
 type Options struct {
+ AgentTransportEnabled bool
+ AgentWorker *interop.AuthenticatedWorker
  DBAbuseEnabled bool
  DBAbuseProxyEnabled bool
  DBAbuseCleanupEnabled bool
@@ -89,6 +92,7 @@ type Options struct {
 }
 
 type Server struct {
+ agentWorker *interop.AuthenticatedWorker
  dbAbuseEnabled bool
  dbAbuseProxyEnabled bool
  dbAbuseCleanupEnabled bool
@@ -149,6 +153,7 @@ func New(options Options) http.Handler {
   dbAbuseSecret: options.DBAbuseSecret,
   fakeCheckout:options.FakeCheckout,
   fakeAccounting:options.FakeAccounting,
+ agentWorker:options.AgentWorker,
   paidEnforcement:options.PaidEntitlementEnforcementEnabled && options.FakeCheckout!=nil,
   agentOwnership: options.AgentOwnership,
   fakeInstallRunDB:options.FakeInstallRunDB,
@@ -186,6 +191,12 @@ func New(options Options) http.Handler {
 	}
 
 	mux := http.NewServeMux()
+ if options.AgentTransportEnabled && options.AgentWorker!=nil && options.AgentOwnershipEnabled {
+  mux.HandleFunc("POST /api/me/agents/{id}/messages",s.submitLocalAgentMessage)
+  mux.HandleFunc("POST /api/admin/agents/local-worker/tick",s.tickLocalAgentWorker)
+ }
+ if options.AgentOwnershipEnabled && options.AgentOwnership!=nil { mux.HandleFunc("POST /api/admin/agents/{id}/activate",s.activateAgent) }
+
 	mux.HandleFunc("GET /healthz", s.health)
  if options.ReturningLoginEnabled && options.ReturningLogin!=nil && options.ClearSessionsEnabled {mux.HandleFunc("POST /api/login/start",s.startReturningLogin);mux.HandleFunc("POST /api/login/verify",s.verifyReturningLogin)}
  if s.moderationEnforcement {mux.HandleFunc("GET /api/admin/moderation/local-metrics",s.localModerationMetrics)}
@@ -253,7 +264,7 @@ func New(options Options) http.Handler {
 		mux.HandleFunc("PUT /api/me/following/{handle}",s.updateOwnFollow)
 		mux.HandleFunc("DELETE /api/me/following/{handle}",s.updateOwnFollow)
 	}
-	if options.SocialAccountRegistrationEnabled && options.OAuth!=nil && options.SocialAccounts!=nil {mux.HandleFunc("POST /api/social/accounts",s.registerSocialAccount)}
+	if options.SocialAccountRegistrationEnabled && options.OAuth!=nil && options.SocialAccounts!=nil {mux.HandleFunc("POST /api/social/accounts",s.registerSocialAccount);mux.HandleFunc("PUT /api/me/social-profile",s.setupSocialProfile);mux.HandleFunc("GET /api/me/social-profile",s.getSocialProfile)}
 	if options.DefaultFollowEnabled && options.OAuth!=nil && options.DefaultFollow!=nil {mux.HandleFunc("DELETE /api/me/following/chris",s.removeDefaultFollow)}
 	mux.HandleFunc("POST /api/admin/clear/run-requests",s.createRunRequest)
 	mux.HandleFunc("POST /api/admin/clear/run-requests/{id}/decision",s.decideRunRequest)
@@ -501,11 +512,12 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 
 		if s.appOrigin != "" {
 			origin := r.Header.Get("Origin")
+			w.Header().Add("Vary", "Origin")
 			if origin == s.appOrigin {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
-				w.Header().Set("Vary", "Origin")
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
 				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-				w.Header().Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+				w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
 			}
 		}
 

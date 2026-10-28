@@ -16,24 +16,24 @@ import (
 )
 
 var (
-	ErrInviteNotFound      = errors.New("beta invite not found")
-	ErrInviteExpired       = errors.New("beta invite expired")
-	ErrInviteUsed          = errors.New("beta invite already used")
-	ErrActivationNotFound  = errors.New("activation session not found")
-	ErrActivationExpired   = errors.New("activation session expired")
-	ErrInvalidCode         = errors.New("invalid beta code")
-	ErrLocked              = errors.New("beta activation locked")
-	ErrAlreadyActivated    = errors.New("beta invite already activated")
-	ErrResendTooSoon       = errors.New("wait before requesting another code")
-	ErrPhoneAlreadyActive  = errors.New("phone number already belongs to an active user")
+	ErrInviteNotFound     = errors.New("beta invite not found")
+	ErrInviteExpired      = errors.New("beta invite expired")
+	ErrInviteUsed         = errors.New("beta invite already used")
+	ErrActivationNotFound = errors.New("activation session not found")
+	ErrActivationExpired  = errors.New("activation session expired")
+	ErrInvalidCode        = errors.New("invalid beta code")
+	ErrLocked             = errors.New("beta activation locked")
+	ErrAlreadyActivated   = errors.New("beta invite already activated")
+	ErrResendTooSoon      = errors.New("wait before requesting another code")
+	ErrPhoneAlreadyActive = errors.New("phone number already belongs to an active user")
 )
 
 const (
-	emailInviteTTL    = 7 * 24 * time.Hour
-	activationTTL     = 30 * time.Minute
-	challengeTTL      = 10 * time.Minute
-	resendCooldown    = 60 * time.Second
-	maxCodeAttempts   = 5
+	emailInviteTTL  = 7 * 24 * time.Hour
+	activationTTL   = 30 * time.Minute
+	challengeTTL    = 10 * time.Minute
+	resendCooldown  = 60 * time.Second
+	maxCodeAttempts = 5
 )
 
 var starterProtocols = []string{
@@ -66,28 +66,29 @@ type ActivationResult struct {
 
 func NewService(db *database.Store, tokens *security.Tokens, sender notifications.Sender, appURL string) *Service {
 	return &Service{
-		db: db,
+		db:     db,
 		tokens: tokens,
 		sender: sender,
 		appURL: strings.TrimRight(appURL, "/"),
-		now: time.Now,
+		now:    time.Now,
 	}
 }
 
 func (s *Service) Invite(ctx context.Context, email string) (InviteResult, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	var entry struct {
-		ID    string
-		Name  string
-		Email string
-		Phone string
+		ID              string
+		Name            string
+		Email           string
+		EmailNormalized string
+		Phone           string
 	}
 	err := s.db.DB.QueryRowContext(ctx, `
-		SELECT id, name, email, phone_e164
+		SELECT id, name, email, email_normalized, phone_e164
 		FROM waitlist_entries
 		WHERE email_normalized = ?
 		LIMIT 1
-	`, email).Scan(&entry.ID, &entry.Name, &entry.Email, &entry.Phone)
+	`, email).Scan(&entry.ID, &entry.Name, &entry.Email, &entry.EmailNormalized, &entry.Phone)
 	if errors.Is(err, sql.ErrNoRows) {
 		return InviteResult{}, ErrInviteNotFound
 	}
@@ -131,6 +132,11 @@ func (s *Service) Invite(ctx context.Context, email string) (InviteResult, error
 	`, inviteID, entry.ID, s.tokens.Digest(rawToken), stamp(expires), maxCodeAttempts, stamp(now), stamp(now)); err != nil {
 		return InviteResult{}, fmt.Errorf("create beta invite: %w", err)
 	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO beta_invite_identities
+		(invite_id,name,email_normalized,phone_e164) VALUES(?,?,?,?)`,
+		inviteID, entry.Name, entry.EmailNormalized, entry.Phone); err != nil {
+		return InviteResult{}, fmt.Errorf("bind invited identity: %w", err)
+	}
 
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE waitlist_entries SET status = 'invited', updated_at = ? WHERE id = ?
@@ -147,9 +153,9 @@ func (s *Service) Invite(ctx context.Context, email string) (InviteResult, error
 
 	activationURL := s.appURL + "/beta/activate?token=" + url.QueryEscape(rawToken)
 	message := notifications.Email{
-		To: entry.Email,
+		To:      entry.Email,
 		Subject: "You're in — meet Clear",
-		Text: fmt.Sprintf("Hey %s,\n\nYou're invited to the Cleartify beta.\n\nActivate your invite:\n%s\n\nThe link expires in 7 days.", entry.Name, activationURL),
+		Text:    fmt.Sprintf("Hey %s,\n\nYou're invited to the Cleartify beta.\n\nActivate your invite:\n%s\n\nThe link expires in 7 days.", entry.Name, activationURL),
 	}
 	if err := s.sender.SendEmail(ctx, message); err != nil {
 		_, _ = s.db.DB.ExecContext(ctx, `
@@ -168,18 +174,18 @@ func (s *Service) Start(ctx context.Context, rawEmailToken string) (StartResult,
 	}
 
 	var invite struct {
-		ID          string
-		Status      string
-		ExpiresAt   string
-		UsedAt      sql.NullString
-		Name        string
-		Phone       string
+		ID        string
+		Status    string
+		ExpiresAt string
+		UsedAt    sql.NullString
+		Name      string
+		Phone     string
 	}
 	err := s.db.DB.QueryRowContext(ctx, `
 		SELECT i.id, i.status, i.email_token_expires_at, i.email_token_used_at,
-		       w.name, w.phone_e164
+		       identity.name, identity.phone_e164
 		FROM beta_invites i
-		JOIN waitlist_entries w ON w.id = i.waitlist_entry_id
+		JOIN beta_invite_identities identity ON identity.invite_id = i.id
 		WHERE i.email_token_hash = ?
 		LIMIT 1
 	`, s.tokens.Digest(rawEmailToken)).Scan(
@@ -195,8 +201,59 @@ func (s *Service) Start(ctx context.Context, rawEmailToken string) (StartResult,
 	if invite.Status == "activated" {
 		return StartResult{}, ErrAlreadyActivated
 	}
+	// Derive a recoverable, domain-separated session token from the email
+	// capability. Only its digest is stored. Resume never extends expiry, resets
+	// attempts, or sends another SMS; code possession is still required.
+	activationToken := s.tokens.Digest("beta-activation-session:" + rawEmailToken)
 	if invite.UsedAt.Valid {
-		return StartResult{}, ErrInviteUsed
+		if invite.Status == "locked" {
+			return StartResult{}, ErrLocked
+		}
+		if invite.Status != "challenge" {
+			return StartResult{}, ErrInviteUsed
+		}
+		tx, e := s.db.DB.BeginTx(ctx, nil)
+		if e != nil {
+			return StartResult{}, e
+		}
+		defer tx.Rollback()
+		var expiry, codeExpiry string
+		var attempts, max int
+		e = tx.QueryRowContext(ctx, `SELECT activation_expires_at,challenge_expires_at,challenge_attempts,max_challenge_attempts FROM beta_invites WHERE id=? AND status='challenge'`, invite.ID).Scan(&expiry, &codeExpiry, &attempts, &max)
+		if errors.Is(e, sql.ErrNoRows) {
+			return StartResult{}, ErrInviteUsed
+		}
+		if e != nil {
+			return StartResult{}, e
+		}
+		if expired(expiry, s.now()) {
+			return StartResult{}, ErrActivationExpired
+		}
+		if max <= 0 || attempts >= max {
+			return StartResult{}, ErrLocked
+		}
+		result, e := tx.ExecContext(ctx, `UPDATE beta_invites SET activation_token_hash=? WHERE id=? AND status='challenge'`, s.tokens.Digest(activationToken), invite.ID)
+		if e != nil {
+			return StartResult{}, e
+		}
+		n, e := result.RowsAffected()
+		if e != nil {
+			return StartResult{}, e
+		}
+		if n != 1 {
+			return StartResult{}, ErrInviteUsed
+		}
+		if e = tx.Commit(); e != nil {
+			return StartResult{}, e
+		}
+		if e = s.db.Push(ctx); e != nil {
+			return StartResult{}, e
+		}
+		remaining := 0
+		if at, e := time.Parse(time.RFC3339Nano, codeExpiry); e == nil && at.After(s.now()) {
+			remaining = int(at.Sub(s.now()).Seconds())
+		}
+		return StartResult{ActivationToken: activationToken, PhoneHint: maskPhone(invite.Phone), ExpiresIn: remaining}, nil
 	}
 	if expired(invite.ExpiresAt, s.now()) {
 		return StartResult{}, ErrInviteExpired
@@ -205,10 +262,6 @@ func (s *Service) Start(ctx context.Context, rawEmailToken string) (StartResult,
 		return StartResult{}, ErrInviteNotFound
 	}
 
-	activationToken, err := s.tokens.RandomURLToken(32)
-	if err != nil {
-		return StartResult{}, err
-	}
 	code, err := s.tokens.FiveDigitCode()
 	if err != nil {
 		return StartResult{}, err
@@ -247,7 +300,7 @@ func (s *Service) Start(ctx context.Context, rawEmailToken string) (StartResult,
 	}
 
 	if err := s.sender.SendSMS(ctx, notifications.SMS{
-		To: invite.Phone,
+		To:   invite.Phone,
 		Text: "Your Cleartify beta code is " + code + ". It expires in 10 minutes.",
 	}); err != nil {
 		return StartResult{}, fmt.Errorf("send beta challenge: %w", err)
@@ -255,108 +308,122 @@ func (s *Service) Start(ctx context.Context, rawEmailToken string) (StartResult,
 
 	return StartResult{
 		ActivationToken: activationToken,
-		PhoneHint: maskPhone(invite.Phone),
-		ExpiresIn: int(challengeTTL.Seconds()),
+		PhoneHint:       maskPhone(invite.Phone),
+		ExpiresIn:       int(challengeTTL.Seconds()),
 	}, nil
 }
 
 func (s *Service) Resend(ctx context.Context, activationToken string) (StartResult, error) {
-	session, err := s.loadActivation(ctx, activationToken)
+	tx, err := s.db.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return StartResult{}, err
 	}
-	if session.Status == "activated" {
-		return StartResult{}, ErrAlreadyActivated
-	}
-	if session.Status == "locked" {
-		return StartResult{}, ErrLocked
-	}
-	if expired(session.ActivationExpiresAt, s.now()) {
-		return StartResult{}, ErrActivationExpired
-	}
-	if session.ChallengeSentAt.Valid {
-		sentAt, err := time.Parse(time.RFC3339Nano, session.ChallengeSentAt.String)
-		if err == nil && s.now().Before(sentAt.Add(resendCooldown)) {
-			return StartResult{}, ErrResendTooSoon
-		}
-	}
-
-	code, err := s.tokens.FiveDigitCode()
+	defer tx.Rollback()
+	session, err := s.loadActivationFrom(ctx, tx, activationToken)
 	if err != nil {
 		return StartResult{}, err
 	}
 	now := s.now().UTC()
-	if _, err := s.db.DB.ExecContext(ctx, `
-		UPDATE beta_invites
-		SET challenge_code_hash = ?, challenge_expires_at = ?,
-		    challenge_attempts = 0, challenge_sent_at = ?, updated_at = ?
-		WHERE id = ? AND status = 'challenge'
-	`, s.tokens.Digest(code), stamp(now.Add(challengeTTL)), stamp(now), stamp(now), session.ID); err != nil {
-		return StartResult{}, fmt.Errorf("refresh beta challenge: %w", err)
-	}
-	if err := s.db.Push(ctx); err != nil {
+	if err = session.validate(now); err != nil {
 		return StartResult{}, err
 	}
-	if err := s.sender.SendSMS(ctx, notifications.SMS{
-		To: session.Phone,
-		Text: "Your new Cleartify beta code is " + code + ". It expires in 10 minutes.",
+	if session.ChallengeSentAt.Valid {
+		sentAt, parseErr := time.Parse(time.RFC3339Nano, session.ChallengeSentAt.String)
+		if parseErr != nil {
+			return StartResult{}, ErrActivationNotFound
+		}
+		if now.Before(sentAt.Add(resendCooldown)) {
+			return StartResult{}, ErrResendTooSoon
+		}
+	}
+	code, err := s.tokens.FiveDigitCode()
+	if err != nil {
+		return StartResult{}, err
+	}
+	result, err := tx.ExecContext(ctx, `UPDATE beta_invites
+  SET challenge_code_hash=?, challenge_expires_at=?, challenge_sent_at=?, updated_at=?
+  WHERE id=? AND status='challenge' AND challenge_code_hash=?
+  AND challenge_attempts < max_challenge_attempts`,
+		s.tokens.Digest(code), stamp(now.Add(challengeTTL)), stamp(now), stamp(now), session.ID, session.ChallengeCodeHash)
+	if err != nil {
+		return StartResult{}, fmt.Errorf("refresh beta challenge: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return StartResult{}, err
+	}
+	if affected != 1 {
+		return StartResult{}, ErrActivationNotFound
+	}
+	if err = tx.Commit(); err != nil {
+		return StartResult{}, err
+	}
+	if err = s.db.Push(ctx); err != nil {
+		return StartResult{}, err
+	}
+	if err = s.sender.SendSMS(ctx, notifications.SMS{
+		To: session.Phone, Text: "Your new Cleartify beta code is " + code + ". It expires in 10 minutes.",
 	}); err != nil {
 		return StartResult{}, fmt.Errorf("resend beta challenge: %w", err)
 	}
-
-	return StartResult{
-		ActivationToken: activationToken,
-		PhoneHint: maskPhone(session.Phone),
-		ExpiresIn: int(challengeTTL.Seconds()),
-	}, nil
+	return StartResult{ActivationToken: activationToken, PhoneHint: maskPhone(session.Phone), ExpiresIn: int(challengeTTL.Seconds())}, nil
 }
 
 func (s *Service) Verify(ctx context.Context, activationToken, code string) (ActivationResult, error) {
-	session, err := s.loadActivation(ctx, activationToken)
+	tx, err := s.db.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return ActivationResult{}, fmt.Errorf("begin activation transaction: %w", err)
+	}
+	defer tx.Rollback()
+	session, err := s.loadActivationFrom(ctx, tx, activationToken)
 	if err != nil {
 		return ActivationResult{}, err
 	}
-	if session.Status == "activated" {
-		return ActivationResult{}, ErrAlreadyActivated
+	now := s.now().UTC()
+	if err = session.validate(now); err != nil {
+		return ActivationResult{}, err
 	}
-	if session.Status == "locked" || session.Attempts >= session.MaxAttempts {
-		return ActivationResult{}, ErrLocked
-	}
-	if expired(session.ActivationExpiresAt, s.now()) || expired(session.ChallengeExpiresAt, s.now()) {
+	if expired(session.ChallengeExpiresAt, now) {
 		return ActivationResult{}, ErrActivationExpired
 	}
 
 	if !s.tokens.Matches(strings.TrimSpace(code), session.ChallengeCodeHash) {
-		attempts := session.Attempts + 1
-		status := "challenge"
-		if attempts >= session.MaxAttempts {
-			status = "locked"
-		}
-		if _, err := s.db.DB.ExecContext(ctx, `
-			UPDATE beta_invites
-			SET challenge_attempts = ?, status = ?, updated_at = ?
-			WHERE id = ?
-		`, attempts, status, stamp(s.now().UTC()), session.ID); err != nil {
+		result, err := tx.ExecContext(ctx, `UPDATE beta_invites
+   SET challenge_attempts=challenge_attempts+1,
+       status=CASE WHEN challenge_attempts+1 >= max_challenge_attempts THEN 'locked' ELSE 'challenge' END,
+       updated_at=?
+   WHERE id=? AND status='challenge' AND challenge_code_hash=?
+   AND challenge_attempts < max_challenge_attempts`, stamp(now), session.ID, session.ChallengeCodeHash)
+		if err != nil {
 			return ActivationResult{}, fmt.Errorf("record challenge attempt: %w", err)
 		}
-		_ = s.db.Push(ctx)
-		if status == "locked" {
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return ActivationResult{}, err
+		}
+		if affected != 1 {
+			return ActivationResult{}, ErrActivationNotFound
+		}
+		if err = tx.Commit(); err != nil {
+			return ActivationResult{}, err
+		}
+		if err = s.db.Push(ctx); err != nil {
+			return ActivationResult{}, err
+		}
+		if session.Attempts+1 >= session.MaxAttempts {
 			return ActivationResult{}, ErrLocked
 		}
 		return ActivationResult{}, ErrInvalidCode
 	}
 
 	var existingUser string
-	err = s.db.DB.QueryRowContext(ctx, `
-		SELECT user_id FROM phone_identities WHERE phone_e164 = ? LIMIT 1
-	`, session.Phone).Scan(&existingUser)
+	err = tx.QueryRowContext(ctx, `SELECT user_id FROM phone_identities WHERE phone_e164=? LIMIT 1`, session.Phone).Scan(&existingUser)
 	if err == nil {
 		return ActivationResult{}, ErrPhoneAlreadyActive
 	}
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return ActivationResult{}, fmt.Errorf("check active phone: %w", err)
 	}
-
 	userID, err := s.tokens.RandomURLToken(18)
 	if err != nil {
 		return ActivationResult{}, err
@@ -366,69 +433,57 @@ func (s *Service) Verify(ctx context.Context, activationToken, code string) (Act
 		return ActivationResult{}, err
 	}
 
-	now := s.now().UTC()
-	tx, err := s.db.DB.BeginTx(ctx, nil)
+	// Claim the current challenge before creating any account side effects. All
+	// reads and writes share one transaction, so revocation/resend races cannot
+	// commit a user from a stale challenge. A zero-row claim is never success.
+	result, err := tx.ExecContext(ctx, `UPDATE beta_invites
+  SET status='activated', activated_user_id=?, activated_at=?, updated_at=?
+  WHERE id=? AND status='challenge' AND activation_token_hash=?
+  AND challenge_code_hash=? AND challenge_attempts < max_challenge_attempts`,
+		userID, stamp(now), stamp(now), session.ID, s.tokens.Digest(activationToken), session.ChallengeCodeHash)
 	if err != nil {
-		return ActivationResult{}, fmt.Errorf("begin activation transaction: %w", err)
+		return ActivationResult{}, fmt.Errorf("claim beta activation: %w", err)
 	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO users (id, display_name, primary_email, status, created_at, updated_at)
-		VALUES (?, ?, ?, 'active', ?, ?)
-	`, userID, session.Name, session.EmailNormalized, stamp(now), stamp(now)); err != nil {
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return ActivationResult{}, err
+	}
+	if affected != 1 {
+		return ActivationResult{}, ErrActivationNotFound
+	}
+	if _, err = tx.ExecContext(ctx, `INSERT INTO users (id,display_name,primary_email,status,created_at,updated_at)
+  VALUES(?,?,?,'active',?,?)`, userID, session.Name, session.EmailNormalized, stamp(now), stamp(now)); err != nil {
 		return ActivationResult{}, fmt.Errorf("create user: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO phone_identities (id, user_id, phone_e164, verified_at, created_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, phoneID, userID, session.Phone, stamp(now), stamp(now)); err != nil {
+	if _, err = tx.ExecContext(ctx, `INSERT INTO phone_identities (id,user_id,phone_e164,verified_at,created_at)
+  VALUES(?,?,?,?,?)`, phoneID, userID, session.Phone, stamp(now), stamp(now)); err != nil {
 		return ActivationResult{}, fmt.Errorf("create phone identity: %w", err)
 	}
-
 	for _, key := range starterProtocols {
 		installID, err := s.tokens.RandomURLToken(18)
 		if err != nil {
 			return ActivationResult{}, err
 		}
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO protocol_installations (
-				id, user_id, protocol_key, version, source, enabled, created_at
-			) VALUES (?, ?, ?, 1, 'starter', 1, ?)
-		`, installID, userID, key, stamp(now)); err != nil {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO protocol_installations
+   (id,user_id,protocol_key,version,source,enabled,created_at) VALUES(?,?,?,1,'starter',1,?)`, installID, userID, key, stamp(now)); err != nil {
 			return ActivationResult{}, fmt.Errorf("install starter protocol %s: %w", key, err)
 		}
 	}
-
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE beta_invites
-		SET status = 'activated', activated_user_id = ?, activated_at = ?, updated_at = ?
-		WHERE id = ? AND status = 'challenge'
-	`, userID, stamp(now), stamp(now), session.ID); err != nil {
-		return ActivationResult{}, fmt.Errorf("mark invite activated: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE waitlist_entries
-		SET status = 'activated', updated_at = ?
-		WHERE id = ?
-	`, stamp(now), session.WaitlistEntryID); err != nil {
+	if _, err = tx.ExecContext(ctx, `UPDATE waitlist_entries SET status='activated',updated_at=? WHERE id=?`, stamp(now), session.WaitlistEntryID); err != nil {
 		return ActivationResult{}, fmt.Errorf("mark waitlist activated: %w", err)
 	}
-
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		return ActivationResult{}, fmt.Errorf("commit activation: %w", err)
 	}
-	if err := s.db.Push(ctx); err != nil {
+	if err = s.db.Push(ctx); err != nil {
 		return ActivationResult{}, err
 	}
-
-	if err := s.sender.SendSMS(ctx, notifications.SMS{
-		To: session.Phone,
+	if err = s.sender.SendSMS(ctx, notifications.SMS{
+		To:   session.Phone,
 		Text: "Hey " + session.Name + ". I'm Clear. You can text me like a person. What's something you've been putting off?",
 	}); err != nil {
 		slog.Warn("beta activated but welcome sms failed", "user_id", userID, "error", err)
 	}
-
 	return ActivationResult{UserID: userID}, nil
 }
 
@@ -447,19 +502,42 @@ type activationSession struct {
 	Phone               string
 }
 
-func (s *Service) loadActivation(ctx context.Context, token string) (activationSession, error) {
+type activationQuerier interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+func (v activationSession) validate(now time.Time) error {
+	if v.Status == "activated" {
+		return ErrAlreadyActivated
+	}
+	if v.Status == "locked" {
+		return ErrLocked
+	}
+	if v.Status != "challenge" {
+		return ErrActivationNotFound
+	}
+	if v.MaxAttempts <= 0 || v.Attempts >= v.MaxAttempts {
+		return ErrLocked
+	}
+	if expired(v.ActivationExpiresAt, now) {
+		return ErrActivationExpired
+	}
+	return nil
+}
+
+func (s *Service) loadActivationFrom(ctx context.Context, query activationQuerier, token string) (activationSession, error) {
 	var v activationSession
 	if strings.TrimSpace(token) == "" {
 		return v, ErrActivationNotFound
 	}
-	err := s.db.DB.QueryRowContext(ctx, `
+	err := query.QueryRowContext(ctx, `
 		SELECT i.id, i.waitlist_entry_id, i.status,
 		       i.activation_expires_at, i.challenge_code_hash,
 		       i.challenge_expires_at, i.challenge_sent_at,
 		       i.challenge_attempts, i.max_challenge_attempts,
-		       w.name, w.email_normalized, w.phone_e164
+		       identity.name, identity.email_normalized, identity.phone_e164
 		FROM beta_invites i
-		JOIN waitlist_entries w ON w.id = i.waitlist_entry_id
+		JOIN beta_invite_identities identity ON identity.invite_id = i.id
 		WHERE i.activation_token_hash = ?
 		LIMIT 1
 	`, s.tokens.Digest(token)).Scan(

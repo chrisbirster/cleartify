@@ -71,4 +71,10 @@ func TestLoginThrottleSurvivesResendAndPhoneNormalization(t *testing.T){
  if _,err=login.Verify(ctx,phone,good);!errors.Is(err,ErrChallenge){t.Fatal("lockout bypassed",err)}
  for i:=0;i<8;i++{now=now.Add(time.Minute);if err=login.Start(ctx,phone);err!=nil{t.Fatal(err)}}
  if len(sender.sms)!=2{t.Fatal("lockout bypassed via resend")}
+ // Once the shared throttle expires, a new challenge must be usable.
+ now=now.Add(throttleWindow+time.Second)
+ if err=login.Start(ctx,phone);err!=nil{t.Fatal(err)}
+ if len(sender.sms)!=3{t.Fatal("cooldown did not allow a new code")}
+ good=strings.TrimSuffix(strings.Split(sender.sms[2].Text," ")[5],".")
+ if _,err=login.Verify(ctx,phone,good);err!=nil{t.Fatal("login remained locked after cooldown",err)}
 }

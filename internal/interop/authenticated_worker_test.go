@@ -65,6 +65,7 @@ func TestAuthenticatedWorkerLocalDurableDelivery(t *testing.T){
  if e:=worker.Submit(ctx,caller,envelope("one"));e==nil{t.Fatal("injected failure succeeded")}
  if e:=store.DB.QueryRowContext(ctx,"SELECT count(*) FROM agent_interop_messages WHERE message_id='one'").Scan(&missing);e!=nil||missing!=0{t.Fatalf("stranded message %d %v",missing,e)}
  if _,err=store.DB.ExecContext(ctx,"DROP TRIGGER fail_outbox");err!=nil{t.Fatal(err)}
+ if _,err=grant.Grant(ctx,"did:plc:alice",a.ID,b.ID,"message.preview",time.Hour);err!=nil{t.Fatal(err)}
  if err=worker.Submit(ctx,caller,envelope("one"));err!=nil{t.Fatal(err)}
  if err=worker.Submit(ctx,caller,envelope("one"));!errors.Is(err,ErrReplay){t.Fatal("replay",err)}
  var wg sync.WaitGroup

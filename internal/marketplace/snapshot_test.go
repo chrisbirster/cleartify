@@ -11,6 +11,7 @@ func TestImmutableFakeSaleSnapshot(t *testing.T){
  store,err:=database.Open(ctx,database.Config{Path:":memory:"});if err!=nil{t.Fatal(err)};defer store.Close()
  if err=store.Migrate(ctx);err!=nil{t.Fatal(err)}
  for _,q:=range []string{
+  `INSERT INTO social_profiles(did,handle,display_name,kind,public_visible,claimed,updated_at) VALUES('did:plc:seller','seller.test','Seller','person',1,1,'now')`,
   `INSERT INTO published_protocols(id,creator_did,slug,version,title,summary,license,spec_json,status,created_at) VALUES('p','did:plc:seller','slug',1,'Title','','MIT','{}','published','now')`,
   `INSERT INTO marketplace_listings(id,protocol_id,creator_did,title,pricing_kind,price_minor,currency,status,created_at) VALUES('l','p','did:plc:seller','Title','one_time',101,'USD','listed','now')`,
  } {if _,err=store.DB.ExecContext(ctx,q);err!=nil{t.Fatal(err)}}
@@ -50,6 +51,7 @@ func TestReconciliationFailsClosedForLegacyMissingSnapshot(t *testing.T) {
  defer store.Close()
  if err := store.Migrate(ctx); err != nil { t.Fatal(err) }
  for _, q := range []string{
+  `INSERT INTO social_profiles(did,handle,display_name,kind,public_visible,claimed,updated_at) VALUES('did:plc:seller','seller.test','Seller','person',1,1,'now')`,
   `INSERT INTO published_protocols(id,creator_did,slug,version,title,summary,license,spec_json,status,created_at) VALUES('p','did:plc:seller','slug',1,'Title','','MIT','{}','published','now')`,
   `INSERT INTO marketplace_listings(id,protocol_id,creator_did,title,pricing_kind,price_minor,currency,status,created_at) VALUES('l','p','did:plc:seller','Title','one_time',101,'USD','listed','now')`,
  } { if _, err := store.DB.ExecContext(ctx,q); err != nil { t.Fatal(err) } }

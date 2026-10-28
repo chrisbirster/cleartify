@@ -16,6 +16,7 @@ export function BetaActivate() {
   async function request(path: string, body: unknown) {
     const response = await fetch(`${apiBase}${path}`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -95,11 +96,12 @@ export function BetaActivate() {
             <h1 {...stylex.props(styles.title)}>Meet Clear.</h1>
             <p {...stylex.props(styles.copy)}>
               One last thing: verify the phone that will text Clear. We won't send the
-              five-digit code until you press the button below.
+              five-digit code until you press the button below. If you already started,
+              this button restores your activation without resetting the code.
             </p>
             {error() && <div role="alert" {...stylex.props(styles.error)}>{error()}</div>}
             <button disabled={busy() || !inviteToken} onClick={sendCode} {...stylex.props(styles.primary)}>
-              {busy() ? 'Sending…' : 'Text me my code →'}
+              {busy() ? 'Sending…' : 'Send or recover my code →'}
             </button>
           </>
         )}
@@ -109,10 +111,12 @@ export function BetaActivate() {
             <div {...stylex.props(styles.eyebrow)}>CHECK YOUR PHONE</div>
             <h1 {...stylex.props(styles.title)}>Five digits. Clearly.</h1>
             <p {...stylex.props(styles.copy)}>
-              We sent a beta code to <strong>{phoneHint()}</strong>. It expires in ten minutes.
+              Your beta code goes to <strong>{phoneHint()}</strong> and lasts ten minutes.
+              If it expired or did not arrive, request a new code below.
             </p>
             <form onSubmit={verifyCode} {...stylex.props(styles.form)}>
               <input
+                aria-label="Five-digit activation code"
                 name="code"
                 inputmode="numeric"
                 autocomplete="one-time-code"

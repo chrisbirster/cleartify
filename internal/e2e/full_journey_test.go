@@ -54,6 +54,7 @@ func TestProductionShapedLocalJourney(t *testing.T){
   return nil
  })
  run("creator-publish",func(ctx context.Context)error{
+  if _,e:=h.Store.DB.ExecContext(ctx,`INSERT INTO social_profiles(did,handle,display_name,kind,claimed,public_visible,updated_at) VALUES(?,'e2e-creator','Creator','person',1,1,'now') ON CONFLICT(did) DO UPDATE SET claimed=1,public_visible=1`,creator);e!=nil{return e}
   var e error
   publication,e=draft.Create(ctx,creator,protocols.DraftInput{Slug:"local-e2e",Version:1,Title:"Local E2E",License:"MIT",Spec:json.RawMessage(`{"permissions":[],"steps":[{"operation":"local.set","key":"ok","value":"yes"},{"operation":"local.assert","key":"ok","value":"yes"}]}`)})
   if e!=nil{return e}
@@ -86,7 +87,7 @@ func TestProductionShapedLocalJourney(t *testing.T){
   _,e=h.Store.DB.ExecContext(ctx,`INSERT INTO clear_fake_install_audit(id,run_id,action,recorded_at) VALUES('local-run-audit','local-run','completed','now')`);return e
  })
  run("moderation-hold-and-release",func(ctx context.Context)error{
-  _,e:=h.Store.DB.ExecContext(ctx,`INSERT INTO social_profiles(did,handle,display_name,kind,public_visible,claimed,updated_at) VALUES(?,'creator.test','Creator','person',1,1,'now')`,creator);if e!=nil{return e}
+  _,e:=h.Store.DB.ExecContext(ctx,`INSERT INTO social_profiles(did,handle,display_name,kind,public_visible,claimed,updated_at) VALUES(?,'creator.test','Creator','person',1,1,'now') ON CONFLICT(did) DO NOTHING`,creator);if e!=nil{return e}
   _,e=h.Store.DB.ExecContext(ctx,`INSERT INTO social_impersonation_holds(subject_did,reason,created_at) VALUES(?,'lookalike','now')`,creator);if e!=nil{return e}
   reader:=protocols.Reader{DB:h.Store.DB,HoldVisibility:true}
   items,e:=reader.Discover(ctx,10);if e!=nil{return e};if len(items)!=0{return errors.New("held creator exposed")}

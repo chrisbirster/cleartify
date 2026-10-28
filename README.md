@@ -53,8 +53,9 @@ Current routes:
 
 - `/` — meme-friendly consumer landing page + waitlist UI
 - `/@chris` — first-friend / creator protocol profile preview
+- `/settings/profile` — authenticated profile setup and public/private visibility (requires social account registration and OAuth flags)
 
-The landing waitlist now calls the real `POST /api/waitlist` endpoint. Set `VITE_API_BASE_URL` when the API is on a different origin.
+The landing waitlist now calls the real `POST /api/waitlist` endpoint. Set `VITE_API_BASE_URL` when the API is on a different origin. Set the backend `APP_ORIGIN` to the exact browser origin (including port). For local development, use matching hostnames, for example `http://localhost:3000` and `http://localhost:8080`. Authenticated split-origin deployments must remain same-site; see [deployment configuration](docs/deployment.md#frontend).
 
 ## Docs
 

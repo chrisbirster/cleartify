@@ -14,6 +14,7 @@ func TestRound5ExistingFakeLedgerIntegrityCrossBoundary(t *testing.T){
  if err!=nil{t.Fatal(err)};defer d.Close()
  if err=d.Migrate(ctx);err!=nil{t.Fatal(err)}
  for _,q:=range []string{
+  `INSERT INTO social_profiles(did,handle,display_name,kind,public_visible,claimed,updated_at) VALUES('did:plc:s','seller.test','Seller','person',1,1,'now')`,
   `INSERT INTO published_protocols(id,creator_did,slug,version,title,summary,license,spec_json,status,created_at) VALUES('p','did:plc:s','s',1,'S','','MIT','{}','published','now')`,
   `INSERT INTO marketplace_listings(id,protocol_id,creator_did,title,pricing_kind,price_minor,currency,status,created_at) VALUES('l','p','did:plc:s','S','one_time',101,'USD','listed','now')`,
  }{if _,err=d.DB.ExecContext(ctx,q);err!=nil{t.Fatal(err)}}

@@ -26,6 +26,10 @@ func TestOwnershipEd25519Ceremony(t *testing.T){
  if err=svc.Confirm(ctx,"did:plc:owner",reg.ID,nonce,proof);err!=nil{t.Fatal(err)}
  if err=svc.Confirm(ctx,"did:plc:owner",reg.ID,nonce,proof);err==nil{t.Fatal("replay succeeded")}
  var audits int;if err=db.DB.QueryRowContext(ctx,"SELECT count(*) FROM agent_owner_audit").Scan(&audits);err!=nil||audits!=1{t.Fatalf("audit %d %v",audits,err)}
+ entries,err:=Directory(ctx,db.DB,20);if err!=nil||len(entries)!=0{t.Fatal("proof automatically promoted agent",entries,err)}
+ if err=svc.Promote(ctx,reg.ID);err!=nil{t.Fatal("reviewed activation",err)}
+ entries,err=Directory(ctx,db.DB,20);if err!=nil||len(entries)!=1||entries[0].ID!=reg.ID{t.Fatal("promoted agent absent",entries,err)}
+ if err=svc.Promote(ctx,reg.ID);err==nil{t.Fatal("activation replay")}
  adapter:=LocalTestAdapter{}
  if ok,err:=adapter.Health(ctx,reg.ID);err!=nil||!ok{t.Fatal("adapter health")}
  if _,err:=adapter.Challenge(ctx,reg.ID,nonce);err!=nil{t.Fatal(err)}
