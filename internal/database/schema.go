@@ -408,7 +408,12 @@ var schemaStatements = []string{
         decided_at TEXT
     )`,
     `CREATE INDEX IF NOT EXISTS idx_protocol_install_requests_actor ON protocol_install_requests(actor_did,status)`,
-	`CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
+	`CREATE UNIQUE INDEX IF NOT EXISTS idx_guide_install_owner_version ON protocol_installations(user_id,protocol_key,version)`,
+ `CREATE TABLE IF NOT EXISTS guide_install_audit (
+ id TEXT PRIMARY KEY,user_id TEXT NOT NULL,publication_id TEXT NOT NULL,
+ version INTEGER NOT NULL,manifest_sha256 TEXT NOT NULL,action TEXT NOT NULL,created_at TEXT NOT NULL
+ )`,
+ `CREATE INDEX IF NOT EXISTS idx_protocol_installations_user
 		ON protocol_installations(user_id, enabled)`,
 }
 
