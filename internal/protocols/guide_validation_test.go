@@ -3,6 +3,8 @@ package protocols
 import "testing"
 
 func TestGuideStepsOptInAndExecutableRejection(t *testing.T){
+ if err:=ValidateDraftSpecWithGuides([]byte(`{"steps":[{"operation":"guide","text":"Call back","dueAt":"2026-11-01T12:00:00Z"}]}`),"CC0-1.0");err!=nil{t.Fatalf("timed guide rejected: %v",err)}
+ if err:=ValidateDraftSpecWithGuides([]byte(`{"steps":[{"operation":"guide","text":"Call back","dueAt":"someday"}]}`),"CC0-1.0");err==nil{t.Fatal("invalid dueAt accepted")}
  good:=[]byte(`{"steps":[{"operation":"guide","text":"Write down one achievable next step."}]}`)
  if ValidateDraftSpec(good,"CC0-1.0")==nil{t.Fatal("guide enabled by default")}
  if err:=ValidateDraftSpecWithGuides(good,"CC0-1.0");err!=nil{t.Fatal(err)}
