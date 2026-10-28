@@ -78,3 +78,23 @@ func TestLoginThrottleSurvivesResendAndPhoneNormalization(t *testing.T){
  good=strings.TrimSuffix(strings.Split(sender.sms[2].Text," ")[5],".")
  if _,err=login.Verify(ctx,phone,good);err!=nil{t.Fatal("login remained locked after cooldown",err)}
 }
+
+type rejectedLoginSMS struct{}
+func(rejectedLoginSMS)SendSMS(context.Context,notifications.SMS)error{return errors.New("sensitive provider error")}
+func(rejectedLoginSMS)SendEmail(context.Context,notifications.Email)error{return nil}
+func TestFailedDeliveryDoesNotLeaveUsableCode(t *testing.T){
+ ctx:=context.Background()
+ db,err:=database.Open(ctx,database.Config{Path:":memory:"});if err!=nil{t.Fatal(err)};defer db.Close()
+ if err=db.Migrate(ctx);err!=nil{t.Fatal(err)}
+ now:=time.Date(2026,10,27,12,0,0,0,time.UTC)
+ stamp:=now.Format(time.RFC3339Nano)
+ _,err=db.DB.ExecContext(ctx,`INSERT INTO users(id,display_name,primary_email,status,created_at,updated_at) VALUES('u','User','u@test.invalid','active',?,?)`,stamp,stamp);if err!=nil{t.Fatal(err)}
+ _,err=db.DB.ExecContext(ctx,`INSERT INTO phone_identities(id,user_id,phone_e164,verified_at,created_at) VALUES('p','u','+15551112222',?,?)`,stamp,stamp);if err!=nil{t.Fatal(err)}
+ tokens,err:=security.NewTokens(strings.Repeat("p",32));if err!=nil{t.Fatal(err)}
+ login:=&Login{Sessions:&Service{Store:db,Tokens:tokens},Sender:rejectedLoginSMS{},Now:func()time.Time{return now}}
+ if err=login.Ready(ctx);err!=nil{t.Fatal(err)}
+ if err=login.Start(ctx,"+15551112222");err!=nil{t.Fatal("provider failure leaked",err)}
+ var count int
+ if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM clear_login_challenges").Scan(&count);err!=nil||count!=0{t.Fatalf("undelivered challenge remains %d %v",count,err)}
+ if _,err=login.Verify(ctx,"+15551112222","12345");!errors.Is(err,ErrChallenge){t.Fatalf("login without delivery: %v",err)}
+}

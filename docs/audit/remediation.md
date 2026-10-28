@@ -57,3 +57,8 @@ Final verification for the third batch passed: `go test -p 1 -count=1 ./...` acr
 Creator sync failure retries were exercised across draft creation, publishing, takedown request and decision: identical retries recover the existing result, retry Push, and preserve one immutable version and the expected audit count. Conflicting draft payloads remain rejected. The explicit upgrade test preserves legacy ambiguous installs without creating a guessed binding.
 
 The disposable browser fixture database/source, local servers, browser tab, `node_modules`, web build output and TypeScript build cache were removed after validation. Audit coverage hashes continue to describe the original reviewed revision rather than this changed working tree.
+
+
+## Integration with current dev
+
+Before publishing the repairs, fetched `origin/dev` at `1e3f7b0` and merged its five newer commits into the feature branch. Conflict resolution retains the in-app follow-up worker, guide due dates and install auditing/uniqueness, login delivery-failure cleanup, and `/social` preview while preserving canonical installation bindings, creator holds and audit repairs. The combined Go suite, `go vet`, and frontend build (including all three social-demo tests) pass. Dependency installation reported one moderate advisory in this later run; the lockfile was not changed by the integration.
