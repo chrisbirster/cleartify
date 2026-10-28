@@ -22,3 +22,11 @@ test('creator errors are truthful about flag-off, OAuth required and conflicts',
  for(const status of ['401','404','503','409']) assert.ok(ui.includes(status));
  assert.match(ui,/no real Bluesky posting/i);
 });
+
+test('large total-size client warning is advisory, never a new submit gate',()=>{
+  assert.match(ui,/new TextEncoder\(\)\.encode\(JSON\.stringify/);
+  assert.match(ui,/requestSize > 64 \* 1024/);
+  assert.match(ui,/preview and submission remain available/);
+  assert.match(ui,/setSizeWarning\(/);
+  assert.doesNotMatch(ui,/if\s*\(requestSize\s*>\s*64\s*\*\s*1024\)\s*return/);
+});
