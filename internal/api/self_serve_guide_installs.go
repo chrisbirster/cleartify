@@ -19,14 +19,6 @@ func(s *Server) selfServeGuideInstall(w http.ResponseWriter,r *http.Request){
  if s.installFlow==nil||s.installFlow.Store==nil||s.clearSessions==nil {writeJSON(w,503,map[string]string{"error":"unavailable"});return}
  if s.appOrigin==""||r.Header.Get("Origin")!=s.appOrigin{writeJSON(w,403,map[string]string{"error":"invalid_origin"});return}
  user,ok:=s.clearPrincipal(w,r);if !ok{return}
- // Fail closed if legacy duplicates prevent creation of a database-enforced unique index.
- if _,err:=s.installFlow.Store.DB.ExecContext(r.Context(),`CREATE UNIQUE INDEX IF NOT EXISTS idx_guide_install_owner_version ON protocol_installations(user_id,protocol_key,version)`);err!=nil{
-  writeJSON(w,503,map[string]string{"error":"install_storage_unavailable"});return
- }
- if _,err:=s.installFlow.Store.DB.ExecContext(r.Context(),`CREATE TABLE IF NOT EXISTS guide_install_audit (
-  id TEXT PRIMARY KEY,user_id TEXT NOT NULL,publication_id TEXT NOT NULL,
-  version INTEGER NOT NULL,manifest_sha256 TEXT NOT NULL,action TEXT NOT NULL,created_at TEXT NOT NULL
- )`);err!=nil{writeJSON(w,503,map[string]string{"error":"install_storage_unavailable"});return}
  var req struct{PublicationID string `json:"publicationId"`;AcknowledgedManifestSHA256 string `json:"acknowledgedManifestSha256"`}
  if !decodeJSON(w,r,&req){return}
  if len(req.PublicationID)<1||len(req.PublicationID)>128||len(req.AcknowledgedManifestSHA256)!=64{writeJSON(w,400,map[string]string{"error":"invalid_request"});return}
@@ -66,7 +58,10 @@ func(s *Server) selfServeGuideInstall(w http.ResponseWriter,r *http.Request){
  var b [18]byte;if _,err=rand.Read(b[:]);err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
  id:=hex.EncodeToString(b[:])
  _,err=tx.ExecContext(r.Context(),`INSERT INTO protocol_installations(id,user_id,protocol_key,version,source,enabled,created_at) VALUES(?,?,?,?, 'self_serve_guide',1,?)`,id,user,req.PublicationID,version,time.Now().UTC().Format(time.RFC3339Nano))
- if err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
+ if err!=nil{
+  if strings.Contains(strings.ToLower(err.Error()),"unique constraint")||strings.Contains(strings.ToLower(err.Error()),"constraint failed"){writeJSON(w,409,map[string]string{"error":"install_already_exists_or_version_conflict"});return}
+  writeJSON(w,503,map[string]string{"error":"unavailable"});return
+ }
  _,err=tx.ExecContext(r.Context(),`INSERT INTO guide_install_audit(id,user_id,publication_id,version,manifest_sha256,action,created_at)
  VALUES(?,?,?,?,?,'installed',?)`,id,user,req.PublicationID,version,req.AcknowledgedManifestSHA256,time.Now().UTC().Format(time.RFC3339Nano))
  if err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
