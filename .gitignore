@@ -1,0 +1,9 @@
+# Local development databases and credentials — never commit
+.local/
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+*.db-wal
+*.db-shm
