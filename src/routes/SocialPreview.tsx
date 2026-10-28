@@ -40,8 +40,8 @@ export function SocialPreview() {
               <div class="social-mini-avatar">✳</div>
               <div><strong>YOUR SPACE, YOUR RULES</strong><p>Your methods. Your people. Your own little weird corner of the internet.</p></div>
             </div>
-            <div class="social-side-section"><span class="social-side-caption">THE CLUBHOUSE</span><a href="#profile">✧ My profile <b>↗</b></a><a href="#playbooks">⚡ Playbooks <b>04</b></a><button onClick={() => setTab('friends')}>♡ My people <b>03</b></button><a href="#about">✦ About Cleartify <b>↗</b></a></div>
-            <div class="social-side-section"><span class="social-side-caption">PICK YOUR VIBE (DEMO)</span><div class="social-swatches"><button aria-label="Mint theme" aria-pressed={theme()==='mint'} class="swatch mint" onClick={() => setTheme('mint')}/><button aria-label="Pink theme" aria-pressed={theme()==='pink'} class="swatch pink" onClick={() => setTheme('pink')}/><button aria-label="Blue theme" aria-pressed={theme()==='blue'} class="swatch blue" onClick={() => setTheme('blue')}/></div><small>Profile customization is just a local preview here.</small></div>
+            <div class="social-side-section"><span class="social-side-caption">THE CLUBHOUSE</span><a href="#profile">✧ My profile <b>↗</b></a><a href="#playbooks">⚡ Playbooks <b>04</b></a><button onClick={() => { setTab('friends'); }}>♡ My people <b>03</b></button><a href="#about">✦ About Cleartify <b>↗</b></a></div>
+            <div class="social-side-section"><span class="social-side-caption">PICK YOUR VIBE (DEMO)</span><div class="social-swatches"><button aria-label="Mint theme" aria-pressed={theme()==='mint'} class="swatch mint" onClick={() => { setTheme('mint'); }}/><button aria-label="Pink theme" aria-pressed={theme()==='pink'} class="swatch pink" onClick={() => { setTheme('pink'); }}/><button aria-label="Blue theme" aria-pressed={theme()==='blue'} class="swatch blue" onClick={() => { setTheme('blue'); }}/></div><small>Profile customization is just a local preview here.</small></div>
             <div class="social-sticker">you are the<br/>main character <span>✳</span></div>
             <div class="social-side-foot">made for humans with<br />too many side quests ☻</div>
           </aside>
@@ -62,8 +62,8 @@ export function SocialPreview() {
             </div>
 
             <div class="social-tabs" role="tablist" aria-label="Profile sections">
-              <button role="tab" aria-selected={tab()==='playbooks'} class={tab()==='playbooks'?'active':''} onClick={() => setTab('playbooks')}>⚡ The playbooks</button>
-              <button role="tab" aria-selected={tab()==='about'} class={tab()==='about'?'active':''} onClick={() => setTab('about')}>✳ The lore</button>
+              <button role="tab" aria-selected={tab()==='playbooks'} class={tab()==='playbooks'?'active':''} onClick={() => { setTab('playbooks'); }}>⚡ The playbooks</button>
+              <button role="tab" aria-selected={tab()==='about'} class={tab()==='about'?'active':''} onClick={() => { setTab('about'); }}>✳ The lore</button>
               <button role="tab" aria-selected={tab()==='friends'} class={tab()==='friends'?'active':''} onClick={() => setTab('friends')}>♡ Top friends</button>
             </div>
 
