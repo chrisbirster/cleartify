@@ -93,7 +93,7 @@ export function ClearApp() {
       else setStatus(errText(cause));
     }
   }
-  createEffect(() => { void checkSession(); void refreshRecipes(); });
+  createEffect(() => true, () => { void checkSession(); void refreshRecipes(); });
 
   async function startLogin(event: SubmitEvent) {
     event.preventDefault(); setBusy(true); setError('');
