@@ -75,8 +75,9 @@ export function ClearApp() {
     try {
       const result = await request('/api/protocols');
       const candidates = Array.isArray(result.protocols) ? result.protocols : Array.isArray(result.items) ? result.items : Array.isArray(result.results) ? result.results : [];
-      setRecipes(candidates.map(toRecipe).filter((v): v is Recipe => v !== null));
-      if (candidates.length && !recipes().length) setRecipeStatus('The catalog returned an unsupported shape. No entries were fabricated.');
+      const mappedRecipes = candidates.map(toRecipe).filter((v): v is Recipe => v !== null);
+      setRecipes(mappedRecipes);
+      if (candidates.length && mappedRecipes.length === 0) setRecipeStatus('The catalog returned an unsupported shape. No entries were fabricated.');
       if (!candidates.length) setRecipeStatus('No published recipes returned by the API.');
     } catch (cause) {
       setRecipes([]);
