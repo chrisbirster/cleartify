@@ -43,7 +43,7 @@ node scripts/dev-seed-guide.mjs --i-understand-local-fixtures-only
 backend_pid=$!
 wait_health http://127.0.0.1:8080/healthz
 npm run build > .local/browser-build.log 2>&1
-npm run preview -- --host 127.0.0.1 --port 3000 > .local/browser-vite.log 2>&1 &
+npm run dev -- --host 127.0.0.1 --port 3000 > .local/browser-vite.log 2>&1 &
 web_pid=$!
 wait_health http://127.0.0.1:3000/
 npx playwright test -c playwright.config.ts
