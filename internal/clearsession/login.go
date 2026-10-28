@@ -115,8 +115,10 @@ func(l *Login) Start(ctx context.Context,rawPhone string) error{
  // including when local notification delivery is disabled or fails.
  if sendErr:=l.Sender.SendSMS(ctx,notifications.SMS{To:phone,Text:"Your Cleartify sign-in code is "+code+". It expires in 10 minutes."});sendErr!=nil {
   // Do not leave an undelivered valid challenge; never log the phone, code or provider error.
-  _,_ =l.Sessions.Store.DB.ExecContext(ctx,`DELETE FROM clear_login_challenges WHERE user_id=? AND code_digest=?`,user,l.Sessions.Tokens.Digest(code))
-  _ =l.Sessions.Store.Push(ctx)
+  if _,cleanupErr:=l.Sessions.Store.DB.ExecContext(ctx,`DELETE FROM clear_login_challenges WHERE user_id=? AND code_digest=?`,user,l.Sessions.Tokens.Digest(code));cleanupErr!=nil {
+   return errors.New("login challenge cleanup unavailable")
+  }
+  if pushErr:=l.Sessions.Store.Push(ctx);pushErr!=nil{return errors.New("login challenge cleanup unavailable")}
  }
  return nil
 }
