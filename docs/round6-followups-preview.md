@@ -29,3 +29,7 @@ Creation replies include a follow-up record, `deliveryChannel`, and `deliverySta
 - The worker uses a database lease and backoff for failed dispatch. The in-app channel can mark delivery durably. External SMS cannot guarantee exactly-once delivery across a crash after send but before database commit without downstream provider idempotency; **do not represent the Debug SMS path as exactly-once**.
 - In-app visibility is not proof that a user read the message. No push transport, read receipts, recurrence, rich natural-language time interpretation, SMS provider, or deployed scheduler is present.
 - #100 separately addresses a uniqueness constraint/audit for the already merged self-service install code and safe failed-login delivery. #100 is not merged and must be reviewed before exposing install paths to concurrency.
+
+## Integration baseline
+
+This draft PR is based on the current `dev` after the already-merged two-person journey (#98), install security (#100), and frontend preview (#101). Its changes are limited to the follow-up and conversation feature; no journey test or social preview implementation is included in this PR diff.
