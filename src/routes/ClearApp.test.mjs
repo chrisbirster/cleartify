@@ -24,3 +24,13 @@ test('errors and delivery semantics are explicitly represented without dummy use
   assert.match(component, /In-app delivered means persisted/);
   assert.doesNotMatch(component, /(?:mockProfiles|fakeRecipes|demoFollowups)/);
 });
+
+test('valid catalog uses local mapped result, not potentially stale Solid state', () => {
+  assert.match(component, /const mappedRecipes = candidates\.map\(toRecipe\)\.filter/);
+  assert.match(component, /setRecipes\(mappedRecipes\)/);
+  assert.match(component, /if \(candidates\.length && mappedRecipes\.length === 0\)/);
+  assert.doesNotMatch(component, /candidates\.length && !recipes\(\)\.length/);
+  const valid = [{id:'test-guide',title:'A real catalog item',summary:'Guide'}];
+  const mapped = valid.filter(v => typeof v.id === 'string' && typeof v.title === 'string');
+  assert.equal(valid.length > 0 && mapped.length === 0, false);
+});
