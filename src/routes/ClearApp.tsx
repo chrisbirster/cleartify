@@ -1,4 +1,4 @@
-import { createSignal, For, Show, onMount } from 'solid-js';
+import { createSignal, For, Show, createEffect } from 'solid-js';
 import './ClearApp.css';
 
 // REAL API ONLY: no fixture users, publications, messages, or fake installations.
@@ -93,7 +93,7 @@ export function ClearApp() {
       else setStatus(errText(cause));
     }
   }
-  onMount(() => { void checkSession(); void refreshRecipes(); });
+  createEffect(() => { void checkSession(); void refreshRecipes(); });
 
   async function startLogin(event: SubmitEvent) {
     event.preventDefault(); setBusy(true); setError('');
