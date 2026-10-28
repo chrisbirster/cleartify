@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const component = readFileSync(new URL('./ClearApp.tsx', import.meta.url), 'utf8');
+const router = readFileSync(new URL('../router.tsx', import.meta.url), 'utf8');
+test('Clear and recipes are separate real API routes while social remains demo', () => {
+  assert.match(router, /path:\s*'\/clear',\s*component:\s*ClearApp/);
+  assert.match(router, /path:\s*'\/recipes',\s*component:\s*ClearApp/);
+  assert.match(router, /path:\s*'\/social',\s*component:\s*SocialPreview/);
+});
+test('real login, catalog, manifest, installs and followup endpoints are wired', () => {
+  for (const route of ['/api/login/start','/api/login/verify','/api/protocols',
+    '/api/public/guide-manifests/','/api/me/self-serve-guide-installs',
+    '/api/me/clear/messages','/api/me/clear/followups','/api/me/clear/nudges']) {
+    assert.ok(component.includes(route), 'missing ' + route);
+  }
+  assert.match(component, /credentials:\s*'include'/);
+  assert.match(component, /no-store/);
+});
+test('errors and delivery semantics are explicitly represented without dummy user data', () => {
+  for(const status of ['401','409','429']) assert.ok(component.includes(status));
+  assert.match(component, /deterministic command interface/);
+  assert.match(component, /In-app delivered means persisted/);
+  assert.doesNotMatch(component, /(?:mockProfiles|fakeRecipes|demoFollowups)/);
+});
