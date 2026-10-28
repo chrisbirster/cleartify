@@ -15,6 +15,7 @@ import (
 
 	"github.com/chrisbirster/cleartify/internal/beta"
  "github.com/chrisbirster/cleartify/internal/clearsession"
+ "github.com/chrisbirster/cleartify/internal/followups"
 	"github.com/chrisbirster/cleartify/internal/agents"
 	"github.com/chrisbirster/cleartify/internal/clear"
 	"github.com/chrisbirster/cleartify/internal/atproto"
@@ -67,6 +68,8 @@ type Options struct {
  ClearSessions *clearsession.Service
  ReturningLoginEnabled bool
  ReturningLogin *clearsession.Login
+ ClearConversationEnabled bool
+ Followups *followups.Service
 	Waitlist   *waitlist.Service
 	Beta       *beta.Service
 	AppOrigin  string
@@ -118,6 +121,7 @@ type Server struct {
  privateAlphaEnabled bool
  clearSessions *clearsession.Service
  returningLogin *clearsession.Login
+ followups *followups.Service
 	waitlist   *waitlist.Service
 	beta       *beta.Service
 	appOrigin  string
@@ -159,6 +163,7 @@ func New(options Options) http.Handler {
   linkSocial: options.LinkSocial,
 		clearSessions: options.ClearSessions,
   returningLogin: options.ReturningLogin,
+  followups: options.Followups,
   clearPrincipalResolver: options.ClearPrincipalResolver,
   alphaEligibility:options.AlphaEligibility,
   privateAlphaEnabled:options.PrivateAlphaRoutesEnabled,
@@ -187,6 +192,11 @@ func New(options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.health)
+ if options.ClearConversationEnabled && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.Followups!=nil {
+  mux.HandleFunc("POST /api/me/clear/messages",s.alphaPrivateRoute(s.clearMessage))
+  mux.HandleFunc("GET /api/me/clear/followups",s.alphaPrivateRoute(s.listClearFollowups))
+  mux.HandleFunc("GET /api/me/clear/nudges",s.alphaPrivateRoute(s.listClearNudges))
+ }
  if options.ReturningLoginEnabled && options.ReturningLogin!=nil && options.ClearSessionsEnabled {mux.HandleFunc("POST /api/login/start",s.startReturningLogin);mux.HandleFunc("POST /api/login/verify",s.verifyReturningLogin)}
  if s.moderationEnforcement {mux.HandleFunc("GET /api/admin/moderation/local-metrics",s.localModerationMetrics)}
  if options.FakeCheckoutEnabled && options.FakeCheckout!=nil && options.FakeAccounting!=nil && options.FakeAccounting.Enabled {
