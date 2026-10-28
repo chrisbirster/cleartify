@@ -58,7 +58,7 @@ export function SocialPreview() {
 
             <div class="social-profile-bar">
               <div class="social-stats"><div><strong>04</strong><small>public playbooks*</small></div><div><strong>03</strong><small>featured friends*</small></div><div><strong>∞</strong><small>side quests</small></div></div>
-              <div class="social-actions"><button class="social-follow" onClick={() => { setFollowing(!following()); setNotice(following() ? 'Demo: following turned on. No account data changed.' : 'Demo: following turned off. No account data changed.'); }}>{following() ? '♥ Following' : '+ Follow'}</button><button class="social-share" onClick={() => {void navigator.clipboard?.writeText(window.location.origin + '/social').then(() => setNotice('Demo link copied!')).catch(() => setNotice('Share this demo page: /social'));}}>↗ Share space</button></div>
+              <div class="social-actions"><button class="social-follow" onClick={() => { const next = !following(); setFollowing(next); setNotice(next ? 'Demo: following turned on. No account data changed.' : 'Demo: following turned off. No account data changed.'); }}>{following() ? '♥ Following' : '+ Follow'}</button><button class="social-share" onClick={() => {if (navigator.clipboard) { void navigator.clipboard.writeText(window.location.origin + '/social').then(() => setNotice('Demo link copied!')).catch(() => setNotice('Share this demo page: /social')); } else { setNotice('Share this demo page: /social'); }}}>↗ Share space</button></div>
             </div>
 
             <div class="social-tabs" role="tablist" aria-label="Profile sections">
