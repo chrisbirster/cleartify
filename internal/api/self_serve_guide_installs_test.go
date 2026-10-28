@@ -52,6 +52,18 @@ func TestSelfServeGuideInstallOnlyVisiblePublicAndOwnerScoped(t *testing.T){
   w:=httptest.NewRecorder();h.ServeHTTP(w,req);return w.Code
  }
  m,err:=flow.Preview(ctx,"pub");if err!=nil{t.Fatal(err)}
+ publicManifest:=httptest.NewRecorder()
+ on.ServeHTTP(publicManifest,httptest.NewRequest("GET","/api/public/guide-manifests/pub",nil))
+ if publicManifest.Code!=200 || !bytes.Contains(publicManifest.Body.Bytes(),[]byte(m.ManifestSHA256)){t.Fatalf("public manifest: %d %s",publicManifest.Code,publicManifest.Body.String())}
+ hiddenManifest:=httptest.NewRecorder()
+ on.ServeHTTP(hiddenManifest,httptest.NewRequest("GET","/api/public/guide-manifests/hidden",nil))
+ if hiddenManifest.Code!=404{t.Fatalf("hidden manifest leaked: %d",hiddenManifest.Code)}
+ draftManifest:=httptest.NewRecorder()
+ on.ServeHTTP(draftManifest,httptest.NewRequest("GET","/api/public/guide-manifests/draft",nil))
+ if draftManifest.Code!=404{t.Fatalf("draft manifest leaked: %d",draftManifest.Code)}
+ offManifest:=httptest.NewRecorder()
+ off.ServeHTTP(offManifest,httptest.NewRequest("GET","/api/public/guide-manifests/pub",nil))
+ if offManifest.Code!=404{t.Fatalf("flag-off manifest exposed: %d",offManifest.Code)}
  if status:=post(off,"pub",m.ManifestSHA256,true);status!=404{t.Fatalf("flag off: %d",status)}
  if status:=post(on,"pub",m.ManifestSHA256,false);status!=401{t.Fatalf("without user: %d",status)}
  if status:=post(on,"pub",m.ManifestSHA256,true);status!=201{t.Fatalf("install: %d",status)}
