@@ -25,7 +25,7 @@ export function SocialPreview() {
 
   return (
     <main class={`social-page social-theme-${theme()}`}>
-      <div class="social-marquee"><span>✦ welcome to your corner of the internet ✦ no algorithm, just excellent taste ✦ protocols > productivity guilt ✦</span></div>
+      <div class="social-marquee"><span>✦ welcome to your corner of the internet ✦ no algorithm, just excellent taste ✦ protocols &gt; productivity guilt ✦</span></div>
       <header class="social-nav">
         <a class="social-logo" href="/">✳ clear<span>tify</span><sup>beta</sup></a>
         <nav aria-label="Primary"><a class="social-nav-active" href="/social">People</a><a href="#playbooks">Playbooks</a><a href="/@chris">Real profiles ↗</a></nav>
