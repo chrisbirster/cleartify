@@ -252,6 +252,7 @@ func New(options Options) http.Handler {
  if options.ClearSessionsEnabled && options.ClearSessions != nil {if options.PrivateAlphaRoutesEnabled {mux.HandleFunc("GET /api/me/clear-session",s.alphaPrivateRoute(s.meClearSession))} else {mux.HandleFunc("GET /api/me/clear-session",s.meClearSession)};mux.HandleFunc("POST /api/me/clear-session/logout",s.logoutClearSession)}
 	if options.SelfServeGuideInstallsEnabled && options.ClearSessionsEnabled && options.ClearSessions!=nil && options.InstallFlow!=nil {
   mux.HandleFunc("POST /api/me/self-serve-guide-installs",s.alphaPrivateRoute(s.selfServeGuideInstall))
+   mux.HandleFunc("GET /api/public/guide-manifests/{id}",s.selfServeGuideManifest)
  }
  if options.ProtocolInstallFlowEnabled && options.OAuth!=nil && options.InstallFlow!=nil {
 		mux.HandleFunc("GET /api/protocols/{id}/install-manifest",s.installManifest)
