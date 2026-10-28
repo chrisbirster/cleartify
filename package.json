@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run test:social-demo && npm run test:clear-live && tsc -b && vite build",
+    "build": "npm run test:social-demo && npm run test:clear-live && npm run test:local-journey && tsc -b && vite build",
     "preview": "vite preview",
     "test:social-demo": "node --test src/routes/SocialPreview.test.mjs",
-    "test:clear-live": "node --test src/routes/ClearApp.test.mjs"
+    "test:clear-live": "node --test src/routes/ClearApp.test.mjs",
+    "test:local-journey": "node --test scripts/local-journey.test.mjs"
   },
   "dependencies": {
     "@solidjs/router": "2.0.0-next.35",
