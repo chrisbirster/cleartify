@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '26'
       - run: npm ci
-      - run: npm install --no-save --package-lock=false @playwright/test@1.58.2
+      - run: npm ls @playwright/test @solidjs/compiler @solidjs/babel-plugin @solidjs/web
       - run: mkdir -p .local && go build -buildvcs=false -o .local/cleartify-e2e ./cmd/cleartify
       - run: bash scripts/run-local-browser-e2e.sh
       - name: Upload screenshots only
