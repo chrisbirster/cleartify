@@ -20,5 +20,5 @@ test('API draft and publication are separate; public requires private transition
 });
 test('creator errors are truthful about flag-off, OAuth required and conflicts',()=>{
  for(const status of ['401','404','503','409']) assert.ok(ui.includes(status));
- assert.match(ui,/not a real Bluesky posting/i);
+ assert.match(ui,/no real Bluesky posting/i);
 });
