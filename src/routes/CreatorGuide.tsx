@@ -41,6 +41,7 @@ export function CreatorGuide() {
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal('');
   const [notice, setNotice] = createSignal('');
+  const [sizeWarning, setSizeWarning] = createSignal('');
   const [published, setPublished] = createSignal(false);
 
   const change = () => {
@@ -60,6 +61,15 @@ export function CreatorGuide() {
     if (clean.some(s => s.dueAt && !Number.isFinite(Date.parse(s.dueAt)))) {
       setError('Invalid due date; choose a date/time or leave the step unscheduled.');return null;
     }
+    // Advisory only. The server remains authoritative about request-size limits.
+    const requestSize = new TextEncoder().encode(JSON.stringify({
+      slug: slug().trim(), version: version(), title: title().trim(),
+      summary: summary().trim(), license: license(),
+      spec: { steps: clean.map(s => ({ operation: 'guide', text: s.text,
+        ...(s.dueAt ? { dueAt: new Date(s.dueAt).toISOString() } : {}) })), permissions: [] },
+    })).byteLength;
+    setSizeWarning(requestSize > 64 * 1024 ?
+      'Large guide request (' + Math.ceil(requestSize / 1024) + ' KiB). The server may reject it; preview and submission remain available.' : '');
     return { id: '', title: title().trim(), slug: slug().trim(), summary: summary().trim(),
       license: license(), version: version(), steps: clean };
   }
@@ -133,6 +143,7 @@ export function CreatorGuide() {
             <div class="creator-actions"><button class="creator-soft" disabled={!publicConsent()||busy()} onClick={()=>void changeVisibility('unlisted')}>Publish unlisted</button><button disabled={!publicConsent()||busy()} onClick={()=>void changeVisibility('public')}>Publish publicly</button></div>
           </Show>
         </Show>
+        <Show when={sizeWarning()}><p class="creator-notice" role="status">{sizeWarning()}</p></Show>
         <Show when={error()}><p class="creator-error" role="alert">{error()}</p></Show><Show when={notice()}><p class="creator-notice" role="status">{notice()}</p></Show>
         <hr/><p class="creator-fine">The server validates owner DID, license, provenance, visibility transition, and inert step schema. Public publishing requires explicit consent here and valid OAuth on the server. There is no real Bluesky posting in this page.</p>
       </aside>
