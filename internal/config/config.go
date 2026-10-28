@@ -36,6 +36,7 @@ type Config struct {
  PrivateAlphaRoutesEnabled bool
  ClearSessionsEnabled bool
  ReturningLoginEnabled bool
+ ClearConversationEnabled bool
 	Port             string
 	AppOrigin        string
 	AppURL           string
@@ -86,6 +87,7 @@ func Load() Config {
  GuideStepsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("GUIDE_STEPS_ENABLED")),"true"),
  CreatorDraftsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CREATOR_DRAFTS_ENABLED")),"true"),
  PrivateAlphaRoutesEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("PRIVATE_ALPHA_ROUTES_ENABLED")),"true"),
+ ClearConversationEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CLEAR_CONVERSATION_ENABLED")),"true"),
  ReturningLoginEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("RETURNING_LOGIN_ENABLED")),"true"),
  ClearSessionsEnabled: strings.EqualFold(strings.TrimSpace(os.Getenv("CLEAR_SESSIONS_ENABLED")),"true"),
 		Port:             env("PORT", "8080"),

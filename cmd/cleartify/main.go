@@ -23,6 +23,7 @@ import (
 	"github.com/chrisbirster/cleartify/internal/atproto"
 	"github.com/chrisbirster/cleartify/internal/beta"
  "github.com/chrisbirster/cleartify/internal/clearsession"
+ "github.com/chrisbirster/cleartify/internal/followups"
 	"github.com/chrisbirster/cleartify/internal/config"
 	"github.com/chrisbirster/cleartify/internal/database"
 	"github.com/chrisbirster/cleartify/internal/notifications"
@@ -111,6 +112,21 @@ func main() {
  }
  var clearSessions *clearsession.Service
  if cfg.ClearSessionsEnabled {clearSessions=&clearsession.Service{Store:db,Tokens:tokens}}
+ var followupService *followups.Service
+ if cfg.ClearConversationEnabled && clearSessions!=nil {channel:="in_app"
+  switch strings.TrimSpace(os.Getenv("FOLLOWUP_DELIVERY_CHANNEL")) {
+  case "", "in_app":
+  case "debug_sms":
+   if cfg.NotificationMode!="debug" {slog.Error("debug_sms requires local-only debug notifications");os.Exit(1)}
+   channel="sms"
+  default:slog.Error("unsupported follow-up delivery channel");os.Exit(1)
+  }
+  followupService=&followups.Service{DB:db.DB,Sender:sender,Channel:channel};if err=followupService.Ready(ctx);err!=nil{slog.Error("followups storage unavailable","error",err);os.Exit(1)}}
+ if followupService!=nil {
+   tick:=time.NewTicker(30*time.Second)
+   defer tick.Stop()
+   go func(){if e:=followupService.Run(ctx,tick.C);e!=nil && ctx.Err()==nil{slog.Error("follow-up worker stopped","error",e);stop()}}()
+ }
  var returningLogin *clearsession.Login
  if cfg.ReturningLoginEnabled && clearSessions!=nil {returningLogin=&clearsession.Login{Sessions:clearSessions,Sender:sender};if err=returningLogin.Ready(ctx);err!=nil{slog.Error("returning login storage failed", "error",err);os.Exit(1)}}
  // Local transport has no HTTP listener, outbound network, or production delivery.
@@ -160,6 +176,8 @@ func main() {
   ClearSessions:clearSessions,
   ReturningLoginEnabled:cfg.ReturningLoginEnabled,
   ReturningLogin:returningLogin,
+  ClearConversationEnabled:cfg.ClearConversationEnabled,
+  Followups:followupService,
 		Waitlist:   waitlistService,
 		Beta:       betaService,
 		AppOrigin:  cfg.AppOrigin,
