@@ -34,3 +34,10 @@ test('valid catalog uses local mapped result, not potentially stale Solid state'
   const mapped = valid.filter(v => typeof v.id === 'string' && typeof v.title === 'string');
   assert.equal(valid.length > 0 && mapped.length === 0, false);
 });
+
+test('phone input uses browser-portable E.164 regex confirmed by Chromium', () => {
+  assert.match(component, /pattern="\[\+\]\[1-9\]\[0-9\]\{7,14\}"/);
+  const pattern = /^[+][1-9][0-9]{7,14}$/;
+  assert.equal(pattern.test('+15550002222'), true);
+  assert.equal(pattern.test('15550002222'), false);
+});
