@@ -10,6 +10,7 @@ import (
  "testing"
  "time"
  "github.com/chrisbirster/cleartify/internal/clearsession"
+ "github.com/chrisbirster/cleartify/internal/followups"
  "github.com/chrisbirster/cleartify/internal/database"
  "github.com/chrisbirster/cleartify/internal/protocols"
  "github.com/chrisbirster/cleartify/internal/security"
@@ -68,4 +69,24 @@ func TestSelfServeGuideInstallOnlyVisiblePublicAndOwnerScoped(t *testing.T){
  if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM guide_install_audit WHERE user_id='b' AND publication_id='pub' AND action='installed'").Scan(&audit);err!=nil||audit!=1{t.Fatalf("audit %d %v",audit,err)}
  _,err=db.DB.ExecContext(ctx,`INSERT INTO protocol_installations(id,user_id,protocol_key,version,source,enabled,created_at) VALUES('dup','b','pub',1,'self_serve_guide',1,'now')`)
  if err==nil{t.Fatal("duplicate database insert bypassed unique constraint")}
+ svc:=&followups.Service{DB:db.DB}
+ if err=svc.Ready(ctx);err!=nil{t.Fatal(err)}
+ a,err:=sessions.Issue(ctx,"a");if err!=nil{t.Fatal(err)}
+ withFollowups:=New(Options{ClearSessionsEnabled:true,ClearSessions:sessions,InstallFlow:flow,AppOrigin:origin,SelfServeGuideInstallsEnabled:true,Followups:svc})
+ payload,_:=json.Marshal(map[string]any{"publicationId":"pub","acknowledgedManifestSha256":m.ManifestSHA256,"createFollowups":true,"followupDueAt":"2026-11-01T12:00:00Z"})
+ req:=httptest.NewRequest("POST","/api/me/self-serve-guide-installs",bytes.NewReader(payload))
+ req.Header.Set("Origin",origin);req.AddCookie(&http.Cookie{Name:"clear_session",Value:a})
+ w:=httptest.NewRecorder();withFollowups.ServeHTTP(w,req)
+ if w.Code!=201{t.Fatalf("install with guide followups %d %s",w.Code,w.Body.String())}
+ if !bytes.Contains(w.Body.Bytes(),[]byte(`"followupsCreated":1`)){t.Fatalf("followups not acknowledged %s",w.Body.String())}
+ var count int
+ if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM clear_followups WHERE user_id='a' AND text='First step' AND due_at LIKE '2026-11-01T12:00:00%'").Scan(&count);err!=nil||count!=1{t.Fatalf("guide followup not persisted %d %v",count,err)}
+ if err=db.DB.QueryRowContext(ctx,"SELECT COUNT(*) FROM clear_followups WHERE user_id='b'").Scan(&count);err!=nil||count!=0{t.Fatalf("B has A followup %d %v",count,err)}
+ svc.Now=func()time.Time{return time.Date(2026,11,2,0,0,0,0,time.UTC)}
+ if _,err=svc.Tick(ctx);err!=nil{t.Fatal(err)}
+ if _,err=svc.DeliverDue(ctx);err!=nil{t.Fatal(err)}
+ list,err:=svc.List(ctx,"a");if err!=nil||len(list)!=1{t.Fatal("missing A followup",err)}
+ inbox,err:=svc.Inbox(ctx,"a");if err!=nil||len(inbox)!=1||inbox[0].DeliveryStatus!="delivered"{t.Fatalf("in-app nudge %+v %v",inbox,err)}
+ if err=svc.Done(ctx,"a",list[0].ID);err!=nil{t.Fatal(err)}
+ inbox,err=svc.Inbox(ctx,"a");if err!=nil||len(inbox)!=0{t.Fatalf("done still nudged %+v %v",inbox,err)}
 }
