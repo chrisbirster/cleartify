@@ -58,6 +58,12 @@ func(s *Server) selfServeGuideInstall(w http.ResponseWriter,r *http.Request){
  var b [18]byte;if _,err=rand.Read(b[:]);err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
  id:=hex.EncodeToString(b[:])
  _,err=tx.ExecContext(r.Context(),`INSERT INTO protocol_installations(id,user_id,protocol_key,version,source,enabled,created_at) VALUES(?,?,?,?, 'self_serve_guide',1,?)`,id,user,req.PublicationID,version,time.Now().UTC().Format(time.RFC3339Nano))
+ if err!=nil{
+  if strings.Contains(strings.ToLower(err.Error()),"unique constraint")||strings.Contains(strings.ToLower(err.Error()),"constraint failed"){writeJSON(w,409,map[string]string{"error":"install_already_exists_or_version_conflict"});return}
+  writeJSON(w,503,map[string]string{"error":"unavailable"});return
+ }
+ _,err=tx.ExecContext(r.Context(),`INSERT INTO guide_install_audit(id,user_id,publication_id,version,manifest_sha256,action,created_at)
+ VALUES(?,?,?,?,?,'installed',?)`,id,user,req.PublicationID,version,req.AcknowledgedManifestSHA256,time.Now().UTC().Format(time.RFC3339Nano))
  if err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
  if err=tx.Commit();err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
  if err=s.installFlow.Store.Push(r.Context());err!=nil{writeJSON(w,503,map[string]string{"error":"unavailable"});return}
