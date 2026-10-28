@@ -161,7 +161,7 @@ export function ClearApp() {
           <section class="clear-panel" aria-label="Phone sign in">
             <h2>Sign in to Clear</h2>
             <Show when={stage() === 'phone'} fallback={<form onSubmit={verifyLogin}><label>Five-digit code<input required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{5}" maxlength="5" value={code()} onInput={e => setCode(e.currentTarget.value)} placeholder="Code from Debug Sender"/></label><button disabled={busy()} type="submit">Verify code</button><button type="button" class="clear-link" onClick={() => setStage('phone')}>Change phone</button></form>}>
-              <form onSubmit={startLogin}><label>Phone (E.164, e.g. +15551234567)<input type="tel" required pattern="\\+[1-9][0-9]{7,14}" value={phone()} onInput={e => setPhone(e.currentTarget.value)} placeholder="+15551234567"/></label><button disabled={busy()} type="submit">Request sign-in code</button></form>
+              <form onSubmit={startLogin}><label>Phone (E.164, e.g. +15551234567)<input type="tel" required pattern="[+][1-9][0-9]{7,14}" value={phone()} onInput={e => setPhone(e.currentTarget.value)} placeholder="+15551234567"/></label><button disabled={busy()} type="submit">Request sign-in code</button></form>
             </Show>
             <p>For existing accounts only. No account or SMS provider is created by this screen.</p>
           </section>
