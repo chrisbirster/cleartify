@@ -1,0 +1,23 @@
+name: e2e-lockfile-bootstrap-temporary
+on:
+  push:
+    branches: [feat/clear-browser-e2e-clean-20261028]
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '26'}
+      - run: npm install --package-lock-only --save-dev --save-exact @playwright/test@1.58.2 @solidjs/compiler@2.0.0-rc.13 @solidjs/babel-plugin@2.0.0-rc.13
+      - name: Emit generated lockfile and manifest for controlled commit
+        run: |
+          echo LOCKFILE_BEGIN
+          base64 -w0 package-lock.json
+          echo
+          echo LOCKFILE_END
+          echo MANIFEST_BEGIN
+          base64 -w0 package.json
+          echo
+          echo MANIFEST_END
